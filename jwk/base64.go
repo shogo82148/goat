@@ -12,10 +12,10 @@ type base64Context struct {
 }
 
 // newBase64Context pre-allocates base64 decoding buffers.
-func newBase64Context(n int) base64Context {
+func newBase64Context(n int) *base64Context {
 	src := make([]byte, n)
 	dst := make([]byte, base64.RawURLEncoding.DecodedLen(n))
-	return base64Context{
+	return &base64Context{
 		src: src,
 		dst: dst,
 	}

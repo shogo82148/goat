@@ -6,11 +6,11 @@ import (
 )
 
 func parseRSAKey(data *commonKey) (*Key, error) {
-	key, err := data.decode()
+	ctx := newRSAContext(data)
+	key, err := data.decode(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx := newRSAContext(data)
 	var privateKey rsa.PrivateKey
 
 	// parameters for public key
@@ -39,7 +39,7 @@ func parseRSAKey(data *commonKey) (*Key, error) {
 	return key, nil
 }
 
-func newRSAContext(key *commonKey) base64Context {
+func newRSAContext(key *commonKey) *base64Context {
 	var size int
 	if len(key.E) > size {
 		size = len(key.E)
@@ -75,6 +75,12 @@ func newRSAContext(key *commonKey) base64Context {
 	}
 	if len(key.Qi) > size {
 		size = len(key.Qi)
+	}
+	if len(key.X5t) > size {
+		size = len(key.X5t)
+	}
+	if len(key.X5tS256) > size {
+		size = len(key.X5tS256)
 	}
 	return newBase64Context(size)
 }

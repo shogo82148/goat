@@ -2,6 +2,9 @@
 package jwk
 
 import (
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
@@ -32,10 +35,10 @@ type Key struct {
 	X509CertificateChain []*x509.Certificate
 
 	// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
-	X509CertificateSHA1 string
+	X509CertificateSHA1 []byte
 
 	// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
-	X509CertificateSHA256 string
+	X509CertificateSHA256 []byte
 
 	// PrivateKey is the private key.
 	// If the key doesn't contain any private key, it returns nil.
@@ -94,7 +97,48 @@ type commonKey struct {
 	} `json:"oth,omitempty"`
 }
 
-func (key *commonKey) decode() (*Key, error) {
+func (key *commonKey) decode(ctx *base64Context) (*Key, error) {
+	// decode the certificates
+	certs := make([]*x509.Certificate, 0, len(key.X5c))
+	for _, der := range key.X5c {
+		cert, err := x509.ParseCertificate(der)
+		if err != nil {
+			return nil, errors.New("jwk: failed to parse x5c")
+		}
+		certs = append(certs, cert)
+	}
+
+	// check thumbprints
+	var x5t, x5tS256 []byte
+	if key.X5t != "" {
+		if len(certs) == 0 && key.X5u == "" {
+			return nil, errors.New("jwk: the certificate is not found")
+		}
+		got := sha1.Sum(key.X5c[0])
+		want := ctx.decode(key.X5t, "x5t")
+		if ctx.err != nil {
+			return nil, ctx.err
+		}
+		if subtle.ConstantTimeCompare(got[:], want) == 0 {
+			return nil, errors.New("jwk: the sha-1 thumbprint of the certificate is mismatch")
+		}
+		x5t = append([]byte(nil), want...)
+	}
+	if key.X5tS256 != "" {
+		if len(key.X5c) == 0 && key.X5u == "" {
+			return nil, errors.New("jwk: the certificate is not found")
+		}
+		got := sha256.Sum256(key.X5c[0])
+		want := ctx.decode(key.X5t, "x5t#S256")
+		if ctx.err != nil {
+			return nil, ctx.err
+		}
+		if subtle.ConstantTimeCompare(got[:], want) == 0 {
+			return nil, errors.New("jwk: the sha-256 thumbprint of the certificate is mismatch")
+		}
+		x5tS256 = append([]byte(nil), want...)
+	}
+
 	return &Key{
 		KeyType:               key.Kty,
 		PublicKeyUse:          key.Use,
@@ -102,8 +146,9 @@ func (key *commonKey) decode() (*Key, error) {
 		Algorithm:             key.Alg,
 		KeyID:                 key.Kid,
 		X509URL:               key.X5u,
-		X509CertificateSHA1:   key.X5t,
-		X509CertificateSHA256: key.X5tS256,
+		X509CertificateChain:  certs,
+		X509CertificateSHA1:   x5t,
+		X509CertificateSHA256: x5tS256,
 	}, nil
 }
 
