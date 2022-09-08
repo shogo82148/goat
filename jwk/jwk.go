@@ -175,8 +175,7 @@ func parseKey(key *commonKey) (*Key, error) {
 		// }
 		return nil, errors.New("TODO: implement me")
 	case "oct":
-		// return parseSymmetricKey(data)
-		return nil, errors.New("TODO: implement me")
+		return parseSymmetricKey(key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.Kty)
 	}
