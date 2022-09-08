@@ -30,6 +30,36 @@ func parseRSAKey(data *commonKey) (*Key, error) {
 		privateKey.D = d
 		privateKey.Primes = []*big.Int{p, q}
 
+		// precomputed values
+		crtValues := make([]rsa.CRTValue, 0, len(data.Oth))
+		for _, v := range data.Oth {
+			r := new(big.Int).SetBytes(ctx.decode(v.R, "oth[].r"))
+			privateKey.Primes = append(privateKey.Primes, r)
+
+			d := new(big.Int).SetBytes(ctx.decode(v.D, "oth[].d"))
+			t := new(big.Int).SetBytes(ctx.decode(v.T, "oth[].t"))
+
+			crtValues = append(crtValues, rsa.CRTValue{
+				Exp:   d,
+				Coeff: t,
+				R:     r,
+			})
+		}
+
+		if data.Dp != "" && data.Dq != "" && data.Qi != "" {
+			dp := new(big.Int).SetBytes(ctx.decode(data.Dp, "dp"))
+			dq := new(big.Int).SetBytes(ctx.decode(data.Dp, "dq"))
+			qi := new(big.Int).SetBytes(ctx.decode(data.Dp, "qi"))
+
+			privateKey.Precomputed = rsa.PrecomputedValues{
+				Dp:        dp,
+				Dq:        dq,
+				Qinv:      qi,
+				CRTValues: crtValues,
+			}
+		}
+
+		privateKey.Precompute()
 		key.PrivateKey = &privateKey
 	}
 
@@ -63,8 +93,8 @@ func newRSAContext(key *commonKey) *base64Context {
 		if len(v.D) > size {
 			size = len(v.D)
 		}
-		if len(v.D) > size {
-			size = len(v.D)
+		if len(v.T) > size {
+			size = len(v.T)
 		}
 	}
 	if len(key.Dp) > size {
