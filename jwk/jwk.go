@@ -168,12 +168,7 @@ func parseKey(key *commonKey) (*Key, error) {
 	case "RSA":
 		return parseRSAKey(key)
 	case "OKP":
-		// if hint.D {
-		// 	return parseOkpPrivateKey(data, hint.Crv)
-		// } else {
-		// 	return parseOkpPublicKey(data, hint.Crv)
-		// }
-		return nil, errors.New("TODO: implement me")
+		return parseOKPKey(key)
 	case "oct":
 		return parseSymmetricKey(key)
 	default:
