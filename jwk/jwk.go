@@ -164,12 +164,7 @@ func ParseKey(data []byte) (*Key, error) {
 func parseKey(key *commonKey) (*Key, error) {
 	switch key.Kty {
 	case "EC":
-		// if hint.D {
-		// 	return parseEcdsaPrivateKey(data)
-		// } else {
-		// 	return parseEcdsaPublicKey(data)
-		// }
-		return nil, errors.New("TODO: implement me")
+		return parseEcdsaKey(key)
 	case "RSA":
 		return parseRSAKey(key)
 	case "OKP":

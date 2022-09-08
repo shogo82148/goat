@@ -1,12 +1,43 @@
 package jwk
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"errors"
 	"testing"
 )
 
 func TestKey_RFC7517AppendixA(t *testing.T) {
+	t.Run("RFC 7517 A.1. Example Public Keys (EC)", func(t *testing.T) {
+		rawKey := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
+			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
+			`"use":"enc",` +
+			`"kid":"1"}`
+		key, err := ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if key.KeyType != "EC" {
+			t.Errorf("unexpected key type: want %s, got %s", "RSA", key.KeyType)
+		}
+		publicKey, ok := key.PublicKey.(*ecdsa.PublicKey)
+		if !ok {
+			t.Errorf("unexpected key type: want *ecdsa.PublicKey, got %T", key.PublicKey)
+		}
+		if publicKey.Curve != elliptic.P256() {
+			t.Errorf("unexpected curve: want P-256, got %s", publicKey.Curve.Params().Name)
+		}
+		if got, want := publicKey.X.String(), "21994169848703329112137818087919262246467304847122821377551355163096090930238"; got != want {
+			t.Errorf("unexpected x param: want %s, got %s", want, got)
+		}
+		if got, want := publicKey.Y.String(), "101451294974385619524093058399734017814808930032421185206609461750712400090915"; got != want {
+			t.Errorf("unexpected y param: want %s, got %s", want, got)
+		}
+	})
+
 	t.Run("RFC 7517 A.1. Example Public Keys (RSA)", func(t *testing.T) {
 		rawKey := `{"kty":"RSA",` +
 			`"n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx` +
@@ -34,6 +65,37 @@ func TestKey_RFC7517AppendixA(t *testing.T) {
 		}
 		if publicKey.E != 65537 {
 			t.Errorf("want %d, got %d", 65537, publicKey.E)
+		}
+	})
+
+	t.Run("RFC 7517 A.2. Example Private Keys (EC)", func(t *testing.T) {
+		rawKey := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
+			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
+			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
+			`"use":"enc",` +
+			`"kid":"1"}`
+		key, err := ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if key.KeyType != "EC" {
+			t.Errorf("unexpected key type: want %s, got %s", "EC", key.KeyType)
+		}
+		privateKey, ok := key.PrivateKey.(*ecdsa.PrivateKey)
+		if !ok {
+			t.Errorf("unexpected key type: want *ecdsa.PrivateKey, got %T", key.PrivateKey)
+		}
+		if privateKey.Curve.Params().Name != "P-256" {
+			t.Errorf("unexpected curve: want P-256, got %s", privateKey.Curve.Params().Name)
+		}
+		publicKey, ok := key.PublicKey.(*ecdsa.PublicKey)
+		if !ok {
+			t.Errorf("unexpected key type: want *ecdsa.PublicKey, got %T", key.PublicKey)
+		}
+		if !privateKey.PublicKey.Equal(publicKey) {
+			t.Error("public keys are mismatch")
 		}
 	})
 
@@ -94,17 +156,19 @@ func TestKey_RFC7517AppendixA(t *testing.T) {
 }
 
 func BenchmarkKey_RFC7517AppendixA(b *testing.B) {
-	// b.Run("RFC 7517 A.1. Example Public Keys (EC)", func(b *testing.B) {
-	// 	rawKey := []byte(`{"kty":"EC",` +
-	// 		`"crv":"P-256",` +
-	// 		`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
-	// 		`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
-	// 		`"use":"enc",` +
-	// 		`"kid":"1"}`)
-	// 	for i := 0; i < b.N; i++ {
-	// 		ParseKey(rawKey)
-	// 	}
-	// })
+	b.Run("RFC 7517 A.1. Example Public Keys (EC)", func(b *testing.B) {
+		rawKey := []byte(`{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
+			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
+			`"use":"enc",` +
+			`"kid":"1"}`)
+		for i := 0; i < b.N; i++ {
+			if _, err := ParseKey(rawKey); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 
 	b.Run("RFC 7517 A.1. Example Public Keys (RSA)", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"RSA",` +
@@ -124,18 +188,20 @@ func BenchmarkKey_RFC7517AppendixA(b *testing.B) {
 		}
 	})
 
-	// b.Run("RFC 7517 A.2. Example Private Keys (EC)", func(b *testing.B) {
-	// 	rawKey := []byte(`{"kty":"EC",` +
-	// 		`"crv":"P-256",` +
-	// 		`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
-	// 		`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
-	// 		`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
-	// 		`"use":"enc",` +
-	// 		`"kid":"1"}`)
-	// 	for i := 0; i < b.N; i++ {
-	// 		ParseKey(rawKey)
-	// 	}
-	// })
+	b.Run("RFC 7517 A.2. Example Private Keys (EC)", func(b *testing.B) {
+		rawKey := []byte(`{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
+			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
+			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
+			`"use":"enc",` +
+			`"kid":"1"}`)
+		for i := 0; i < b.N; i++ {
+			if _, err := ParseKey(rawKey); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 
 	b.Run("RFC 7517 A.2. Example Private Keys (RSA)", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"RSA",` +
@@ -288,46 +354,46 @@ func BenchmarkKey_RFC7517AppendixB(b *testing.B) {
 }
 
 func TestKey_Base64Error(t *testing.T) {
-	// t.Run("EC Public Keys", func(t *testing.T) {
-	// 	rawKey := `{"kty":"EC",` +
-	// 		`"crv":"P-256",` +
-	// 		`"x":"!!!INVALID BASE64!!!",` +
-	// 		`"y":"!!!INVALID BASE64!!!",` +
-	// 		`"use":"enc",` +
-	// 		`"kid":"1"}`
-	// 	var e *base64DecodeError
-	// 	_, err := ParseKey([]byte(rawKey))
-	// 	if !errors.As(err, &e) {
-	// 		t.Errorf("want *base64DecodeError, got %T", err)
-	// 	}
-	// 	if e.err == nil {
-	// 		t.Error("want not nil, got nil")
-	// 	}
-	// 	if e.name != "x" && e.name != "y" {
-	// 		t.Errorf("want name is x or y, got %s", e.name)
-	// 	}
-	// })
+	t.Run("EC Public Keys", func(t *testing.T) {
+		rawKey := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"!!!INVALID BASE64!!!",` +
+			`"y":"!!!INVALID BASE64!!!",` +
+			`"use":"enc",` +
+			`"kid":"1"}`
+		var e *base64DecodeError
+		_, err := ParseKey([]byte(rawKey))
+		if !errors.As(err, &e) {
+			t.Errorf("want *base64DecodeError, got %T", err)
+		}
+		if e.err == nil {
+			t.Error("want not nil, got nil")
+		}
+		if e.name != "x" && e.name != "y" {
+			t.Errorf("want name is x or y, got %s", e.name)
+		}
+	})
 
-	// t.Run("EC Private Keys", func(t *testing.T) {
-	// 	rawKey := `{"kty":"EC",` +
-	// 		`"crv":"P-256",` +
-	// 		`"x":"!!!INVALID BASE64!!!",` +
-	// 		`"y":"!!!INVALID BASE64!!!",` +
-	// 		`"d":"!!!INVALID BASE64!!!",` +
-	// 		`"use":"enc",` +
-	// 		`"kid":"1"}`
-	// 	var e *base64DecodeError
-	// 	_, err := ParseKey([]byte(rawKey))
-	// 	if !errors.As(err, &e) {
-	// 		t.Errorf("want *base64DecodeError, got %T", err)
-	// 	}
-	// 	if e.err == nil {
-	// 		t.Error("want not nil, got nil")
-	// 	}
-	// 	if e.name != "x" && e.name != "y" && e.name != "d" {
-	// 		t.Errorf("want name is x or y or d, got %s", e.name)
-	// 	}
-	// })
+	t.Run("EC Private Keys", func(t *testing.T) {
+		rawKey := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"!!!INVALID BASE64!!!",` +
+			`"y":"!!!INVALID BASE64!!!",` +
+			`"d":"!!!INVALID BASE64!!!",` +
+			`"use":"enc",` +
+			`"kid":"1"}`
+		var e *base64DecodeError
+		_, err := ParseKey([]byte(rawKey))
+		if !errors.As(err, &e) {
+			t.Errorf("want *base64DecodeError, got %T", err)
+		}
+		if e.err == nil {
+			t.Error("want not nil, got nil")
+		}
+		if e.name != "x" && e.name != "y" && e.name != "d" {
+			t.Errorf("want name is x or y or d, got %s", e.name)
+		}
+	})
 
 	t.Run("RSA Public Key", func(t *testing.T) {
 		rawKey := `{"kty":"RSA",` +
