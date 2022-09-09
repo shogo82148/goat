@@ -13,7 +13,7 @@ import (
 
 // Key is a JSON Web Key.
 type Key struct {
-	// KeyType is RFC7517 4.2. "use" (Public Key Use) Parameter.
+	// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
 	KeyType string
 
 	// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
