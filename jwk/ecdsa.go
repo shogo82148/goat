@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 // RFC7518 6.2.2. Parameters for Elliptic Curve Private Keys
@@ -18,13 +20,11 @@ func parseEcdsaKey(data *commonKey) (*Key, error) {
 
 	var privateKey ecdsa.PrivateKey
 	switch data.Crv {
-	case "P-224":
-		privateKey.Curve = elliptic.P224()
-	case "P-256":
+	case jwa.P256:
 		privateKey.Curve = elliptic.P256()
-	case "P-384":
+	case jwa.P384:
 		privateKey.Curve = elliptic.P384()
-	case "P-521":
+	case jwa.P521:
 		privateKey.Curve = elliptic.P521()
 	default:
 		return nil, fmt.Errorf("jwk: unknown elliptic curve: %q", data.Crv)

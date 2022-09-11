@@ -9,12 +9,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 // Key is a JSON Web Key.
 type Key struct {
 	// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
-	KeyType string
+	KeyType jwa.KeyType
 
 	// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
 	PublicKeyUse string
@@ -23,7 +25,7 @@ type Key struct {
 	KeyOperations []string
 
 	// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
-	Algorithm string
+	Algorithm jwa.KeyAlgorithm
 
 	// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
 	KeyID string
@@ -51,7 +53,7 @@ type Key struct {
 
 type commonKey struct {
 	// RFC7517 4.1. "kty" (Key Type) Parameter
-	Kty string `json:"kty"`
+	Kty jwa.KeyType `json:"kty"`
 
 	// RFC7517 4.2. "use" (Public Key Use) Parameter
 	Use string `json:"use,omitempty"`
@@ -60,7 +62,7 @@ type commonKey struct {
 	KeyOps []string `json:"key_ops,omitempty"`
 
 	// RFC7517 4.4. "alg" (Algorithm) Parameter
-	Alg string `json:"alg,omitempty"`
+	Alg jwa.KeyAlgorithm `json:"alg,omitempty"`
 
 	// RFC7517 4.5. "kid" (Key ID) Parameter
 	Kid string `json:"kid,omitempty"`
@@ -78,18 +80,18 @@ type commonKey struct {
 	X5tS256 string `json:"x5t#S256,omitempty"`
 
 	// key type specific parameters
-	Crv string `json:"crv,omitempty"`
-	D   string `json:"d,omitempty"`
-	Dp  string `json:"dp,omitempty"`
-	Dq  string `json:"dq,omitempty"`
-	E   string `json:"e,omitempty"`
-	K   string `json:"k,omitempty"`
-	N   string `json:"n,omitempty"`
-	P   string `json:"p,omitempty"`
-	Q   string `json:"q,omitempty"`
-	Qi  string `json:"qi,omitempty"`
-	X   string `json:"x,omitempty"`
-	Y   string `json:"y,omitempty"`
+	Crv jwa.EllipticCurve `json:"crv,omitempty"`
+	D   string            `json:"d,omitempty"`
+	Dp  string            `json:"dp,omitempty"`
+	Dq  string            `json:"dq,omitempty"`
+	E   string            `json:"e,omitempty"`
+	K   string            `json:"k,omitempty"`
+	N   string            `json:"n,omitempty"`
+	P   string            `json:"p,omitempty"`
+	Q   string            `json:"q,omitempty"`
+	Qi  string            `json:"qi,omitempty"`
+	X   string            `json:"x,omitempty"`
+	Y   string            `json:"y,omitempty"`
 	Oth []struct {
 		R string `json:"r,omitempty"`
 		D string `json:"d,omitempty"`
@@ -163,13 +165,13 @@ func ParseKey(data []byte) (*Key, error) {
 
 func parseKey(key *commonKey) (*Key, error) {
 	switch key.Kty {
-	case "EC":
+	case jwa.EC:
 		return parseEcdsaKey(key)
-	case "RSA":
+	case jwa.RSA:
 		return parseRSAKey(key)
-	case "OKP":
+	case jwa.OKP:
 		return parseOKPKey(key)
-	case "oct":
+	case jwa.Oct:
 		return parseSymmetricKey(key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.Kty)
