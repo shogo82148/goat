@@ -1,49 +1,49 @@
 // Package jwa implements RFC7518.
 package jwa
 
-// SignAlgorithm is an algorithm for JSON Web Signature (JWS)
+// SignatureAlgorithm is an algorithm for JSON Web Signature (JWS)
 // defined in RFC8518 Section 3 Cryptographic Algorithms for Digital Signatures and MACs.
-type SignAlgorithm string
+type SignatureAlgorithm string
 
 const (
 	// HS256 is HMAC using SHA-256.
-	HS256 SignAlgorithm = "HS256"
+	HS256 SignatureAlgorithm = "HS256"
 
 	// HS384 is HMAC using SHA-384.
-	HS384 SignAlgorithm = "HS384"
+	HS384 SignatureAlgorithm = "HS384"
 
 	// HS512 is HMAC using SHA-512.
-	HS512 SignAlgorithm = "HS512"
+	HS512 SignatureAlgorithm = "HS512"
 
 	// RS256 is RSASSA-PKCS1-v1_5 using SHA-256.
-	RS256 SignAlgorithm = "RS256"
+	RS256 SignatureAlgorithm = "RS256"
 
 	// RS384 is RSASSA-PKCS1-v1_5 using SHA-384.
-	RS384 SignAlgorithm = "RS384"
+	RS384 SignatureAlgorithm = "RS384"
 
 	// RS512 is RSASSA-PKCS1-v1_5 using SHA-512.
-	RS512 SignAlgorithm = "RS512"
+	RS512 SignatureAlgorithm = "RS512"
 
 	// ES256 is ECDSA using P-256 and SHA-256.
-	ES256 SignAlgorithm = "ES256"
+	ES256 SignatureAlgorithm = "ES256"
 
 	// ES384 is ECDSA using P-384 and SHA-384.
-	ES384 SignAlgorithm = "ES384"
+	ES384 SignatureAlgorithm = "ES384"
 
 	// ES512 is ECDSA using P-521 and SHA-512.
-	ES512 SignAlgorithm = "ES512"
+	ES512 SignatureAlgorithm = "ES512"
 
 	// PS256 is RSASSA-PSS using SHA-256 and MGF1 with SHA-256.
-	PS256 SignAlgorithm = "PS256"
+	PS256 SignatureAlgorithm = "PS256"
 
 	// PS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
-	PS384 SignAlgorithm = "PS384"
+	PS384 SignatureAlgorithm = "PS384"
 
 	// PS512 is RSASSA-PSS using SHA-512 and MGF1 with SHA-512.
-	PS512 SignAlgorithm = "PS512"
+	PS512 SignatureAlgorithm = "PS512"
 
 	// None is no digital signature or MAC performed.
-	None SignAlgorithm = "none"
+	None SignatureAlgorithm = "none"
 )
 
 // KeyManagementAlgorithm is an algorithm for JSON Web Encryption (JWE)
@@ -102,6 +102,21 @@ const (
 	// PBES2_HS512_A256KW is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
 	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
+
+// KeyAlgorithm may be either SignatureAlgorithm or KeyManagementAlgorithm.
+// It is a workaround for jwk.Key being able to contain different
+// types of algorithms in its `alg` field.
+type KeyAlgorithm string
+
+// SignatureAlgorithm casts alg to SignatureAlgorithm.
+func (alg KeyAlgorithm) SignatureAlgorithm() SignatureAlgorithm {
+	return SignatureAlgorithm(alg)
+}
+
+// KeyManagementAlgorithm cast alg to KeyManagementAlgorithm.
+func (alg KeyAlgorithm) KeyManagementAlgorithm() KeyManagementAlgorithm {
+	return KeyManagementAlgorithm(alg)
+}
 
 // ContentEncryptionAlgorithm an algorithm for content encryption
 // defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.

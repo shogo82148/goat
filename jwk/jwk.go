@@ -9,12 +9,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 // Key is a JSON Web Key.
 type Key struct {
 	// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
-	KeyType string
+	KeyType jwa.KeyType
 
 	// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
 	PublicKeyUse string
@@ -23,7 +25,7 @@ type Key struct {
 	KeyOperations []string
 
 	// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
-	Algorithm string
+	Algorithm jwa.KeyAlgorithm
 
 	// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
 	KeyID string
@@ -51,7 +53,7 @@ type Key struct {
 
 type commonKey struct {
 	// RFC7517 4.1. "kty" (Key Type) Parameter
-	Kty string `json:"kty"`
+	Kty jwa.KeyType `json:"kty"`
 
 	// RFC7517 4.2. "use" (Public Key Use) Parameter
 	Use string `json:"use,omitempty"`
@@ -60,7 +62,7 @@ type commonKey struct {
 	KeyOps []string `json:"key_ops,omitempty"`
 
 	// RFC7517 4.4. "alg" (Algorithm) Parameter
-	Alg string `json:"alg,omitempty"`
+	Alg jwa.KeyAlgorithm `json:"alg,omitempty"`
 
 	// RFC7517 4.5. "kid" (Key ID) Parameter
 	Kid string `json:"kid,omitempty"`
@@ -163,13 +165,13 @@ func ParseKey(data []byte) (*Key, error) {
 
 func parseKey(key *commonKey) (*Key, error) {
 	switch key.Kty {
-	case "EC":
+	case jwa.EC:
 		return parseEcdsaKey(key)
-	case "RSA":
+	case jwa.RSA:
 		return parseRSAKey(key)
-	case "OKP":
+	case jwa.OKP:
 		return parseOKPKey(key)
-	case "oct":
+	case jwa.Oct:
 		return parseSymmetricKey(key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.Kty)
