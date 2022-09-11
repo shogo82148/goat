@@ -531,7 +531,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
@@ -550,7 +550,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
@@ -565,7 +565,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
@@ -581,7 +581,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
@@ -598,7 +598,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
