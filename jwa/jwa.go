@@ -145,13 +145,13 @@ type EllipticCurve string
 
 const (
 	// P256 is a Curve which implements NIST P-256.
-	P256 EllipticCurve = "P256"
+	P256 EllipticCurve = "P-256"
 
 	// P384 is a Curve which implements NIST P-384.
-	P384 EllipticCurve = "P364"
+	P384 EllipticCurve = "P-364"
 
 	// P521 is a Curve which implements NIST P-521.
-	P521 EllipticCurve = "P521"
+	P521 EllipticCurve = "P-521"
 
 	// Ed25519 is Ed25519 signature algorithm key pairs.
 	Ed25519 EllipticCurve = "Ed25519"

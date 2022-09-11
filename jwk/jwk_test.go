@@ -502,7 +502,7 @@ func BenchmarkKey_RFC8037AppendixA(b *testing.B) {
 func TestKey_Base64Error(t *testing.T) {
 	t.Run("EC Public Keys", func(t *testing.T) {
 		rawKey := `{"kty":"EC",` +
-			`"crv":"P-256",` +
+			`"crv":"P-521",` +
 			`"x":"!!!INVALID BASE64!!!",` +
 			`"y":"!!!INVALID BASE64!!!",` +
 			`"use":"enc",` +
@@ -510,7 +510,7 @@ func TestKey_Base64Error(t *testing.T) {
 		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
 		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %T", err)
+			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
 		}
 		if e.err == nil {
 			t.Error("want not nil, got nil")
@@ -522,7 +522,7 @@ func TestKey_Base64Error(t *testing.T) {
 
 	t.Run("EC Private Keys", func(t *testing.T) {
 		rawKey := `{"kty":"EC",` +
-			`"crv":"P-256",` +
+			`"crv":"P-521",` +
 			`"x":"!!!INVALID BASE64!!!",` +
 			`"y":"!!!INVALID BASE64!!!",` +
 			`"d":"!!!INVALID BASE64!!!",` +
