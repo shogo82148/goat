@@ -80,18 +80,18 @@ type commonKey struct {
 	X5tS256 string `json:"x5t#S256,omitempty"`
 
 	// key type specific parameters
-	Crv string `json:"crv,omitempty"`
-	D   string `json:"d,omitempty"`
-	Dp  string `json:"dp,omitempty"`
-	Dq  string `json:"dq,omitempty"`
-	E   string `json:"e,omitempty"`
-	K   string `json:"k,omitempty"`
-	N   string `json:"n,omitempty"`
-	P   string `json:"p,omitempty"`
-	Q   string `json:"q,omitempty"`
-	Qi  string `json:"qi,omitempty"`
-	X   string `json:"x,omitempty"`
-	Y   string `json:"y,omitempty"`
+	Crv jwa.EllipticCurve `json:"crv,omitempty"`
+	D   string            `json:"d,omitempty"`
+	Dp  string            `json:"dp,omitempty"`
+	Dq  string            `json:"dq,omitempty"`
+	E   string            `json:"e,omitempty"`
+	K   string            `json:"k,omitempty"`
+	N   string            `json:"n,omitempty"`
+	P   string            `json:"p,omitempty"`
+	Q   string            `json:"q,omitempty"`
+	Qi  string            `json:"qi,omitempty"`
+	X   string            `json:"x,omitempty"`
+	Y   string            `json:"y,omitempty"`
 	Oth []struct {
 		R string `json:"r,omitempty"`
 		D string `json:"d,omitempty"`

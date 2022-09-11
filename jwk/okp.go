@@ -3,6 +3,8 @@ package jwk
 import (
 	"errors"
 	"fmt"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 // RFC8037 2.  Key Type "OKP"
@@ -13,7 +15,7 @@ func parseOKPKey(data *commonKey) (*Key, error) {
 		return nil, err
 	}
 	switch data.Crv {
-	case "Ed25519":
+	case jwa.Ed25519:
 		return parseEd25519Key(ctx, data, key)
 	case "":
 		return nil, errors.New("jwk: the crv parameter is missing")

@@ -2,7 +2,7 @@
 package jwa
 
 // SignatureAlgorithm is an algorithm for JSON Web Signature (JWS)
-// defined in RFC8518 Section 3 Cryptographic Algorithms for Digital Signatures and MACs.
+// defined in the IANA "JSON Web Signature and Encryption Algorithms".
 type SignatureAlgorithm string
 
 const (
@@ -47,7 +47,7 @@ const (
 )
 
 // KeyManagementAlgorithm is an algorithm for JSON Web Encryption (JWE)
-// defined in RFC7518 4. Cryptographic Algorithms for Key Management
+// defined in the IANA JSON Web Signature and Encryption Algorithms.
 type KeyManagementAlgorithm string
 
 const (
@@ -122,7 +122,7 @@ func (alg KeyAlgorithm) KeyManagementAlgorithm() KeyManagementAlgorithm {
 // defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.
 type ContentEncryptionAlgorithm string
 
-// KeyType is a key type defined in RFC7518 Section 6 Cryptographic Algorithms for Keys.
+// KeyType is a key type defined in the IANA "JSON Web Key Types".
 type KeyType string
 
 const (
@@ -138,4 +138,33 @@ const (
 
 	// Oct is Octet sequence (used to represent symmetric keys).
 	Oct = "oct"
+)
+
+// EllipticCurve is an EllipticCurve defined in the IANA "JSON Web Key Elliptic Curve".
+type EllipticCurve string
+
+const (
+	// P256 is a Curve which implements NIST P-256.
+	P256 EllipticCurve = "P256"
+
+	// P384 is a Curve which implements NIST P-384.
+	P384 EllipticCurve = "P364"
+
+	// P521 is a Curve which implements NIST P-521.
+	P521 EllipticCurve = "P521"
+
+	// Ed25519 is Ed25519 signature algorithm key pairs.
+	Ed25519 EllipticCurve = "Ed25519"
+
+	// Ed448 is Ed448 signature algorithm key pairs.
+	Ed448 EllipticCurve = "Ed448"
+
+	// X25519 is X25519 function key pairs
+	X25519 EllipticCurve = "X25519"
+
+	// X448 is X448 function key pairs.
+	X448 EllipticCurve = "X448"
+
+	// secp256k1 is SECG secp256k1 curve.
+	Secp256k1 EllipticCurve = "secp256k1"
 )
