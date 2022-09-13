@@ -5,26 +5,21 @@ import (
 	"errors"
 )
 
-func parseEd25519Key(ctx *base64Context, data *commonKey, key *Key) (*Key, error) {
+func parseEd25519Key(ctx *decodeContext, key *Key) {
 	const keySize = ed25519.PrivateKeySize - ed25519.PublicKeySize
 	privateKey := make([]byte, ed25519.PrivateKeySize)
 
-	publicKey := ctx.decode(data.X, "x")
-	if ctx.err != nil {
-		return nil, ctx.err
-	}
+	publicKey := ctx.mustBytes("x")
 	if copy(privateKey[keySize:], publicKey) != ed25519.PublicKeySize {
-		return nil, errors.New("jwk: the parameter x has invalid size")
+		ctx.error(errors.New("jwk: the parameter x has invalid size"))
+		return
 	}
 	key.PublicKey = ed25519.PublicKey(privateKey[keySize:])
 
-	if data.D != "" {
-		d := ctx.decode(data.D, "d")
-		if ctx.err != nil {
-			return nil, ctx.err
-		}
+	if d, ok := ctx.getBytes("d"); ok {
 		if copy(privateKey, d) != keySize {
-			return nil, errors.New("jwk: the parameter d has invalid size")
+			ctx.error(errors.New("jwk: the parameter d has invalid size"))
+			return
 		}
 		key.PrivateKey = ed25519.PrivateKey(privateKey)
 	}
@@ -34,12 +29,12 @@ func parseEd25519Key(ctx *base64Context, data *commonKey, key *Key) (*Key, error
 		cert := certs[0]
 		publicKey, ok := cert.PublicKey.(ed25519.PublicKey)
 		if !ok {
-			return nil, errors.New("jwk: public key types are mismatch")
+			ctx.error(errors.New("jwk: public key types are mismatch"))
+			return
 		}
 		if !ed25519.PublicKey(privateKey[keySize:]).Equal(publicKey) {
-			return nil, errors.New("jwk: public keys are mismatch")
+			ctx.error(errors.New("jwk: public keys are mismatch"))
+			return
 		}
 	}
-
-	return key, nil
 }
