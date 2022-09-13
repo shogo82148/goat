@@ -2,6 +2,7 @@
 package jwk
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -9,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/shogo82148/goat/jwa"
 )
@@ -31,7 +33,7 @@ type Key struct {
 	KeyID string
 
 	// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
-	X509URL string
+	X509URL *url.URL
 
 	// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
 	X509CertificateChain []*x509.Certificate
@@ -49,133 +51,136 @@ type Key struct {
 	// PublicKey is the public key.
 	// If the key doesn't contain any public key, it returns nil.
 	PublicKey any
+
+	// Raw is the raw data of JWK.
+	// JSON numbers are decoded as json.Number to avoid data loss.
+	Raw map[string]any
 }
 
-type commonKey struct {
-	// RFC7517 4.1. "kty" (Key Type) Parameter
-	Kty jwa.KeyType `json:"kty"`
-
-	// RFC7517 4.2. "use" (Public Key Use) Parameter
-	Use string `json:"use,omitempty"`
-
-	// RFC7517 4.3. "key_ops" (Key Operations) Parameter
-	KeyOps []string `json:"key_ops,omitempty"`
-
-	// RFC7517 4.4. "alg" (Algorithm) Parameter
-	Alg jwa.KeyAlgorithm `json:"alg,omitempty"`
-
-	// RFC7517 4.5. "kid" (Key ID) Parameter
-	Kid string `json:"kid,omitempty"`
-
-	// RFC7517 4.6. "x5u" (X.509 URL) Parameter
-	X5u string `json:"x5u,omitempty"`
-
-	// RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter
-	X5c [][]byte `json:"x5c,omitempty"`
-
-	// RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter
-	X5t string `json:"x5t,omitempty"`
-
-	// RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter
-	X5tS256 string `json:"x5t#S256,omitempty"`
-
-	// key type specific parameters
-	Crv jwa.EllipticCurve `json:"crv,omitempty"`
-	D   string            `json:"d,omitempty"`
-	Dp  string            `json:"dp,omitempty"`
-	Dq  string            `json:"dq,omitempty"`
-	E   string            `json:"e,omitempty"`
-	K   string            `json:"k,omitempty"`
-	N   string            `json:"n,omitempty"`
-	P   string            `json:"p,omitempty"`
-	Q   string            `json:"q,omitempty"`
-	Qi  string            `json:"qi,omitempty"`
-	X   string            `json:"x,omitempty"`
-	Y   string            `json:"y,omitempty"`
-	Oth []struct {
-		R string `json:"r,omitempty"`
-		D string `json:"d,omitempty"`
-		T string `json:"t,omitempty"`
-	} `json:"oth,omitempty"`
-}
-
-func (key *commonKey) decode(ctx *base64Context) (*Key, error) {
-	// decode the certificates
-	certs := make([]*x509.Certificate, 0, len(key.X5c))
-	for _, der := range key.X5c {
-		cert, err := x509.ParseCertificate(der)
-		if err != nil {
-			return nil, errors.New("jwk: failed to parse x5c")
+// decode common parameters such as certificate and thumbprints, etc.
+func decodeCommonParameters(ctx *decodeContext, key *Key) {
+	key.KeyType = jwa.KeyType(must[string](ctx, "kty"))
+	if kid, ok := get[string](ctx, "kid"); ok {
+		key.KeyID = kid
+	}
+	if use, ok := get[string](ctx, "use"); ok {
+		key.PublicKeyUse = use
+	}
+	if ops, ok := get[[]any](ctx, "key_ops"); ok {
+		keyOps := make([]string, 0, len(ops))
+		for _, v := range ops {
+			s, ok := v.(string)
+			if !ok {
+				ctx.error(fmt.Errorf("jwk: unexpected type for the parameter key_ops[]: %T", v))
+				return
+			}
+			keyOps = append(keyOps, s)
 		}
-		certs = append(certs, cert)
+		key.KeyOperations = keyOps
+	}
+	if alg, ok := get[string](ctx, "alg"); ok {
+		key.Algorithm = jwa.KeyAlgorithm(alg)
+	}
+
+	// decode the certificates
+	if x5u, ok := get[string](ctx, "x5u"); ok {
+		u, err := url.Parse(x5u)
+		if err != nil {
+			ctx.error(fmt.Errorf("jwk: failed parse x5u: %w", err))
+			return
+		}
+		key.X509URL = u
+	}
+	var cert0 []byte
+	var certs []*x509.Certificate
+	x5c, ok := get[[]any](ctx, "x5c")
+	if ok {
+		for i, v := range x5c {
+			s, ok := v.(string)
+			if !ok {
+				ctx.error(fmt.Errorf("jwk: unexpected type for the parameter x5c[%d]: %T", i, v))
+				return
+			}
+			der := ctx.decodeStd(s, "x5c[]")
+			cert, err := x509.ParseCertificate(der)
+			if err != nil {
+				ctx.error(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				return
+			}
+			if cert0 == nil {
+				cert0 = der
+			}
+			certs = append(certs, cert)
+		}
+		key.X509CertificateChain = certs
 	}
 
 	// check thumbprints
-	var x5t, x5tS256 []byte
-	if key.X5t != "" {
-		if len(certs) == 0 && key.X5u == "" {
-			return nil, errors.New("jwk: the certificate is not found")
+	x5t, ok := ctx.getBytes("x5t")
+	if ok {
+		if cert0 == nil {
+			ctx.error(fmt.Errorf("jwk: key has sha-1 thumbprint but certificate is not found"))
+			return
 		}
-		got := sha1.Sum(key.X5c[0])
-		want := ctx.decode(key.X5t, "x5t")
-		if ctx.err != nil {
-			return nil, ctx.err
+		sum := sha1.Sum(cert0)
+		if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
+			ctx.error(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			return
 		}
-		if subtle.ConstantTimeCompare(got[:], want) == 0 {
-			return nil, errors.New("jwk: the sha-1 thumbprint of the certificate is mismatch")
-		}
-		x5t = append([]byte(nil), want...)
+		key.X509CertificateSHA1 = x5t
 	}
-	if key.X5tS256 != "" {
-		if len(key.X5c) == 0 && key.X5u == "" {
-			return nil, errors.New("jwk: the certificate is not found")
+	x5t256, ok := ctx.getBytes("x5t#S256")
+	if ok {
+		if cert0 == nil {
+			ctx.error(fmt.Errorf("jwk: key has sha-256 thumbprint but certificate is not found"))
+			return
 		}
-		got := sha256.Sum256(key.X5c[0])
-		want := ctx.decode(key.X5t, "x5t#S256")
-		if ctx.err != nil {
-			return nil, ctx.err
+		sum := sha256.Sum256(cert0)
+		if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
+			ctx.error(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			return
 		}
-		if subtle.ConstantTimeCompare(got[:], want) == 0 {
-			return nil, errors.New("jwk: the sha-256 thumbprint of the certificate is mismatch")
-		}
-		x5tS256 = append([]byte(nil), want...)
+		key.X509CertificateSHA256 = x5t256
 	}
-
-	return &Key{
-		KeyType:               key.Kty,
-		PublicKeyUse:          key.Use,
-		KeyOperations:         key.KeyOps,
-		Algorithm:             key.Alg,
-		KeyID:                 key.Kid,
-		X509URL:               key.X5u,
-		X509CertificateChain:  certs,
-		X509CertificateSHA1:   x5t,
-		X509CertificateSHA256: x5tS256,
-	}, nil
 }
 
 // ParseKey parses a JWK.
 func ParseKey(data []byte) (*Key, error) {
-	var key commonKey
-	if err := json.Unmarshal(data, &key); err != nil {
+	var raw map[string]any
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
 		return nil, err
 	}
-	return parseKey(&key)
+	return parseKey(raw)
 }
 
-func parseKey(key *commonKey) (*Key, error) {
-	switch key.Kty {
-	case jwa.EC:
-		return parseEcdsaKey(key)
-	case jwa.RSA:
-		return parseRSAKey(key)
-	case jwa.OKP:
-		return parseOKPKey(key)
-	case jwa.Oct:
-		return parseSymmetricKey(key)
-	default:
-		return nil, fmt.Errorf("jwk: unknown key type: %q", key.Kty)
+func parseKey(raw map[string]any) (*Key, error) {
+	ctx := newDecodeContext(raw)
+	key := &Key{
+		Raw: raw,
 	}
+	decodeCommonParameters(ctx, key)
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+
+	switch key.KeyType {
+	case jwa.EC:
+		parseEcdsaKey(ctx, key)
+	case jwa.RSA:
+		parseRSAKey(ctx, key)
+	case jwa.OKP:
+		parseOKPKey(ctx, key)
+	case jwa.Oct:
+		parseSymmetricKey(ctx, key)
+	default:
+		return nil, fmt.Errorf("jwk: unknown key type: %q", key.KeyType)
+	}
+	if ctx.err != nil {
+		return nil, ctx.err
+	}
+	return key, nil
 }
 
 // Set is a JWK Set.
@@ -186,17 +191,24 @@ type Set struct {
 // ParseSet parses a JWK Set.
 func ParseSet(data []byte) (*Set, error) {
 	var keys struct {
-		Keys []commonKey `json:"keys"`
+		Keys []map[string]any `json:"keys"`
 	}
-	if err := json.Unmarshal(data, &keys); err != nil {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&keys); err != nil {
 		return nil, err
 	}
 
 	list := make([]*Key, 0, len(keys.Keys))
 	for _, key := range keys.Keys {
-		if key, err := parseKey(&key); err == nil {
+		if key, err := parseKey(key); err == nil {
 			list = append(list, key)
-			// Ignore keys that cannot be parsed.
+
+			// from: RFC7517 Section 5. JWK Set Format
+			// Implementations SHOULD ignore JWKs within a JWK Set that use "kty"
+			// (key type) values that are not understood by them, that are missing
+			// required members, or for which values are out of the supported
+			// ranges.
 		}
 	}
 	return &Set{
