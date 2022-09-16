@@ -13,6 +13,7 @@ import (
 	"hash"
 	"net/url"
 
+	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk"
 )
@@ -68,37 +69,57 @@ type KeyFinder interface {
 	FindKey(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error)
 }
 
+type FindKeyFunc func(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error)
+
+func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error) {
+	return f(ctx, header)
+}
+
 var dot = []byte{'.'}
 
+// Parse parses a JWS.
 func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
 	header, payload, signature, ok := split(data)
 	if !ok {
 		return nil, errors.New("jws: failed to parse JWS: invalid format")
 	}
 
-	var h map[string]any
+	var raw map[string]any
 	dec := json.NewDecoder(base64.NewDecoder(base64.RawURLEncoding, bytes.NewReader(header)))
-	if err := dec.Decode(&h); err != nil {
-		return nil, fmt.Errorf("jws: failed to parse JWS: %w", err)
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
 
-	hash, key, err := finder.FindKey(ctx, &Header{})
+	// parse the header
+	h, err := parseHeader(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, key, err := finder.FindKey(ctx, h)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to find key: %w", err)
 	}
+
+	// verify the signature
 	mac := hmac.New(hash, key)
 	mac.Write(header)
 	mac.Write(dot)
 	mac.Write(payload)
-
-	if !hmac.Equal(signature, mac.Sum(nil)) {
+	want := mac.Sum(nil)
+	got := make([]byte, base64.RawStdEncoding.DecodedLen(len(signature)))
+	n, err := base64.RawURLEncoding.Decode(got, signature)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
+	}
+	got = got[:n]
+	if !hmac.Equal(want, got) {
 		return nil, errors.New("jws: failed to parse JWS: signature mismatch")
 	}
 
 	return &Message{
-		Header: &Header{
-			Raw: h,
-		},
+		Header:  h,
 		Payload: payload,
 	}, nil
 }
@@ -121,4 +142,32 @@ func split(data []byte) (header []byte, payload []byte, signature []byte, ok boo
 	signature = data[idx2+1:]
 	ok = true
 	return
+}
+
+func parseHeader(raw map[string]any) (*Header, error) {
+	d := jsonutils.NewDecoder("jws", raw)
+	h := &Header{
+		Raw: raw,
+	}
+
+	if alg, ok := d.GetString("alg"); ok {
+		h.Algorithm = jwa.SignatureAlgorithm(alg)
+	}
+
+	if s, ok := d.GetString("jku"); ok {
+		u, err := url.Parse(s)
+		if err != nil {
+			d.Must(fmt.Errorf("jws: failed to parse the jku parameter: %w", err))
+		}
+		h.JWKSetURL = u
+	}
+
+	h.KeyID, _ = d.GetString("kid")
+	h.Type, _ = d.GetString("typ")
+	h.ContentType, _ = d.GetString("cty")
+
+	if err := d.Err(); err != nil {
+		return nil, err
+	}
+	return h, nil
 }
