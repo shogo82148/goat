@@ -3,16 +3,17 @@ package jwk
 import (
 	"fmt"
 
+	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 )
 
 // RFC8037 2.  Key Type "OKP"
-func parseOKPKey(ctx *decodeContext, key *Key) {
-	crv := jwa.EllipticCurve(must[string](ctx, "crv"))
+func parseOKPKey(d *jsonutils.Decoder, key *Key) {
+	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
 	case jwa.Ed25519:
-		parseEd25519Key(ctx, key)
+		parseEd25519Key(d, key)
 	default:
-		ctx.error(fmt.Errorf("jwk: unknown crv: %q", crv))
+		d.Must(fmt.Errorf("jwk: unknown crv: %q", crv))
 	}
 }
