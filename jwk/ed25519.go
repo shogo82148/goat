@@ -13,14 +13,14 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 
 	publicKey := d.MustBytes("x")
 	if copy(privateKey[keySize:], publicKey) != ed25519.PublicKeySize {
-		d.Must(errors.New("jwk: the parameter x has invalid size"))
+		d.NewError(errors.New("jwk: the parameter x has invalid size"))
 		return
 	}
 	key.PublicKey = ed25519.PublicKey(privateKey[keySize:])
 
 	if param, ok := d.GetBytes("d"); ok {
 		if len(param) != keySize {
-			d.Must(errors.New("jwk: the parameter d has invalid size"))
+			d.NewError(errors.New("jwk: the parameter d has invalid size"))
 			return
 		}
 		copy(privateKey, param)
@@ -32,11 +32,11 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 		cert := certs[0]
 		publicKey, ok := cert.PublicKey.(ed25519.PublicKey)
 		if !ok {
-			d.Must(errors.New("jwk: public key types are mismatch"))
+			d.NewError(errors.New("jwk: public key types are mismatch"))
 			return
 		}
 		if !ed25519.PublicKey(privateKey[keySize:]).Equal(publicKey) {
-			d.Must(errors.New("jwk: public keys are mismatch"))
+			d.NewError(errors.New("jwk: public keys are mismatch"))
 			return
 		}
 	}

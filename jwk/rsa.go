@@ -36,7 +36,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		for _, v := range oth {
 			u, ok := v.(map[string]any)
 			if !ok {
-				d.Must(fmt.Errorf("jwk: want string for the parameter oth[].r but got %T", v))
+				d.NewError(fmt.Errorf("jwk: want string for the parameter oth[].r but got %T", v))
 				return
 			}
 			r := parseRSAOthParam(d, u, "r")

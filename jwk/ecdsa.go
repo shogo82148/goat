@@ -22,7 +22,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	case jwa.P521:
 		privateKey.Curve = elliptic.P521()
 	default:
-		d.Must(fmt.Errorf("jwk: unknown crv: %q", crv))
+		d.NewError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
 	}
 
@@ -42,10 +42,10 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		cert := certs[0]
 		publicKey, ok := cert.PublicKey.(*ecdsa.PublicKey)
 		if !ok {
-			d.Must(errors.New("jwk: public key types are mismatch"))
+			d.NewError(errors.New("jwk: public key types are mismatch"))
 		}
 		if !privateKey.PublicKey.Equal(publicKey) {
-			d.Must(errors.New("jwk: public keys are mismatch"))
+			d.NewError(errors.New("jwk: public keys are mismatch"))
 		}
 	}
 }

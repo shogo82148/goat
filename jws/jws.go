@@ -4,12 +4,16 @@ package jws
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/subtle"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -137,17 +141,58 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.Algorithm = jwa.SignatureAlgorithm(alg)
 	}
 
-	if s, ok := d.GetString("jku"); ok {
-		u, err := url.Parse(s)
-		if err != nil {
-			d.Must(fmt.Errorf("jws: failed to parse the jku parameter: %w", err))
+	if jku, ok := d.GetURL("jku"); ok {
+		h.JWKSetURL = jku
+	}
+
+	// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
+	// TODO: JWK *jwk.Key
+
+	if x5u, ok := d.GetURL("x5u"); ok {
+		h.JWKSetURL = x5u
+	}
+
+	var cert0 []byte
+	if x5c, ok := d.GetStringArray("x5c"); ok {
+		var certs []*x509.Certificate
+		for i, s := range x5c {
+			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
+			cert, err := x509.ParseCertificate(der)
+			if err != nil {
+				d.NewError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+			}
+			if cert0 == nil {
+				cert0 = der
+			}
+			certs = append(certs, cert)
 		}
-		h.JWKSetURL = u
+		h.X509CertificateChain = certs
+	}
+
+	if x5t, ok := d.GetBytes("x5t"); ok {
+		h.X509CertificateSHA1 = x5t
+		if cert0 != nil {
+			sum := sha1.Sum(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
+		}
+	}
+
+	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
+		h.X509CertificateSHA256 = x5t256
+		if cert0 != nil {
+			sum := sha256.Sum256(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
+		}
 	}
 
 	h.KeyID, _ = d.GetString("kid")
 	h.Type, _ = d.GetString("typ")
 	h.ContentType, _ = d.GetString("cty")
+	h.Critical, _ = d.GetStringArray("crit")
 
 	if err := d.Err(); err != nil {
 		return nil, err

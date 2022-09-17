@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"net/url"
 	"reflect"
+	"strconv"
 )
 
 type Decoder struct {
@@ -151,7 +153,6 @@ func (d *Decoder) GetArray(name string) ([]any, bool) {
 		return nil, false
 	}
 	return u, true
-
 }
 
 func (d *Decoder) MustArray(name string) []any {
@@ -178,6 +179,30 @@ func (d *Decoder) MustArray(name string) []any {
 		return nil
 	}
 	return u
+}
+
+func (d *Decoder) GetStringArray(name string) ([]string, bool) {
+	array, ok := d.GetArray(name)
+	if !ok {
+		return nil, false
+	}
+	ret := make([]string, 0, len(array))
+	for i, v := range array {
+		s, ok := v.(string)
+		if !ok {
+			if d.err == nil {
+				d.err = &typeError{
+					pkg:  d.pkg,
+					name: name + "[" + strconv.Itoa(i) + "]",
+					want: "string",
+					got:  reflect.TypeOf(v),
+				}
+			}
+			return nil, false
+		}
+		ret = append(ret, s)
+	}
+	return ret, true
 }
 
 func (d *Decoder) GetBytes(name string) ([]byte, bool) {
@@ -216,10 +241,25 @@ func (d *Decoder) MustBigInt(name string) *big.Int {
 	return new(big.Int).SetBytes(data)
 }
 
-// Must asserts the operation must not fail.
-// If err is nil, Must does nothing.
-// Otherwise, Must records the first error.
-func (d *Decoder) Must(err error) {
+func (d *Decoder) GetURL(name string) (*url.URL, bool) {
+	s, ok := d.GetString(name)
+	if !ok {
+		return nil, false
+	}
+	u, err := url.Parse(s)
+	if err != nil {
+		if d.err == nil {
+			d.err = fmt.Errorf("%s: failed to parse the parameter %s as url: %v", d.pkg, name, err)
+		}
+		return nil, false
+	}
+	return u, true
+}
+
+// NewError asserts the operation must not fail.
+// If err is nil, NewError does nothing.
+// Otherwise, NewError records the first error.
+func (d *Decoder) NewError(err error) {
 	if err != nil && d.err == nil {
 		d.err = err
 	}
@@ -237,7 +277,7 @@ type base64DecodeError struct {
 }
 
 func (err *base64DecodeError) Error() string {
-	return fmt.Sprintf("%s: failed to parse the parameter %s: %v", err.pkg, err.name, err.err)
+	return fmt.Sprintf("%s: failed to parse the parameter %s as base64url: %v", err.pkg, err.name, err.err)
 }
 
 func (err *base64DecodeError) Unwrap() error {

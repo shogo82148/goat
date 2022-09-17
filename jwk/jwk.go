@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -63,44 +64,25 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.KeyType = jwa.KeyType(d.MustString("kty"))
 	key.KeyID, _ = d.GetString("kid")
 	key.PublicKeyUse, _ = d.GetString("use")
-	if ops, ok := d.GetArray("key_ops"); ok {
-		keyOps := make([]string, 0, len(ops))
-		for _, v := range ops {
-			s, ok := v.(string)
-			if !ok {
-				d.Must(fmt.Errorf("jwk: unexpected type for the parameter key_ops[]: %T", v))
-				return
-			}
-			keyOps = append(keyOps, s)
-		}
-		key.KeyOperations = keyOps
+	if ops, ok := d.GetStringArray("key_ops"); ok {
+		key.KeyOperations = ops
 	}
 	if alg, ok := d.GetString("alg"); ok {
 		key.Algorithm = jwa.KeyAlgorithm(alg)
 	}
 
 	// decode the certificates
-	if x5u, ok := d.GetString("x5u"); ok {
-		u, err := url.Parse(x5u)
-		if err != nil {
-			d.Must(fmt.Errorf("jwk: failed parse x5u: %w", err))
-			return
-		}
-		key.X509URL = u
+	if x5u, ok := d.GetURL("x5u"); ok {
+		key.X509URL = x5u
 	}
 	var cert0 []byte
-	if x5c, ok := d.GetArray("x5c"); ok {
+	if x5c, ok := d.GetStringArray("x5c"); ok {
 		var certs []*x509.Certificate
-		for i, v := range x5c {
-			s, ok := v.(string)
-			if !ok {
-				d.Must(fmt.Errorf("jwk: unexpected type for the parameter x5c[%d]: %T", i, v))
-				return
-			}
-			der := d.DecodeStd(s, "x5c[]")
+		for i, s := range x5c {
+			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
-				d.Must(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				d.NewError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
 				return
 			}
 			if cert0 == nil {
@@ -114,26 +96,20 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	// check thumbprints
 	if x5t, ok := d.GetBytes("x5t"); ok {
 		key.X509CertificateSHA1 = x5t
-		if cert0 == nil {
-			d.Must(fmt.Errorf("jwk: key has sha-1 thumbprint but certificate is not found"))
-			return
-		}
-		sum := sha1.Sum(cert0)
-		if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
-			d.Must(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
-			return
+		if cert0 != nil {
+			sum := sha1.Sum(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
 		}
 	}
 	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
 		key.X509CertificateSHA256 = x5t256
-		if cert0 == nil {
-			d.Must(fmt.Errorf("jwk: key has sha-256 thumbprint but certificate is not found"))
-			return
-		}
-		sum := sha256.Sum256(cert0)
-		if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-			d.Must(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
-			return
+		if cert0 != nil {
+			sum := sha256.Sum256(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
 		}
 	}
 }
