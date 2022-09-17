@@ -107,7 +107,7 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	}
 
 	// decode signature
-	sigBytes := make([]byte, base64.RawStdEncoding.DecodedLen(len(signature)))
+	sigBytes := make([]byte, base64.RawURLEncoding.DecodedLen(len(signature)))
 	n, err := base64.RawURLEncoding.Decode(sigBytes, signature)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
