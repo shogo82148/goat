@@ -4,18 +4,17 @@ package jws
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"net/url"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk"
+	"github.com/shogo82148/goat/sig"
 )
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
@@ -66,82 +65,66 @@ type Message struct {
 
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
-	FindKey(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error)
+	FindKey(ctx context.Context, header *Header) (key sig.Key, err error)
 }
 
-type FindKeyFunc func(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error)
+type FindKeyFunc func(ctx context.Context, header *Header) (key sig.Key, err error)
 
-func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (h func() hash.Hash, key []byte, err error) {
+func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (key sig.Key, err error) {
 	return f(ctx, header)
 }
 
-var dot = []byte{'.'}
-
 // Parse parses a JWS.
 func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
-	header, payload, signature, ok := split(data)
-	if !ok {
+	// split to segments
+	idx1 := bytes.IndexByte(data, '.')
+	if idx1 < 0 {
 		return nil, errors.New("jws: failed to parse JWS: invalid format")
 	}
+	idx2 := bytes.IndexByte(data[idx1+1:], '.')
+	if idx2 < 0 {
+		return nil, errors.New("jws: failed to parse JWS: invalid format")
+	}
+	idx2 += idx1 + 1
+	header := data[:idx1]
+	payload := data[idx1+1 : idx2]
+	signature := data[idx2+1:]
 
+	// parse the header
 	var raw map[string]any
 	dec := json.NewDecoder(base64.NewDecoder(base64.RawURLEncoding, bytes.NewReader(header)))
 	dec.UseNumber()
 	if err := dec.Decode(&raw); err != nil {
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
-
-	// parse the header
 	h, err := parseHeader(raw)
 	if err != nil {
 		return nil, err
 	}
 
-	hash, key, err := finder.FindKey(ctx, h)
+	// decode signature
+	sigBytes := make([]byte, base64.RawStdEncoding.DecodedLen(len(signature)))
+	n, err := base64.RawURLEncoding.Decode(sigBytes, signature)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
+	}
+	sigBytes = sigBytes[:n]
+
+	// find the key
+	key, err := finder.FindKey(ctx, h)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to find key: %w", err)
 	}
 
 	// verify the signature
-	mac := hmac.New(hash, key)
-	mac.Write(header)
-	mac.Write(dot)
-	mac.Write(payload)
-	want := mac.Sum(nil)
-	got := make([]byte, base64.RawStdEncoding.DecodedLen(len(signature)))
-	n, err := base64.RawURLEncoding.Decode(got, signature)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
-	}
-	got = got[:n]
-	if !hmac.Equal(want, got) {
-		return nil, errors.New("jws: failed to parse JWS: signature mismatch")
+	if err := key.Verify(data[:idx2], sigBytes); err != nil {
+		return nil, err
 	}
 
 	return &Message{
 		Header:  h,
 		Payload: payload,
 	}, nil
-}
-
-func split(data []byte) (header []byte, payload []byte, signature []byte, ok bool) {
-	idx1 := bytes.IndexByte(data, '.')
-	if idx1 < 0 {
-		ok = false
-		return
-	}
-	header = data[:idx1]
-	data = data[idx1+1:]
-
-	idx2 := bytes.IndexByte(data, '.')
-	if idx2 < 0 {
-		ok = false
-		return
-	}
-	payload = data[:idx2]
-	signature = data[idx2+1:]
-	ok = true
-	return
 }
 
 func parseHeader(raw map[string]any) (*Header, error) {
