@@ -122,10 +122,11 @@ func ParseKey(data []byte) (*Key, error) {
 	if err := dec.Decode(&raw); err != nil {
 		return nil, err
 	}
-	return parseKey(raw)
+	return ParseMap(raw)
 }
 
-func parseKey(raw map[string]any) (*Key, error) {
+// ParseMap parses a JWK that is decoded by the json package.
+func ParseMap(raw map[string]any) (*Key, error) {
 	d := jsonutils.NewDecoder("jwk", raw)
 	key := &Key{
 		Raw: raw,
@@ -171,7 +172,7 @@ func ParseSet(data []byte) (*Set, error) {
 
 	list := make([]*Key, 0, len(keys.Keys))
 	for _, key := range keys.Keys {
-		if key, err := parseKey(key); err == nil {
+		if key, err := ParseMap(key); err == nil {
 			list = append(list, key)
 
 			// from: RFC7517 Section 5. JWK Set Format

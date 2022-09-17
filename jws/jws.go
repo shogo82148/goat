@@ -145,8 +145,13 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.JWKSetURL = jku
 	}
 
-	// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
-	// TODO: JWK *jwk.Key
+	if v, ok := d.GetObject("jwk"); ok {
+		key, err := jwk.ParseMap(v)
+		if err != nil {
+			d.NewError(err)
+		}
+		h.JWK = key
+	}
 
 	if x5u, ok := d.GetURL("x5u"); ok {
 		h.JWKSetURL = x5u

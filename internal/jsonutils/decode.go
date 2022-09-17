@@ -181,6 +181,26 @@ func (d *Decoder) MustArray(name string) []any {
 	return u
 }
 
+func (d *Decoder) GetObject(name string) (map[string]any, bool) {
+	v, ok := d.raw[name]
+	if !ok {
+		return nil, false
+	}
+	u, ok := v.(map[string]any)
+	if !ok {
+		if d.err == nil {
+			d.err = &typeError{
+				pkg:  d.pkg,
+				name: name,
+				want: "map[string]any",
+				got:  reflect.TypeOf(v),
+			}
+		}
+		return nil, false
+	}
+	return u, true
+}
+
 func (d *Decoder) GetStringArray(name string) ([]string, bool) {
 	array, ok := d.GetArray(name)
 	if !ok {
