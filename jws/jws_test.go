@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
+	_ "github.com/shogo82148/goat/jwa/es" // for ECDSA
 	_ "github.com/shogo82148/goat/jwa/hs" // for HMAC SHA-256
 	_ "github.com/shogo82148/goat/jwa/rs" // for RSASSA-PKCS1-v1_5 SHA-256
 	"github.com/shogo82148/goat/jwk"
@@ -110,6 +111,46 @@ func TestParse(t *testing.T) {
 		}
 
 		if want, got := msg.Header.Algorithm, jwa.RS256; want != got {
+			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
+		}
+
+		payload := []byte(`{"iss":"joe",` +
+			`"exp":1300819380,` +
+			`"http://example.com/is_root":true}`)
+		if bytes.Equal(payload, msg.Payload) {
+			t.Error("unexpected payload")
+		}
+	})
+
+	t.Run("RFC7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256", func(t *testing.T) {
+		raw := []byte(
+			"eyJhbGciOiJFUzI1NiJ9" +
+				"." +
+				"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+				"." +
+				"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSA" +
+				"pmWQxfKTUJqPP3-Kg6NU1Q",
+		)
+		rawKey := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
+			`"y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",` +
+			`"d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
+			alg := header.Algorithm.New()
+			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if want, got := msg.Header.Algorithm, jwa.ES256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 

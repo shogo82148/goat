@@ -21,7 +21,10 @@ type Key interface {
 }
 
 // ErrSignatureMismatch is an error for unavailable hash.
-var ErrErrHashUnavailable = errors.New("sig: hash is unavailable")
+var ErrHashUnavailable = errors.New("sig: hash is unavailable")
+
+// ErrSignUnavailable ...
+var ErrSignUnavailable = errors.New("sig: sign method is unavailable")
 
 // ErrSignatureMismatch is signature mismatch error.
 var ErrSignatureMismatch = errors.New("sig: signature mismatch")

@@ -71,7 +71,7 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 // Sign implements [github.com/shogo82148/goat/sig.Key].
 func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
-		return nil, sig.ErrErrHashUnavailable
+		return nil, sig.ErrHashUnavailable
 	}
 	mac := hmac.New(key.hash.New, key.key)
 	if _, err := mac.Write(payload); err != nil {
