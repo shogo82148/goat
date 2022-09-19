@@ -80,6 +80,9 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
 func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+	if !key.hash.Available() {
+		return nil, sig.ErrErrHashUnavailable
+	}
 	hash := key.hash.New()
 	if _, err := hash.Write(payload); err != nil {
 		return nil, err
@@ -89,6 +92,9 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
 func (key *Key) Verify(payload, signature []byte) error {
+	if !key.hash.Available() {
+		return sig.ErrErrHashUnavailable
+	}
 	hash := key.hash.New()
 	if _, err := hash.Write(payload); err != nil {
 		return err

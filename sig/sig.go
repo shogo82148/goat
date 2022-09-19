@@ -20,6 +20,9 @@ type Key interface {
 	Verify(payload, signature []byte) error
 }
 
+// ErrSignatureMismatch is an error for unavailable hash.
+var ErrErrHashUnavailable = errors.New("sig: hash is unavailable")
+
 // ErrSignatureMismatch is signature mismatch error.
 var ErrSignatureMismatch = errors.New("sig: signature mismatch")
 
