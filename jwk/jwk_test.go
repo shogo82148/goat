@@ -5,7 +5,6 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rsa"
-	"errors"
 	"reflect"
 	"testing"
 )
@@ -507,16 +506,9 @@ func TestKey_Base64Error(t *testing.T) {
 			`"y":"!!!INVALID BASE64!!!",` +
 			`"use":"enc",` +
 			`"kid":"1"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "x" && e.name != "y" {
-			t.Errorf("want name is x or y, got %s", e.name)
 		}
 	})
 
@@ -528,16 +520,9 @@ func TestKey_Base64Error(t *testing.T) {
 			`"d":"!!!INVALID BASE64!!!",` +
 			`"use":"enc",` +
 			`"kid":"1"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "x" && e.name != "y" && e.name != "d" {
-			t.Errorf("want name is x or y or d, got %s", e.name)
 		}
 	})
 
@@ -547,47 +532,26 @@ func TestKey_Base64Error(t *testing.T) {
 			`"e":"!!!INVALID BASE64!!!",` +
 			`"alg":"RS256",` +
 			`"kid":"2011-04-29"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "n" && e.name != "e" {
-			t.Errorf("want name is n or e, got %s", e.name)
 		}
 	})
 
 	t.Run("Symmetric Keys (HMAC)", func(t *testing.T) {
 		rawKey := `{"kty":"oct","k":"!!!INVALID BASE64!!!"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "k" {
-			t.Errorf("want name is k, got %s", e.name)
 		}
 	})
 
 	t.Run("Ed25519 Public Key", func(t *testing.T) {
 		rawKey := `{"kty":"OKP","crv":"Ed25519",` +
 			`"x":"!!!INVALID BASE64!!!"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "x" {
-			t.Errorf("want name is x, got %s", e.name)
 		}
 	})
 
@@ -595,16 +559,9 @@ func TestKey_Base64Error(t *testing.T) {
 		rawKey := `{"kty":"OKP","crv":"Ed25519",` +
 			`"d":"!!!INVALID BASE64!!!",` +
 			`"x":"!!!INVALID BASE64!!!"}`
-		var e *base64DecodeError
 		_, err := ParseKey([]byte(rawKey))
-		if !errors.As(err, &e) {
-			t.Errorf("want *base64DecodeError, got %[1]T: %[1]v", err)
-		}
-		if e.err == nil {
+		if err == nil {
 			t.Error("want not nil, got nil")
-		}
-		if e.name != "d" && e.name != "x" {
-			t.Errorf("want name is d or x, got %s", e.name)
 		}
 	})
 }

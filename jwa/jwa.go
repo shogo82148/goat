@@ -1,18 +1,23 @@
 // Package jwa implements RFC7518.
 package jwa
 
+import "github.com/shogo82148/goat/sig"
+
 // SignatureAlgorithm is an algorithm for JSON Web Signature (JWS)
 // defined in the IANA "JSON Web Signature and Encryption Algorithms".
 type SignatureAlgorithm string
 
 const (
 	// HS256 is HMAC using SHA-256.
+	// import github.com/shogo82148/goat/jwa/hs
 	HS256 SignatureAlgorithm = "HS256"
 
 	// HS384 is HMAC using SHA-384.
+	// import github.com/shogo82148/goat/jwa/hs
 	HS384 SignatureAlgorithm = "HS384"
 
 	// HS512 is HMAC using SHA-512.
+	// import github.com/shogo82148/goat/jwa/hs
 	HS512 SignatureAlgorithm = "HS512"
 
 	// RS256 is RSASSA-PKCS1-v1_5 using SHA-256.
@@ -45,6 +50,50 @@ const (
 	// None is no digital signature or MAC performed.
 	None SignatureAlgorithm = "none"
 )
+
+func (alg SignatureAlgorithm) String() string {
+	return string(alg)
+}
+
+func (alg SignatureAlgorithm) New() sig.Algorithm {
+	f := signatureAlgorithms[alg]
+	if f == nil {
+		panic("jwa: requested signature algorithm " + string(alg) + " is not available")
+	}
+	return f()
+}
+
+func (alg SignatureAlgorithm) Available() bool {
+	f := signatureAlgorithms[alg]
+	return f != nil
+}
+
+var signatureAlgorithms = map[SignatureAlgorithm]func() sig.Algorithm{
+	HS256: nil,
+	HS384: nil,
+	HS512: nil,
+	RS256: nil,
+	RS384: nil,
+	RS512: nil,
+	ES256: nil,
+	ES384: nil,
+	ES512: nil,
+	PS256: nil,
+	PS384: nil,
+	PS512: nil,
+	None:  nil,
+}
+
+func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) {
+	g, ok := signatureAlgorithms[alg]
+	if !ok {
+		panic("jwa: RegisterSignatureAlgorithm of unknown algorithm")
+	}
+	if g != nil {
+		panic("jwa: RegisterSignatureAlgorithm of already registered algorithm")
+	}
+	signatureAlgorithms[alg] = f
+}
 
 // KeyManagementAlgorithm is an algorithm for JSON Web Encryption (JWE)
 // defined in the IANA JSON Web Signature and Encryption Algorithms.

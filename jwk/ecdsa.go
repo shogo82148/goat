@@ -5,15 +5,15 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
 
+	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 )
 
 // RFC7518 6.2.2. Parameters for Elliptic Curve Private Keys
-func parseEcdsaKey(ctx *decodeContext, key *Key) {
+func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	var privateKey ecdsa.PrivateKey
-	crv := jwa.EllipticCurve(must[string](ctx, "crv"))
+	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
 	case jwa.P256:
 		privateKey.Curve = elliptic.P256()
@@ -22,18 +22,18 @@ func parseEcdsaKey(ctx *decodeContext, key *Key) {
 	case jwa.P521:
 		privateKey.Curve = elliptic.P521()
 	default:
-		ctx.error(fmt.Errorf("jwk: unknown crv: %q", crv))
+		d.NewError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
 	}
 
 	// parameters for public key
-	privateKey.X = new(big.Int).SetBytes(ctx.mustBytes("x"))
-	privateKey.Y = new(big.Int).SetBytes(ctx.mustBytes("y"))
+	privateKey.X = d.MustBigInt("x")
+	privateKey.Y = d.MustBigInt("y")
 	key.PublicKey = &privateKey.PublicKey
 
 	// parameters for private key
-	if d, ok := ctx.getBytes("d"); ok {
-		privateKey.D = new(big.Int).SetBytes(d)
+	if d, ok := d.GetBigInt("d"); ok {
+		privateKey.D = d
 		key.PrivateKey = &privateKey
 	}
 
@@ -42,10 +42,10 @@ func parseEcdsaKey(ctx *decodeContext, key *Key) {
 		cert := certs[0]
 		publicKey, ok := cert.PublicKey.(*ecdsa.PublicKey)
 		if !ok {
-			ctx.error(errors.New("jwk: public key types are mismatch"))
+			d.NewError(errors.New("jwk: public key types are mismatch"))
 		}
 		if !privateKey.PublicKey.Equal(publicKey) {
-			ctx.error(errors.New("jwk: public keys are mismatch"))
+			d.NewError(errors.New("jwk: public keys are mismatch"))
 		}
 	}
 }

@@ -11,7 +11,9 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strconv"
 
+	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 )
 
@@ -58,53 +60,29 @@ type Key struct {
 }
 
 // decode common parameters such as certificate and thumbprints, etc.
-func decodeCommonParameters(ctx *decodeContext, key *Key) {
-	key.KeyType = jwa.KeyType(must[string](ctx, "kty"))
-	if kid, ok := get[string](ctx, "kid"); ok {
-		key.KeyID = kid
+func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
+	key.KeyType = jwa.KeyType(d.MustString("kty"))
+	key.KeyID, _ = d.GetString("kid")
+	key.PublicKeyUse, _ = d.GetString("use")
+	if ops, ok := d.GetStringArray("key_ops"); ok {
+		key.KeyOperations = ops
 	}
-	if use, ok := get[string](ctx, "use"); ok {
-		key.PublicKeyUse = use
-	}
-	if ops, ok := get[[]any](ctx, "key_ops"); ok {
-		keyOps := make([]string, 0, len(ops))
-		for _, v := range ops {
-			s, ok := v.(string)
-			if !ok {
-				ctx.error(fmt.Errorf("jwk: unexpected type for the parameter key_ops[]: %T", v))
-				return
-			}
-			keyOps = append(keyOps, s)
-		}
-		key.KeyOperations = keyOps
-	}
-	if alg, ok := get[string](ctx, "alg"); ok {
+	if alg, ok := d.GetString("alg"); ok {
 		key.Algorithm = jwa.KeyAlgorithm(alg)
 	}
 
 	// decode the certificates
-	if x5u, ok := get[string](ctx, "x5u"); ok {
-		u, err := url.Parse(x5u)
-		if err != nil {
-			ctx.error(fmt.Errorf("jwk: failed parse x5u: %w", err))
-			return
-		}
-		key.X509URL = u
+	if x5u, ok := d.GetURL("x5u"); ok {
+		key.X509URL = x5u
 	}
 	var cert0 []byte
-	var certs []*x509.Certificate
-	x5c, ok := get[[]any](ctx, "x5c")
-	if ok {
-		for i, v := range x5c {
-			s, ok := v.(string)
-			if !ok {
-				ctx.error(fmt.Errorf("jwk: unexpected type for the parameter x5c[%d]: %T", i, v))
-				return
-			}
-			der := ctx.decodeStd(s, "x5c[]")
+	if x5c, ok := d.GetStringArray("x5c"); ok {
+		var certs []*x509.Certificate
+		for i, s := range x5c {
+			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
-				ctx.error(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				d.NewError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
 				return
 			}
 			if cert0 == nil {
@@ -116,31 +94,23 @@ func decodeCommonParameters(ctx *decodeContext, key *Key) {
 	}
 
 	// check thumbprints
-	x5t, ok := ctx.getBytes("x5t")
-	if ok {
-		if cert0 == nil {
-			ctx.error(fmt.Errorf("jwk: key has sha-1 thumbprint but certificate is not found"))
-			return
-		}
-		sum := sha1.Sum(cert0)
-		if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
-			ctx.error(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
-			return
-		}
+	if x5t, ok := d.GetBytes("x5t"); ok {
 		key.X509CertificateSHA1 = x5t
+		if cert0 != nil {
+			sum := sha1.Sum(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
+		}
 	}
-	x5t256, ok := ctx.getBytes("x5t#S256")
-	if ok {
-		if cert0 == nil {
-			ctx.error(fmt.Errorf("jwk: key has sha-256 thumbprint but certificate is not found"))
-			return
-		}
-		sum := sha256.Sum256(cert0)
-		if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-			ctx.error(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
-			return
-		}
+	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
 		key.X509CertificateSHA256 = x5t256
+		if cert0 != nil {
+			sum := sha256.Sum256(cert0)
+			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
+				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+			}
+		}
 	}
 }
 
@@ -152,33 +122,34 @@ func ParseKey(data []byte) (*Key, error) {
 	if err := dec.Decode(&raw); err != nil {
 		return nil, err
 	}
-	return parseKey(raw)
+	return ParseMap(raw)
 }
 
-func parseKey(raw map[string]any) (*Key, error) {
-	ctx := newDecodeContext(raw)
+// ParseMap parses a JWK that is decoded by the json package.
+func ParseMap(raw map[string]any) (*Key, error) {
+	d := jsonutils.NewDecoder("jwk", raw)
 	key := &Key{
 		Raw: raw,
 	}
-	decodeCommonParameters(ctx, key)
-	if ctx.err != nil {
-		return nil, ctx.err
+	decodeCommonParameters(d, key)
+	if err := d.Err(); err != nil {
+		return nil, err
 	}
 
 	switch key.KeyType {
 	case jwa.EC:
-		parseEcdsaKey(ctx, key)
+		parseEcdsaKey(d, key)
 	case jwa.RSA:
-		parseRSAKey(ctx, key)
+		parseRSAKey(d, key)
 	case jwa.OKP:
-		parseOKPKey(ctx, key)
+		parseOKPKey(d, key)
 	case jwa.Oct:
-		parseSymmetricKey(ctx, key)
+		parseSymmetricKey(d, key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.KeyType)
 	}
-	if ctx.err != nil {
-		return nil, ctx.err
+	if err := d.Err(); err != nil {
+		return nil, err
 	}
 	return key, nil
 }
@@ -201,7 +172,7 @@ func ParseSet(data []byte) (*Set, error) {
 
 	list := make([]*Key, 0, len(keys.Keys))
 	for _, key := range keys.Keys {
-		if key, err := parseKey(key); err == nil {
+		if key, err := ParseMap(key); err == nil {
 			list = append(list, key)
 
 			// from: RFC7517 Section 5. JWK Set Format

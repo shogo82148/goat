@@ -4,61 +4,55 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"math/big"
+
+	"github.com/shogo82148/goat/internal/jsonutils"
 )
 
-func parseRSAKey(ctx *decodeContext, key *Key) {
+func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	var privateKey rsa.PrivateKey
 
 	// parameters for public key
 	var e int
-	for _, v := range ctx.mustBytes("e") {
+	for _, v := range d.MustBytes("e") {
 		e = (e << 8) | int(v)
 	}
 	privateKey.PublicKey.E = e
-	privateKey.PublicKey.N = new(big.Int).SetBytes(ctx.mustBytes("n"))
+	privateKey.PublicKey.N = d.MustBigInt("n")
 	key.PublicKey = &privateKey.PublicKey
 
 	// parameters for private key
-	if !ctx.has("d") {
+	if !d.Has("d") {
 		return
 	}
-	d := new(big.Int).SetBytes(ctx.mustBytes("d"))
-	p := new(big.Int).SetBytes(ctx.mustBytes("p"))
-	q := new(big.Int).SetBytes(ctx.mustBytes("q"))
-	privateKey.D = d
-	privateKey.Primes = []*big.Int{p, q}
+	privateKey.D = d.MustBigInt("d")
+	privateKey.Primes = []*big.Int{
+		d.MustBigInt("p"),
+		d.MustBigInt("q"),
+	}
 
 	// precomputed values
-	if oth, ok := get[[]any](ctx, "oth"); ok {
+	if oth, ok := d.GetArray("oth"); ok {
 		crtValues := make([]rsa.CRTValue, 0, len(oth))
 		for _, v := range oth {
 			u, ok := v.(map[string]any)
 			if !ok {
-				ctx.error(fmt.Errorf("jwk: unexpected type for the parameter oth[].r: %T", v))
+				d.NewError(fmt.Errorf("jwk: want string for the parameter oth[].r but got %T", v))
 				return
 			}
-			r := parseRSAOthParam(ctx, u, "r")
+			r := parseRSAOthParam(d, u, "r")
 			privateKey.Primes = append(privateKey.Primes, r)
-
-			d := parseRSAOthParam(ctx, u, "d")
-			t := parseRSAOthParam(ctx, u, "t")
-
 			crtValues = append(crtValues, rsa.CRTValue{
-				Exp:   d,
-				Coeff: t,
+				Exp:   parseRSAOthParam(d, u, "d"),
+				Coeff: parseRSAOthParam(d, u, "t"),
 				R:     r,
 			})
 		}
 
-		if ctx.has("dp") && ctx.has("dq") && ctx.has("qi") {
-			dp := new(big.Int).SetBytes(ctx.mustBytes("dp"))
-			dq := new(big.Int).SetBytes(ctx.mustBytes("dq"))
-			qi := new(big.Int).SetBytes(ctx.mustBytes("qi"))
-
+		if d.Has("dp") && d.Has("dq") && d.Has("qi") {
 			privateKey.Precomputed = rsa.PrecomputedValues{
-				Dp:        dp,
-				Dq:        dq,
-				Qinv:      qi,
+				Dp:        d.MustBigInt("dp"),
+				Dq:        d.MustBigInt("dq"),
+				Qinv:      d.MustBigInt("qi"),
 				CRTValues: crtValues,
 			}
 		}
@@ -68,7 +62,7 @@ func parseRSAKey(ctx *decodeContext, key *Key) {
 	key.PrivateKey = &privateKey
 }
 
-func parseRSAOthParam(ctx *decodeContext, v map[string]any, name string) *big.Int {
+func parseRSAOthParam(d *jsonutils.Decoder, v map[string]any, name string) *big.Int {
 	u, ok := v[name]
 	if !ok {
 		return nil
@@ -77,5 +71,5 @@ func parseRSAOthParam(ctx *decodeContext, v map[string]any, name string) *big.In
 	if !ok {
 		return nil
 	}
-	return new(big.Int).SetBytes(ctx.decode(w, fmt.Sprintf("oth[].%s", name)))
+	return new(big.Int).SetBytes(d.Decode(w, fmt.Sprintf("oth[].%s", name)))
 }
