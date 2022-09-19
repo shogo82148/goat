@@ -15,6 +15,7 @@ type NumericDate struct {
 	time.Time
 }
 
+// the maximum time epoch that Go can marshal to JSON.
 const maxEpoch = 253402300799
 
 func (date NumericDate) MarshalJSON() (b []byte, err error) {
@@ -34,7 +35,6 @@ func (date NumericDate) MarshalJSON() (b []byte, err error) {
 		buf = append(buf, '-')
 	}
 	if sec > maxEpoch || sec < -maxEpoch {
-		// the maximum time.Time that Go can marshal to JSON.
 		return nil, fmt.Errorf("unix time epoch overflow: %d", sec)
 	}
 	buf = strconv.AppendInt(buf, sec, 10)
@@ -64,7 +64,6 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 	if acc == big.Exact {
 		// z is an integer, we don't need to parse nsec.
 		if sec > maxEpoch || sec < -maxEpoch {
-			// the maximum time.Time that Go can marshal to JSON.
 			return fmt.Errorf("unix time epoch overflow: %d", sec)
 		}
 		date.Time = time.Unix(sec, 0)
@@ -85,7 +84,6 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 		sec--
 	}
 	if sec > maxEpoch || sec < -maxEpoch {
-		// the maximum time.Time that Go can marshal to JSON.
 		return fmt.Errorf("unix time epoch overflow: %d", sec)
 	}
 	date.Time = time.Unix(sec, ns)
