@@ -40,12 +40,6 @@ func TestNumericDate_MarshalJSON(t *testing.T) {
 			output: "253402300799.999999999",
 			date:   time.Date(9999, time.December, 31, 23, 59, 59, 999_999_999, time.UTC),
 		},
-		{
-			// the maximum time.Time that in Go
-			// https://stackoverflow.com/questions/25065055/what-is-the-maximum-time-time-in-go
-			output: "9223371974719179007.999999999",
-			date:   time.Unix(1<<63-62135596801, 999999999),
-		},
 	}
 
 	for _, tc := range testCases {
@@ -94,12 +88,6 @@ func TestNumericDate_UnmarshalJSON(t *testing.T) {
 			// the maximum time.Time that Go can marshal to JSON.
 			input: "253402300799.999999999",
 			date:  time.Date(9999, time.December, 31, 23, 59, 59, 999_999_999, time.UTC),
-		},
-		{
-			// the maximum time.Time that in Go
-			// https://stackoverflow.com/questions/25065055/what-is-the-maximum-time-time-in-go
-			input: "9223371974719179007.999999999",
-			date:  time.Unix(1<<63-62135596801, 999999999),
 		},
 	}
 

@@ -1,6 +1,7 @@
 package jsonutils
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 	"strconv"
@@ -15,11 +16,15 @@ type NumericDate struct {
 }
 
 func (date NumericDate) MarshalJSON() (b []byte, err error) {
-	// the maximum time.Time in Go
-	const maxTime = "9223371974719179007.999999999"
+	// the maximum time.Time that Go can marshal to JSON.
+	const maxTime = "253402300799.999999999"
 
 	buf := make([]byte, 0, len(maxTime))
 	sec := date.Unix()
+	if sec > 253402300799 || sec < -253402300799 {
+		// the maximum time.Time that Go can marshal to JSON.
+		return nil, fmt.Errorf("unix time epoch overflow: %d", sec)
+	}
 	buf = strconv.AppendInt(buf, sec, 10)
 
 	// non-integer values can be represented.
@@ -44,6 +49,10 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 		return err
 	}
 	sec, acc := z.Int64()
+	if sec > 253402300799 || sec < -253402300799 {
+		// the maximum time.Time that Go can marshal to JSON.
+		return fmt.Errorf("unix time epoch overflow: %d", sec)
+	}
 	if acc == big.Exact {
 		// z is an integer, we don't need to parse nsec.
 		date.Time = time.Unix(sec, 0)
