@@ -2,9 +2,11 @@ package jwt
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 	"time"
 
+	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/hs"   // for HMAC SHA-256
 	_ "github.com/shogo82148/goat/jwa/none" // for none
 	"github.com/shogo82148/goat/jwk"
@@ -84,4 +86,56 @@ func TestParse(t *testing.T) {
 			t.Error("unexpected claim")
 		}
 	})
+}
+
+func TestParse_Claims(t *testing.T) {
+	var now time.Time
+	nowFunc = func() time.Time {
+		return now
+	}
+	defer func() {
+		nowFunc = time.Now
+	}()
+
+	algNone := jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
+		alg := jwa.None.New()
+		return alg.NewKey(nil, nil), nil
+	})
+
+	var err error
+	var token, data []byte
+
+	token = []byte(`{"exp":1300819380}`)
+	data = []byte(
+		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
+			base64.RawURLEncoding.EncodeToString(token) + ".")
+
+	now = time.Unix(1300819380, -1) // 1ns before expiration time
+	_, err = Parse(context.TODO(), data, algNone)
+	if err != nil {
+		t.Error(err)
+	}
+
+	now = time.Unix(1300819380, 0) // just expiration time
+	_, err = Parse(context.TODO(), data, algNone)
+	if err == nil {
+		t.Error("want some error, but not")
+	}
+
+	token = []byte(`{"nbf":1300819380}`)
+	data = []byte(
+		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
+			base64.RawURLEncoding.EncodeToString(token) + ".")
+
+	now = time.Unix(1300819380, -1) // 1ns before the token is valid
+	_, err = Parse(context.TODO(), data, algNone)
+	if err == nil {
+		t.Error("want some error, but not")
+	}
+
+	now = time.Unix(1300819380, 0) // just activated
+	_, err = Parse(context.TODO(), data, algNone)
+	if err != nil {
+		t.Error(err)
+	}
 }
