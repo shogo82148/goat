@@ -107,12 +107,16 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	}
 
 	// decode signature
-	sigBytes := make([]byte, base64.RawURLEncoding.DecodedLen(len(signature)))
-	n, err := base64.RawURLEncoding.Decode(sigBytes, signature)
+	size := len(signature)
+	if len(payload) > size {
+		size = len(payload)
+	}
+	buf := make([]byte, base64.RawURLEncoding.DecodedLen(size))
+	n, err := base64.RawURLEncoding.Decode(buf, signature)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
 	}
-	sigBytes = sigBytes[:n]
+	buf = buf[:n]
 
 	// find the key
 	key, err := finder.FindKey(ctx, h)
@@ -121,13 +125,20 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	}
 
 	// verify the signature
-	if err := key.Verify(data[:idx2], sigBytes); err != nil {
+	if err := key.Verify(data[:idx2], buf); err != nil {
 		return nil, err
+	}
+
+	// decode payload
+	buf = buf[:cap(buf)]
+	n, err = base64.RawURLEncoding.Decode(buf, payload)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
 	}
 
 	return &Message{
 		Header:  h,
-		Payload: payload,
+		Payload: buf[:n],
 	}, nil
 }
 

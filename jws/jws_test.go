@@ -46,11 +46,11 @@ func TestParse(t *testing.T) {
 			t.Errorf("unexpected type: want %s, got %s", want, got)
 		}
 
-		payload := []byte(`{"iss":"joe",` +
-			`"exp":1300819380,` +
-			`"http://example.com/is_root":true}`)
-		if bytes.Equal(payload, msg.Payload) {
-			t.Error("unexpected payload")
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
+		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
 	})
 
@@ -114,11 +114,11 @@ func TestParse(t *testing.T) {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
-		payload := []byte(`{"iss":"joe",` +
-			`"exp":1300819380,` +
-			`"http://example.com/is_root":true}`)
-		if bytes.Equal(payload, msg.Payload) {
-			t.Error("unexpected payload")
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
+		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
 	})
 
@@ -154,11 +154,11 @@ func TestParse(t *testing.T) {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
-		payload := []byte(`{"iss":"joe",` +
-			`"exp":1300819380,` +
-			`"http://example.com/is_root":true}`)
-		if bytes.Equal(payload, msg.Payload) {
-			t.Error("unexpected payload")
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
+		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
 	})
 
@@ -197,11 +197,9 @@ func TestParse(t *testing.T) {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
-		payload := []byte(`{"iss":"joe",` +
-			`"exp":1300819380,` +
-			`"http://example.com/is_root":true}`)
-		if bytes.Equal(payload, msg.Payload) {
-			t.Error("unexpected payload")
+		payload := []byte(`Payload`)
+		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
 	})
 }
