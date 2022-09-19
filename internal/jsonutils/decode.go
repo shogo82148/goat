@@ -3,11 +3,14 @@ package jsonutils
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"net/url"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 type Decoder struct {
@@ -274,6 +277,37 @@ func (d *Decoder) GetURL(name string) (*url.URL, bool) {
 		return nil, false
 	}
 	return u, true
+}
+
+func (d *Decoder) GetTime(name string) (time.Time, bool) {
+	v, ok := d.raw[name]
+	if !ok {
+		return time.Time{}, false
+	}
+	switch v := v.(type) {
+	case json.Number:
+		var t NumericDate
+		if err := t.UnmarshalJSON([]byte(v)); err != nil {
+			if d.err == nil {
+				d.err = fmt.Errorf("%s: failed to parse parameter %s", d.pkg, name)
+			}
+			return time.Time{}, false
+		}
+		return t.Time, true
+	case float64:
+		i, f := math.Modf(v)
+		t := time.Unix(int64(i), int64(math.RoundToEven(f*1e9)))
+		return t, true
+	}
+	if d.err == nil {
+		d.err = &typeError{
+			pkg:  d.pkg,
+			name: name,
+			want: "number",
+			got:  reflect.TypeOf(v),
+		}
+	}
+	return time.Time{}, false
 }
 
 // NewError asserts the operation must not fail.
