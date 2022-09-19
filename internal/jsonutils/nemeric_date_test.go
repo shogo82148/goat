@@ -59,7 +59,9 @@ func BenchmarkNumericDate_MarshalJSON(b *testing.B) {
 		time.Date(9999, time.December, 31, 23, 59, 59, 999_999_999, time.UTC),
 	}
 	for i := 0; i < b.N; i++ {
-		date.MarshalJSON()
+		if _, err := date.MarshalJSON(); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -106,7 +108,9 @@ func BenchmarkNumericDate_UnmarshalJSON(b *testing.B) {
 	input := []byte("253402300799.999999999")
 	for i := 0; i < b.N; i++ {
 		var date NumericDate
-		date.UnmarshalJSON(input)
+		if err := date.UnmarshalJSON(input); err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
