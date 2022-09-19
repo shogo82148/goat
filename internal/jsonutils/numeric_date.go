@@ -17,10 +17,17 @@ type NumericDate struct {
 
 func (date NumericDate) MarshalJSON() (b []byte, err error) {
 	// the maximum time.Time that Go can marshal to JSON.
-	const maxTime = "253402300799.999999999"
+	const maxTime = "+253402300799.999999999"
 
 	buf := make([]byte, 0, len(maxTime))
 	sec := date.Unix()
+	nsec := date.Nanosecond()
+	if sec < 0 && nsec != 0 {
+		// handle the sign
+		sec++
+		nsec = 1_000_000_000 - nsec
+		buf = append(buf, '-')
+	}
 	if sec > 253402300799 || sec < -253402300799 {
 		// the maximum time.Time that Go can marshal to JSON.
 		return nil, fmt.Errorf("unix time epoch overflow: %d", sec)
@@ -28,7 +35,7 @@ func (date NumericDate) MarshalJSON() (b []byte, err error) {
 	buf = strconv.AppendInt(buf, sec, 10)
 
 	// non-integer values can be represented.
-	if nsec := date.Nanosecond(); nsec != 0 {
+	if nsec != 0 {
 		buf = append(buf, '.')
 		digits := 100_000_000
 		for nsec != 0 {
