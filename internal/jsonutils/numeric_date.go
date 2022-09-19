@@ -28,6 +28,9 @@ func (date NumericDate) MarshalJSON() (b []byte, err error) {
 		// handle the sign
 		sec++
 		nsec = 1_000_000_000 - nsec
+		if sec < 0 {
+			sec = -sec
+		}
 		buf = append(buf, '-')
 	}
 	if sec > maxEpoch || sec < -maxEpoch {
