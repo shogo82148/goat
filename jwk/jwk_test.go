@@ -5,11 +5,14 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rsa"
+	"math/big"
 	"reflect"
 	"testing"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
-func TestKey_RFC7517AppendixA(t *testing.T) {
+func TestParseKey_RFC7517AppendixA(t *testing.T) {
 	t.Run("RFC 7517 A.1. Example Public Keys (EC)", func(t *testing.T) {
 		rawKey := `{"kty":"EC",` +
 			`"crv":"P-256",` +
@@ -21,21 +24,18 @@ func TestKey_RFC7517AppendixA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType != "EC" {
-			t.Errorf("unexpected key type: want %s, got %s", "RSA", key.KeyType)
+		if want, got := key.KeyType, jwa.EC; want != got {
+			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		publicKey, ok := key.PublicKey.(*ecdsa.PublicKey)
-		if !ok {
-			t.Errorf("unexpected key type: want *ecdsa.PublicKey, got %T", key.PublicKey)
+		x, _ := new(big.Int).SetString("21994169848703329112137818087919262246467304847122821377551355163096090930238", 10)
+		y, _ := new(big.Int).SetString("101451294974385619524093058399734017814808930032421185206609461750712400090915", 10)
+		publicKey := &ecdsa.PublicKey{
+			Curve: elliptic.P256(),
+			X:     x,
+			Y:     y,
 		}
-		if publicKey.Curve != elliptic.P256() {
-			t.Errorf("unexpected curve: want P-256, got %s", publicKey.Curve.Params().Name)
-		}
-		if got, want := publicKey.X.String(), "21994169848703329112137818087919262246467304847122821377551355163096090930238"; got != want {
-			t.Errorf("unexpected x param: want %s, got %s", want, got)
-		}
-		if got, want := publicKey.Y.String(), "101451294974385619524093058399734017814808930032421185206609461750712400090915"; got != want {
-			t.Errorf("unexpected y param: want %s, got %s", want, got)
+		if !publicKey.Equal(key.PublicKey) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
 		}
 	})
 
@@ -60,12 +60,19 @@ func TestKey_RFC7517AppendixA(t *testing.T) {
 		if key.Algorithm != "RS256" {
 			t.Errorf("unexpected algorithm: want %s, got %s", "RS256", key.Algorithm)
 		}
-		publicKey, ok := key.PublicKey.(*rsa.PublicKey)
-		if !ok {
-			t.Errorf("unexpected key type: want *rsa.PublicKey, got %T", key.PublicKey)
+		n, _ := new(big.Int).SetString("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632"+
+			"0042915031924501272705275043130211783228252369194856949397782880847235143381529207382262647906987655"+
+			"73864738700732036114985476652341729332373918530811337352951272893283810014161204871259717869572065134"+
+			"42954501748953699233833967043343316272615659072667498637447079206063646782316391064038549773021837192"+
+			"46256958550651555767664134467706614553219592981545363271425781391262006405169505726523023628770285432"+
+			"06204439131004744574928756316166854835432256022350994699082769165462796818216782639701536883643596535"+
+			"4956581554819", 10)
+		publicKey := &rsa.PublicKey{
+			N: n,
+			E: 65537,
 		}
-		if publicKey.E != 65537 {
-			t.Errorf("want %d, got %d", 65537, publicKey.E)
+		if !publicKey.Equal(key.PublicKey) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
 		}
 	})
 
@@ -209,7 +216,7 @@ func TestKey_RFC7517AppendixA(t *testing.T) {
 	})
 }
 
-func BenchmarkKey_RFC7517AppendixA(b *testing.B) {
+func BenchmarkParseKey_RFC7517AppendixA(b *testing.B) {
 	b.Run("RFC 7517 A.1. Example Public Keys (EC)", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"EC",` +
 			`"crv":"P-256",` +
@@ -315,7 +322,7 @@ func BenchmarkKey_RFC7517AppendixA(b *testing.B) {
 	})
 }
 
-func TestKey_RFC7517AppendixB(t *testing.T) {
+func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	// RFC7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
 	rawKey := []byte(`{"kty":"RSA",` +
 		`"use":"sig",` +
@@ -371,7 +378,7 @@ func TestKey_RFC7517AppendixB(t *testing.T) {
 	}
 }
 
-func BenchmarkKey_RFC7517AppendixB(b *testing.B) {
+func BenchmarkParseKey_RFC7517AppendixB(b *testing.B) {
 	// RFC7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
 	rawKey := []byte(`{"kty":"RSA",` +
 		`"use":"sig",` +
@@ -411,7 +418,7 @@ func BenchmarkKey_RFC7517AppendixB(b *testing.B) {
 	}
 }
 
-func TestKey_RFC8037AppendixA(t *testing.T) {
+func TestParseKey_RFC8037AppendixA(t *testing.T) {
 	t.Run("A.1. Ed25519 Private Key", func(t *testing.T) {
 		rawKey := `{"kty":"OKP","crv":"Ed25519",` +
 			`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",` +
@@ -475,7 +482,7 @@ func TestKey_RFC8037AppendixA(t *testing.T) {
 	})
 }
 
-func BenchmarkKey_RFC8037AppendixA(b *testing.B) {
+func BenchmarkParseKey_RFC8037AppendixA(b *testing.B) {
 	b.Run("A.1. Ed25519 Private Key", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"OKP","crv":"Ed25519",` +
 			`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",` +
@@ -562,6 +569,76 @@ func TestKey_Base64Error(t *testing.T) {
 		_, err := ParseKey([]byte(rawKey))
 		if err == nil {
 			t.Error("want not nil, got nil")
+		}
+	})
+}
+
+func TestMarshalKey_RFC7517AppendixA(t *testing.T) {
+	t.Run("RFC 7517 A.1. Example Public Keys (EC)", func(t *testing.T) {
+		x, _ := new(big.Int).SetString("21994169848703329112137818087919262246467304847122821377551355163096090930238", 10)
+		y, _ := new(big.Int).SetString("101451294974385619524093058399734017814808930032421185206609461750712400090915", 10)
+		key := &Key{
+			KeyType:      jwa.EC,
+			KeyID:        "1",
+			PublicKeyUse: "enc",
+			PublicKey: &ecdsa.PublicKey{
+				Curve: elliptic.P256(),
+				X:     x,
+				Y:     y,
+			},
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := `{"crv":"P-256",` +
+			`"kid":"1",` +
+			`"kty":"EC",` +
+			`"use":"enc",` +
+			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
+			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"` +
+			`}`
+		if string(got) != want {
+			t.Errorf("want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("RFC 7517 A.1. Example Public Keys (RSA)", func(t *testing.T) {
+		n, _ := new(big.Int).SetString("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632"+
+			"0042915031924501272705275043130211783228252369194856949397782880847235143381529207382262647906987655"+
+			"73864738700732036114985476652341729332373918530811337352951272893283810014161204871259717869572065134"+
+			"42954501748953699233833967043343316272615659072667498637447079206063646782316391064038549773021837192"+
+			"46256958550651555767664134467706614553219592981545363271425781391262006405169505726523023628770285432"+
+			"06204439131004744574928756316166854835432256022350994699082769165462796818216782639701536883643596535"+
+			"4956581554819", 10)
+		key := &Key{
+			Algorithm: jwa.RS256.KeyAlgorithm(),
+			PublicKey: &rsa.PublicKey{
+				N: n,
+				E: 65537,
+			},
+			KeyID: "2011-04-29",
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := `{"alg":"RS256",` +
+			`"e":"AQAB",` +
+			`"kid":"2011-04-29",` +
+			`"kty":"RSA",` +
+			`"n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx` +
+			`4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs` +
+			`tn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2` +
+			`QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbI` +
+			`SD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqb` +
+			`w0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw"` +
+			`}`
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(got) != want {
+			t.Errorf("want %q, got %q", want, got)
 		}
 	})
 }

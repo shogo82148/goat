@@ -310,10 +310,10 @@ func (d *Decoder) GetTime(name string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
-// NewError asserts the operation must not fail.
-// If err is nil, NewError does nothing.
-// Otherwise, NewError records the first error.
-func (d *Decoder) NewError(err error) {
+// SaveError asserts the operation must not fail.
+// If err is nil, SaveError does nothing.
+// Otherwise, SaveError records the first error.
+func (d *Decoder) SaveError(err error) {
 	if err != nil && d.err == nil {
 		d.err = err
 	}

@@ -3,6 +3,9 @@ package jwk
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -11,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strconv"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -54,7 +58,7 @@ type Key struct {
 	// If the key doesn't contain any public key, it returns nil.
 	PublicKey any
 
-	// Raw is the raw data of JWK.
+	// Raw is the raw data of JSON-decoded JWK.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
 }
@@ -82,7 +86,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
-				d.NewError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				d.SaveError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
 				return
 			}
 			if cert0 == nil {
@@ -99,7 +103,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
-				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
@@ -108,9 +112,49 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
+	}
+}
+
+func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
+	e.Set("kty", key.KeyType.String())
+	if v := key.KeyID; v != "" {
+		e.Set("kid", v)
+	}
+	if v := key.PublicKeyUse; v != "" {
+		e.Set("use", v)
+	}
+	if v := key.KeyOperations; v != nil {
+		e.Set("key_ops", v)
+	}
+	if v := key.Algorithm; v != "" {
+		e.Set("alg", v)
+	}
+	if x5u := key.X509URL; x5u != nil {
+		e.Set("x5u", x5u.String())
+	}
+	if x5c := key.X509CertificateChain; x5c != nil {
+		chain := make([][]byte, 0, len(x5c))
+		for _, cert := range x5c {
+			chain = append(chain, cert.Raw)
+		}
+		e.Set("x5c", chain)
+	}
+	if x5t := key.X509CertificateSHA1; x5t != nil {
+		e.SetBytes("x5t", x5t)
+	} else if len(key.X509CertificateChain) > 0 {
+		cert := key.X509CertificateChain[0]
+		sum := sha1.Sum(cert.Raw)
+		e.SetBytes("x5t", sum[:])
+	}
+	if x5t256 := key.X509CertificateSHA256; x5t256 != nil {
+		e.SetBytes("x5t#S256", x5t256)
+	} else if len(key.X509CertificateChain) > 0 {
+		cert := key.X509CertificateChain[0]
+		sum := sha256.Sum256(cert.Raw)
+		e.SetBytes("x5t#S256", sum[:])
 	}
 }
 
@@ -123,6 +167,79 @@ func ParseKey(data []byte) (*Key, error) {
 		return nil, err
 	}
 	return ParseMap(raw)
+}
+
+var _ json.Unmarshaler = (*Key)(nil)
+
+// UnmarshalJSON implements [encoding/json.Unmarshaler]
+func (key *Key) UnmarshalJSON(data []byte) error {
+	k, err := ParseKey(data)
+	if err != nil {
+		return err
+	}
+	*key = *k
+	return nil
+}
+
+var _ json.Marshaler = (*Key)(nil)
+
+// MarshalJSON implements [encoding/json.Marshaler]
+func (key *Key) MarshalJSON() ([]byte, error) {
+	raw := make(map[string]any, len(key.Raw))
+	for k, v := range key.Raw {
+		raw[k] = v
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeCommonParameters(e, key)
+	if err := e.Err(); err != nil {
+		return nil, err
+	}
+
+	switch priv := key.PrivateKey.(type) {
+	case *ecdsa.PrivateKey:
+		if k := key.PublicKey; k != nil && priv.PublicKey.Equal(k) {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		encodeEcdsaKey(e, priv, &priv.PublicKey)
+	case *rsa.PrivateKey:
+		if k := key.PublicKey; k != nil && priv.PublicKey.Equal(k) {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		encodeRSAKey(e, priv, &priv.PublicKey)
+	case ed25519.PrivateKey:
+		if len(priv) != ed25519.PrivateKeySize {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		pub := ed25519.PublicKey(priv[ed25519.SeedSize:])
+		if k := key.PublicKey; k != nil && pub.Equal(k) {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		encodeEd25519Key(e, priv, pub)
+	case []byte:
+		if key.PublicKey != nil {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		encodeSymmetricKey(e, priv)
+	case nil:
+		// the key has only public key.
+		switch pub := key.PublicKey.(type) {
+		case *ecdsa.PublicKey:
+			encodeEcdsaKey(e, nil, pub)
+		case *rsa.PublicKey:
+			encodeRSAKey(e, nil, pub)
+		case ed25519.PublicKey:
+			encodeEd25519Key(e, nil, pub)
+		default:
+			return nil, newUnknownKeyTypeError(key)
+		}
+	default:
+		return nil, newUnknownKeyTypeError(key)
+	}
+
+	if err := e.Err(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(e.Data())
 }
 
 // ParseMap parses a JWK that is decoded by the json package.
@@ -187,6 +304,7 @@ func ParseSet(data []byte) (*Set, error) {
 	}, nil
 }
 
+// Find finds the key that has kid.
 func (set *Set) Find(kid string) (key *Key, found bool) {
 	for _, k := range set.Keys {
 		if k.KeyID == kid {
@@ -194,4 +312,39 @@ func (set *Set) Find(kid string) (key *Key, found bool) {
 		}
 	}
 	return nil, false
+}
+
+var _ json.Unmarshaler = (*Set)(nil)
+
+// UnmarshalJSON implements [encoding/json.Unmarshaler]
+func (set *Set) UnmarshalJSON(data []byte) error {
+	s, err := ParseSet(data)
+	if err != nil {
+		return err
+	}
+	*set = *s
+	return nil
+}
+
+var _ json.Marshaler = (*Set)(nil)
+
+// MarshalJSON implements [encoding/json.Marshaler]
+func (set *Set) MarshalJSON() ([]byte, error) {
+	return nil, nil
+}
+
+type unknownKeyTypeError struct {
+	pub  reflect.Type
+	priv reflect.Type
+}
+
+func newUnknownKeyTypeError(key *Key) *unknownKeyTypeError {
+	return &unknownKeyTypeError{
+		pub:  reflect.TypeOf(key.PublicKey),
+		priv: reflect.TypeOf(key.PrivateKey),
+	}
+}
+
+func (err *unknownKeyTypeError) Error() string {
+	return "jwk: unknown private and public key type: " + err.priv.String() + ", " + err.pub.String()
 }

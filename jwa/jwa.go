@@ -55,6 +55,10 @@ func (alg SignatureAlgorithm) String() string {
 	return string(alg)
 }
 
+func (alg SignatureAlgorithm) KeyAlgorithm() KeyAlgorithm {
+	return KeyAlgorithm(alg)
+}
+
 func (alg SignatureAlgorithm) New() sig.Algorithm {
 	f := signatureAlgorithms[alg]
 	if f == nil {
@@ -152,20 +156,14 @@ const (
 	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
 
+func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
+	return KeyAlgorithm(alg)
+}
+
 // KeyAlgorithm may be either SignatureAlgorithm or KeyManagementAlgorithm.
 // It is a workaround for jwk.Key being able to contain different
 // types of algorithms in its `alg` field.
 type KeyAlgorithm string
-
-// SignatureAlgorithm casts alg to SignatureAlgorithm.
-func (alg KeyAlgorithm) SignatureAlgorithm() SignatureAlgorithm {
-	return SignatureAlgorithm(alg)
-}
-
-// KeyManagementAlgorithm cast alg to KeyManagementAlgorithm.
-func (alg KeyAlgorithm) KeyManagementAlgorithm() KeyManagementAlgorithm {
-	return KeyManagementAlgorithm(alg)
-}
 
 // ContentEncryptionAlgorithm an algorithm for content encryption
 // defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.
@@ -176,18 +174,22 @@ type KeyType string
 
 const (
 	// EC is Elliptic Curve.
-	EC = "EC"
+	EC KeyType = "EC"
 
 	// RSA is RSA.
-	RSA = "RSA"
+	RSA KeyType = "RSA"
 
 	// OKP is Octet string key pairs
 	// defined in RFC8037 Section 2 Key Type "OKP".
-	OKP = "OKP"
+	OKP KeyType = "OKP"
 
 	// Oct is Octet sequence (used to represent symmetric keys).
-	Oct = "oct"
+	Oct KeyType = "oct"
 )
+
+func (kyt KeyType) String() string {
+	return string(kyt)
+}
 
 // EllipticCurve is an EllipticCurve defined in the IANA "JSON Web Key Elliptic Curve".
 type EllipticCurve string
@@ -217,3 +219,7 @@ const (
 	// secp256k1 is SECG secp256k1 curve.
 	Secp256k1 EllipticCurve = "secp256k1"
 )
+
+func (crv EllipticCurve) String() string {
+	return string(crv)
+}
