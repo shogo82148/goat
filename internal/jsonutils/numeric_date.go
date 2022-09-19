@@ -56,12 +56,12 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 		return err
 	}
 	sec, acc := z.Int64()
-	if sec > 253402300799 || sec < -253402300799 {
-		// the maximum time.Time that Go can marshal to JSON.
-		return fmt.Errorf("unix time epoch overflow: %d", sec)
-	}
 	if acc == big.Exact {
 		// z is an integer, we don't need to parse nsec.
+		if sec > 253402300799 || sec < -253402300799 {
+			// the maximum time.Time that Go can marshal to JSON.
+			return fmt.Errorf("unix time epoch overflow: %d", sec)
+		}
 		date.Time = time.Unix(sec, 0)
 		return nil
 	}
@@ -70,6 +70,18 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 	z = z.Sub(z, new(big.Float).SetInt64(sec))
 	z = z.Mul(z, v1_000_000_000)
 	nsec, _ := z.Float64()
-	date.Time = time.Unix(sec, int64(math.RoundToEven(nsec)))
+	insec := int64(math.RoundToEven(nsec))
+	if insec >= 1_000_000_000 {
+		insec -= 1_000_000_000
+		sec++
+	} else if insec <= -1_000_000_000 {
+		insec += 1_000_000_000
+		sec--
+	}
+	if sec > 253402300899 || sec < -253402300799 {
+		// the maximum time.Time that Go can marshal to JSON.
+		return fmt.Errorf("unix time epoch overflow: %d", sec)
+	}
+	date.Time = time.Unix(sec, insec)
 	return nil
 }
