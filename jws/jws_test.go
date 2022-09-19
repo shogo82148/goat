@@ -6,9 +6,10 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/es" // for ECDSA
-	_ "github.com/shogo82148/goat/jwa/hs" // for HMAC SHA-256
-	_ "github.com/shogo82148/goat/jwa/rs" // for RSASSA-PKCS1-v1_5 SHA-256
+	_ "github.com/shogo82148/goat/jwa/es"   // for ECDSA
+	_ "github.com/shogo82148/goat/jwa/hs"   // for HMAC SHA-256
+	_ "github.com/shogo82148/goat/jwa/none" // for none
+	_ "github.com/shogo82148/goat/jwa/rs"   // for RSASSA-PKCS1-v1_5 SHA-256
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/sig"
 )
@@ -198,6 +199,34 @@ func TestParse(t *testing.T) {
 		}
 
 		payload := []byte(`Payload`)
+		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
+		}
+	})
+
+	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
+		raw := []byte(
+			"eyJhbGciOiJub25lIn0" +
+				"." +
+				"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+				".",
+		)
+		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
+			alg := header.Algorithm.New()
+			return alg.NewKey(nil, nil), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if want, got := msg.Header.Algorithm, jwa.None; want != got {
+			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
+		}
+
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
 		if !bytes.Equal(payload, msg.Payload) {
 			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
