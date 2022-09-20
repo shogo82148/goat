@@ -326,4 +326,26 @@ func TestSign(t *testing.T) {
 			t.Errorf("want %s, got %s", want, got)
 		}
 	})
+
+	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
+		k := jwa.None.New().NewKey(nil, nil)
+		h := &Header{Algorithm: jwa.None, Type: "JWT"}
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
+		got, err := Sign(h, payload, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// It is not same with Appendix A.5 because JOSE header is compact encoded here.
+		want := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0" +
+			"." +
+			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+			"."
+		if string(got) != want {
+			t.Errorf("want %s, got %s", want, got)
+		}
+	})
 }
