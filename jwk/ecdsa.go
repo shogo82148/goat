@@ -42,12 +42,8 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	// parameters for private key
 	if d, ok := d.GetBigInt("d"); ok {
 		priv := ecdsa.PrivateKey{
-			PublicKey: ecdsa.PublicKey{
-				Curve: curve,
-				X:     x,
-				Y:     y,
-			},
-			D: d,
+			PublicKey: pub,
+			D:         d,
 		}
 		key.PrivateKey = &priv
 	}
