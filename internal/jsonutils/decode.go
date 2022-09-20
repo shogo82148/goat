@@ -253,15 +253,27 @@ func (d *Decoder) GetBigInt(name string) (*big.Int, bool) {
 	if !ok {
 		return nil, false
 	}
+	if len(data) == 0 {
+		if d.err == nil {
+			d.err = fmt.Errorf("%s: failed to parse the parameter %s as big.Int", d.pkg, name)
+		}
+		return nil, false
+	}
 	return new(big.Int).SetBytes(data), true
 }
 
 func (d *Decoder) MustBigInt(name string) *big.Int {
-	data := d.MustBytes(name)
-	if data == nil {
+	n, ok := d.GetBigInt(name)
+	if !ok {
+		if d.err == nil {
+			d.err = &missingError{
+				pkg:  d.pkg,
+				name: name,
+			}
+		}
 		return nil
 	}
-	return new(big.Int).SetBytes(data)
+	return n
 }
 
 func (d *Decoder) GetURL(name string) (*url.URL, bool) {
