@@ -33,17 +33,17 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		// precomputed values
 		if oth, ok := d.GetArray("oth"); ok {
 			crtValues := make([]rsa.CRTValue, 0, len(oth))
-			for _, v := range oth {
+			for i, v := range oth {
 				u, ok := v.(map[string]any)
 				if !ok {
-					d.SaveError(fmt.Errorf("jwk: want string for the parameter oth[].r but got %T", v))
+					d.SaveError(fmt.Errorf("jwk: want map[string]any for the parameter oth[%d] but got %T", i, v))
 					return
 				}
-				r := parseRSAOthParam(d, u, "r")
+				r := parseRSAOthParam(d, i, u, "r")
 				privateKey.Primes = append(privateKey.Primes, r)
 				crtValues = append(crtValues, rsa.CRTValue{
-					Exp:   parseRSAOthParam(d, u, "d"),
-					Coeff: parseRSAOthParam(d, u, "t"),
+					Exp:   parseRSAOthParam(d, i, u, "d"),
+					Coeff: parseRSAOthParam(d, i, u, "t"),
 					R:     r,
 				})
 			}
@@ -69,7 +69,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	}
 }
 
-func parseRSAOthParam(d *jsonutils.Decoder, v map[string]any, name string) *big.Int {
+func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string) *big.Int {
 	u, ok := v[name]
 	if !ok {
 		return nil
@@ -78,7 +78,7 @@ func parseRSAOthParam(d *jsonutils.Decoder, v map[string]any, name string) *big.
 	if !ok {
 		return nil
 	}
-	return new(big.Int).SetBytes(d.Decode(w, fmt.Sprintf("oth[].%s", name)))
+	return new(big.Int).SetBytes(d.Decode(w, fmt.Sprintf("oth[%d].%s", i, name)))
 }
 
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
@@ -91,5 +91,29 @@ func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey
 		buf[i] = byte(v % 0x100)
 	}
 	e.SetBytes("e", buf[i:])
-	e.SetBytes("n", pub.N.Bytes())
+	e.SetBigInt("n", pub.N)
+
+	if priv != nil {
+		e.SetBigInt("d", priv.D)
+		e.SetBigInt("p", priv.Primes[0])
+		e.SetBigInt("q", priv.Primes[1])
+
+		// precomputed values
+		if priv.Precomputed.Dp != nil {
+			e.SetBigInt("dp", priv.Precomputed.Dp)
+			e.SetBigInt("dq", priv.Precomputed.Dq)
+			e.SetBigInt("qi", priv.Precomputed.Qinv)
+			oth := make([]map[string]string, 0, len(priv.Precomputed.CRTValues))
+			for _, v := range priv.Precomputed.CRTValues {
+				u := make(map[string]string)
+				u["d"] = e.Encode(v.Exp.Bytes())
+				u["t"] = e.Encode(v.Coeff.Bytes())
+				u["r"] = e.Encode(v.R.Bytes())
+				oth = append(oth, u)
+			}
+			if len(oth) > 0 {
+				e.Set("oth", oth)
+			}
+		}
+	}
 }

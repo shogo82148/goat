@@ -197,13 +197,13 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 
 	switch priv := key.PrivateKey.(type) {
 	case *ecdsa.PrivateKey:
-		if k := key.PublicKey; k != nil && priv.PublicKey.Equal(k) {
-			return nil, newUnknownKeyTypeError(key)
+		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+			return nil, errors.New("jwk: public key is mismatch for ecdsa")
 		}
 		encodeEcdsaKey(e, priv, &priv.PublicKey)
 	case *rsa.PrivateKey:
-		if k := key.PublicKey; k != nil && priv.PublicKey.Equal(k) {
-			return nil, newUnknownKeyTypeError(key)
+		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+			return nil, errors.New("jwk: public key is mismatch for rsa")
 		}
 		encodeRSAKey(e, priv, &priv.PublicKey)
 	case ed25519.PrivateKey:
@@ -211,13 +211,13 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, newUnknownKeyTypeError(key)
 		}
 		pub := ed25519.PublicKey(priv[ed25519.SeedSize:])
-		if k := key.PublicKey; k != nil && pub.Equal(k) {
-			return nil, newUnknownKeyTypeError(key)
+		if k := key.PublicKey; k != nil && !pub.Equal(k) {
+			return nil, errors.New("jwk: public key is mismatch for ed25519")
 		}
 		encodeEd25519Key(e, priv, pub)
 	case []byte:
 		if key.PublicKey != nil {
-			return nil, newUnknownKeyTypeError(key)
+			return nil, errors.New("jwk: public key is allowed for symmetric keys")
 		}
 		encodeSymmetricKey(e, priv)
 	case nil:
