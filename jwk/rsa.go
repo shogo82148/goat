@@ -66,6 +66,10 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		if err := d.Err(); err != nil {
 			return
 		}
+		if err := priv.Validate(); err != nil {
+			d.SaveError(err)
+			return
+		}
 		priv.Precompute()
 		key.PrivateKey = &priv
 	}
