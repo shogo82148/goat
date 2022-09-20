@@ -25,7 +25,7 @@ var _ sig.Key = (*Key)(nil)
 type Key struct{}
 
 func (alg *Algorithm) String() string {
-	return none.String()
+	return jwa.None.String()
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
