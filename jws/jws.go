@@ -36,7 +36,7 @@ type Header struct {
 	KeyID string
 
 	// X509URL is RFC7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
-	X509URL string
+	X509URL *url.URL
 
 	// X509CertificateChain is RFC7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
 	X509CertificateChain []*x509.Certificate
@@ -56,7 +56,8 @@ type Header struct {
 	// Critical is 4.1.11. "crit" (Critical) Header Parameter.
 	Critical []string
 
-	// Raw is the raw JWS Header.
+	// Raw is the raw data of JSON-decoded JOSE header.
+	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
 }
 
@@ -165,7 +166,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if x5u, ok := d.GetURL("x5u"); ok {
-		h.JWKSetURL = x5u
+		h.X509URL = x5u
 	}
 
 	var cert0 []byte
@@ -214,4 +215,111 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		return nil, err
 	}
 	return h, nil
+}
+
+func Sign(header *Header, payload []byte, key sig.Key) ([]byte, error) {
+	// encode the header
+	headerBytes, err := encodeHeader(header)
+	if err != nil {
+		return nil, err
+	}
+
+	// encode header and payload
+	b64 := base64.RawURLEncoding
+	l1 := b64.EncodedLen(len(headerBytes))
+	l2 := b64.EncodedLen(len(payload))
+	buf := make([]byte, l1+l2+2+b64.EncodedLen(512))
+	b64.Encode(buf[:l1:l1], headerBytes)
+	buf[l1] = '.'
+	b64.Encode(buf[l1+1:l1+1+l2:l1+1+l2], payload)
+
+	// sign
+	sig, err := key.Sign(buf[:l1+1+l2])
+	if err != nil {
+		return nil, err
+	}
+
+	// encode signature to base64
+	l3 := b64.EncodedLen(len(sig))
+	if len(buf) < l1+l2+l3+2 {
+		tmp := make([]byte, l1+l2+l3+2)
+		copy(tmp, buf)
+		buf = tmp
+	} else {
+		buf = buf[:l1+l2+l3+2]
+	}
+	buf[l1+1+l2] = '.'
+	b64.Encode(buf[l1+l2+2:], sig)
+	return buf, nil
+}
+
+func encodeHeader(h *Header) ([]byte, error) {
+	raw := make(map[string]any, len(h.Raw))
+	for k, v := range h.Raw {
+		raw[k] = v
+	}
+	e := jsonutils.NewEncoder(raw)
+	if v := h.Algorithm; v != "" {
+		e.Set("alg", v.String())
+	}
+
+	if u := h.JWKSetURL; u != nil {
+		e.Set("jku", u.String())
+	}
+
+	if key := h.JWK; key != nil {
+		data, err := key.MarshalJSON()
+		if err != nil {
+			e.SaveError(err)
+		} else {
+			e.Set("jwk", json.RawMessage(data))
+		}
+	}
+
+	if kid := h.KeyID; kid != "" {
+		e.Set("kid", kid)
+	}
+
+	if x5u := h.X509URL; x5u != nil {
+		e.Set("x5u", x5u.String())
+	}
+
+	if x5c := h.X509CertificateChain; x5c != nil {
+		chain := make([][]byte, 0, len(x5c))
+		for _, cert := range x5c {
+			chain = append(chain, cert.Raw)
+		}
+		e.Set("x5c", chain)
+	}
+	if x5t := h.X509CertificateSHA1; x5t != nil {
+		e.SetBytes("x5t", x5t)
+	} else if len(h.X509CertificateChain) > 0 {
+		cert := h.X509CertificateChain[0]
+		sum := sha1.Sum(cert.Raw)
+		e.SetBytes("x5t", sum[:])
+	}
+	if x5t256 := h.X509CertificateSHA256; x5t256 != nil {
+		e.SetBytes("x5t#S256", x5t256)
+	} else if len(h.X509CertificateChain) > 0 {
+		cert := h.X509CertificateChain[0]
+		sum := sha256.Sum256(cert.Raw)
+		e.SetBytes("x5t#S256", sum[:])
+	}
+
+	if typ := h.Type; typ != "" {
+		e.Set("typ", typ)
+	}
+
+	if cty := h.ContentType; cty != "" {
+		e.Set("cty", cty)
+	}
+
+	if crit := h.Critical; len(crit) > 0 {
+		e.Set("crit", crit)
+	}
+
+	if err := e.Err(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(e.Data())
 }

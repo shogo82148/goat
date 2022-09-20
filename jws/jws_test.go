@@ -232,3 +232,36 @@ func TestParse(t *testing.T) {
 		}
 	})
 }
+
+func TestSign(t *testing.T) {
+	t.Run("RFC7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
+		rawKey := `{"kty":"oct",` +
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PrivateKey)
+		h := &Header{Algorithm: jwa.HS256, Type: "JWT"}
+		payload := []byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`)
+		got, err := Sign(h, payload, k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// It is not same with Appendix A.1 because JOSE header is compact encoded here.
+		want := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+			"." +
+			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+			"." +
+			"SfgggA-oZk7ztlq1i8Uz5VhmPmustakoDa9wAf8uHyQ"
+		if string(got) != want {
+			t.Errorf("want %s, got %s", want, got)
+		}
+	})
+}

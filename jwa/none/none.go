@@ -24,12 +24,20 @@ var _ sig.Key = (*Key)(nil)
 
 type Key struct{}
 
+func (alg *Algorithm) String() string {
+	return none.String()
+}
+
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
 func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 	if privateKey != nil || publicKey != nil {
-		return sig.NewInvalidKey("none", privateKey, publicKey)
+		return sig.NewInvalidKey(none, privateKey, publicKey)
 	}
 	return &Key{}
+}
+
+func (key *Key) Algorithm() sig.Algorithm {
+	return none
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
