@@ -74,7 +74,7 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 	z = z.Sub(z, new(big.Float).SetInt64(sec))
 	z = z.Mul(z, v1_000_000_000)
 	nsec, _ := z.Float64()
-	ns := int64(math.RoundToEven(nsec))
+	ns := int64(math.Trunc(nsec))
 	if ns >= 1_000_000_000 {
 		ns -= 1_000_000_000
 		sec++

@@ -87,6 +87,11 @@ func TestNumericDate_UnmarshalJSON(t *testing.T) {
 			date:  time.Unix(1234567890, 123456789),
 		},
 		{
+			// Time shorter than one nanosecond is truncated.
+			input: "1234567890.9999999999",
+			date:  time.Unix(1234567890, 999999999),
+		},
+		{
 			// the maximum time.Time that Go can marshal to JSON.
 			input: "253402300799.999999999",
 			date:  time.Date(9999, time.December, 31, 23, 59, 59, 999_999_999, time.UTC),
