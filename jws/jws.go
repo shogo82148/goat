@@ -159,7 +159,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	if v, ok := d.GetObject("jwk"); ok {
 		key, err := jwk.ParseMap(v)
 		if err != nil {
-			d.NewError(err)
+			d.SaveError(err)
 		}
 		h.JWK = key
 	}
@@ -175,7 +175,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
-				d.NewError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				d.SaveError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
 			}
 			if cert0 == nil {
 				cert0 = der
@@ -190,7 +190,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
-				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
@@ -200,7 +200,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.NewError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
 	}

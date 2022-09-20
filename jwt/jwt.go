@@ -83,14 +83,14 @@ func parseClaims(data []byte) (*Claims, error) {
 	if t, ok := d.GetTime("exp"); ok {
 		c.ExpirationTime = t
 		if !now.Before(t) {
-			d.NewError(fmt.Errorf("jwt: token is expired"))
+			d.SaveError(fmt.Errorf("jwt: token is expired"))
 		}
 	}
 
 	if t, ok := d.GetTime("nbf"); ok {
 		c.NotBefore = t
 		if now.Before(t) {
-			d.NewError(fmt.Errorf("jwt: token is not valid yet"))
+			d.SaveError(fmt.Errorf("jwt: token is not valid yet"))
 		}
 	}
 
