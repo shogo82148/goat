@@ -64,27 +64,6 @@ func (d *Decoder) Decode(s string, name string) []byte {
 	return dst[:n]
 }
 
-// DecodeStd decodes s as base64 standard encoding.
-// the returned slice is valid until next call.
-func (d *Decoder) DecodeStd(s string, name string) []byte {
-	d.grow(len(s))
-	src := d.src[:len(s)]
-	dst := d.dst[:cap(d.dst)]
-	copy(src, s)
-	n, err := base64.StdEncoding.Decode(dst, src)
-	if err != nil {
-		if d.err == nil {
-			d.err = &base64DecodeError{
-				pkg:  d.pkg,
-				name: name,
-				err:  err,
-			}
-		}
-		return nil
-	}
-	return dst[:n]
-}
-
 func (d *Decoder) Has(name string) bool {
 	_, ok := d.raw[name]
 	return ok
