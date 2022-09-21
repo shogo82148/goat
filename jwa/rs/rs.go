@@ -83,6 +83,9 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
+	if key.privateKey == nil {
+		return nil, sig.ErrSignUnavailable
+	}
 	hash := key.hash.New()
 	if _, err := hash.Write(payload); err != nil {
 		return nil, err
