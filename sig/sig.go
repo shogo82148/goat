@@ -23,7 +23,7 @@ type Key interface {
 // ErrSignatureMismatch is an error for unavailable hash.
 var ErrHashUnavailable = errors.New("sig: hash is unavailable")
 
-// ErrSignUnavailable ...
+// ErrSignUnavailable means sign method is not unavailable.
 var ErrSignUnavailable = errors.New("sig: sign method is unavailable")
 
 // ErrSignatureMismatch is signature mismatch error.
@@ -37,11 +37,11 @@ type invalidKey struct {
 
 // NewInvalidKey returns a new key that returns an error for all
 // Sign and Verify operations.
-func NewInvalidKey(algorithmName string, privateKey, publicKey any) Key {
+func NewInvalidKey(alg string, privateKey, publicKey any) Key {
 	t1 := reflect.TypeOf(privateKey)
 	t2 := reflect.TypeOf(publicKey)
 	return &invalidKey{
-		alg:            algorithmName,
+		alg:            alg,
 		privateKeyType: t1,
 		publicKeyType:  t2,
 	}

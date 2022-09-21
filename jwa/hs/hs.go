@@ -52,6 +52,7 @@ type Algorithm struct {
 var _ sig.Key = (*Key)(nil)
 
 type Key struct {
+	alg  *Algorithm
 	hash crypto.Hash
 	key  []byte
 }
@@ -63,6 +64,7 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 	}
 	return &Key{
+		alg:  alg,
 		hash: alg.hash,
 		key:  key,
 	}

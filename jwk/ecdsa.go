@@ -12,35 +12,55 @@ import (
 
 // RFC7518 6.2.2. Parameters for Elliptic Curve Private Keys
 func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
-	var privateKey ecdsa.PrivateKey
+	var curve elliptic.Curve
 	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
 	case jwa.P256:
-		privateKey.Curve = elliptic.P256()
+		curve = elliptic.P256()
 	case jwa.P384:
-		privateKey.Curve = elliptic.P384()
+		curve = elliptic.P384()
 	case jwa.P521:
-		privateKey.Curve = elliptic.P521()
+		curve = elliptic.P521()
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
 	}
 
 	// parameters for public key
-	privateKey.X = d.MustBigInt("x")
-	privateKey.Y = d.MustBigInt("y")
-	key.PublicKey = &privateKey.PublicKey
+	x := d.MustBigInt("x")
+	y := d.MustBigInt("y")
+	if err := d.Err(); err != nil {
+		return
+	}
+	pub := ecdsa.PublicKey{
+		Curve: curve,
+		X:     x,
+		Y:     y,
+	}
+	key.PublicKey = &pub
+	if !curve.IsOnCurve(x, y) {
+		d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s public key", crv))
+	}
 
 	// parameters for private key
-	if d, ok := d.GetBigInt("d"); ok {
-		privateKey.D = d
-		key.PrivateKey = &privateKey
+	if dd, ok := d.GetBigInt("d"); ok {
+		priv := ecdsa.PrivateKey{
+			PublicKey: pub,
+			D:         dd,
+		}
+		key.PrivateKey = &priv
+
+		// sanity check of private key
+		xx, yy := priv.ScalarBaseMult(dd.Bytes())
+		if xx.Cmp(x) != 0 || yy.Cmp(y) != 0 {
+			d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s private key", crv))
+		}
 	}
 
 	// sanity check of the certificate
 	if certs := key.X509CertificateChain; len(certs) > 0 {
 		cert := certs[0]
-		if !privateKey.PublicKey.Equal(cert.PublicKey) {
+		if !pub.Equal(cert.PublicKey) {
 			d.SaveError(errors.New("jwk: public keys are mismatch"))
 		}
 	}
