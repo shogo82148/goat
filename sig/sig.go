@@ -3,7 +3,6 @@ package sig
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 )
 
@@ -59,8 +58,13 @@ func (key *invalidKey) Verify(payload, signature []byte) error {
 
 // Error implements error.
 func (key *invalidKey) Error() string {
-	return fmt.Sprintf(
-		"sig: invalid key type for algorithm %s: %s, %s",
-		key.alg, key.privateKeyType.String(), key.publicKeyType.String(),
-	)
+	priv := "nil"
+	if key.privateKeyType != nil {
+		priv = key.privateKeyType.String()
+	}
+	pub := "nil"
+	if key.publicKeyType != nil {
+		pub = key.publicKeyType.String()
+	}
+	return "sig: invalid key type for algorithm " + key.alg + ": " + priv + ", " + pub
 }
