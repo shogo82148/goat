@@ -52,7 +52,6 @@ type Algorithm struct {
 var _ sig.Key = (*Key)(nil)
 
 type Key struct {
-	alg  *Algorithm
 	hash crypto.Hash
 	key  []byte
 }
@@ -60,11 +59,10 @@ type Key struct {
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
 func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 	key, ok := privateKey.([]byte)
-	if !ok {
+	if !ok || key == nil {
 		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 	}
 	return &Key{
-		alg:  alg,
 		hash: alg.hash,
 		key:  key,
 	}
