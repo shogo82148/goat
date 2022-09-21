@@ -409,7 +409,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 	})
 }
 
-func TestParseRSA_Invalid(t *testing.T) {
+func TestParseKey_RSA_Invalid(t *testing.T) {
 	keys := []struct {
 		name string
 		data string

@@ -1,7 +1,6 @@
 package jwk
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
@@ -74,58 +73,6 @@ func TestParseKey_RFC7517AppendixA(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC 7517 A.3. Example Symmetric Keys (A128KW)", func(t *testing.T) {
-		rawKey := `{"kty":"oct","alg":"A128KW","k":"GawgguFyGrWKav7AX4VKUg"}`
-		key, err := ParseKey([]byte(rawKey))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if key.KeyType != jwa.Oct {
-			t.Errorf("unexpected key type: want %s, got %s", "oct", key.KeyType)
-		}
-		if key.Algorithm != "A128KW" {
-			t.Errorf("unexpected algorithm: want %s, got %s", "A128KW", key.Algorithm)
-		}
-		got, ok := key.PrivateKey.([]byte)
-		if !ok {
-			t.Errorf("unexpected key type: want []byte, got %T", key.PublicKey)
-		}
-		want := []byte{
-			0x19, 0xac, 0x20, 0x82, 0xe1, 0x72, 0x1a, 0xb5,
-			0x8a, 0x6a, 0xfe, 0xc0, 0x5f, 0x85, 0x4a, 0x52,
-		}
-		if !bytes.Equal(want, got) {
-			t.Errorf("unexpected key value: want %x, got %x", want, got)
-		}
-	})
-
-	t.Run("RFC 7517 A.3. Example Symmetric Keys (HMAC)", func(t *testing.T) {
-		rawKey := `{"kty":"oct","k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow","kid":"HMAC key used in JWS spec Appendix A.1 example"}`
-		key, err := ParseKey([]byte(rawKey))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if key.KeyType != jwa.Oct {
-			t.Errorf("unexpected key type: want %s, got %s", "oct", key.KeyType)
-		}
-		got, ok := key.PrivateKey.([]byte)
-		if !ok {
-			t.Errorf("unexpected key type: want []byte, got %T", key.PublicKey)
-		}
-		want := []byte{
-			0x03, 0x23, 0x35, 0x4b, 0x2b, 0x0f, 0xa5, 0xbc,
-			0x83, 0x7e, 0x06, 0x65, 0x77, 0x7b, 0xa6, 0x8f,
-			0x5a, 0xb3, 0x28, 0xe6, 0xf0, 0x54, 0xc9, 0x28,
-			0xa9, 0x0f, 0x84, 0xb2, 0xd2, 0x50, 0x2e, 0xbf,
-			0xd3, 0xfb, 0x5a, 0x92, 0xd2, 0x06, 0x47, 0xef,
-			0x96, 0x8a, 0xb4, 0xc3, 0x77, 0x62, 0x3d, 0x22,
-			0x3d, 0x2e, 0x21, 0x72, 0x05, 0x2e, 0x4f, 0x08,
-			0xc0, 0xcd, 0x9a, 0xf5, 0x67, 0xd0, 0x80, 0xa3,
-		}
-		if !bytes.Equal(want, got) {
-			t.Errorf("unexpected key value: want %x, got %x", want, got)
-		}
-	})
 }
 
 func BenchmarkParseKey_RFC7517AppendixA(b *testing.B) {
@@ -151,24 +98,6 @@ func BenchmarkParseKey_RFC7517AppendixA(b *testing.B) {
 			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
 			`"use":"enc",` +
 			`"kid":"1"}`)
-		for i := 0; i < b.N; i++ {
-			if _, err := ParseKey(rawKey); err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-
-	b.Run("RFC 7517 A.3. Example Symmetric Keys (A128KW)", func(b *testing.B) {
-		rawKey := []byte(`{"kty":"oct","alg":"A128KW","k":"GawgguFyGrWKav7AX4VKUg"}`)
-		for i := 0; i < b.N; i++ {
-			if _, err := ParseKey(rawKey); err != nil {
-				b.Fatal(err)
-			}
-		}
-	})
-
-	b.Run("RFC 7517 A.3. Example Symmetric Keys (HMAC)", func(b *testing.B) {
-		rawKey := []byte(`{"kty":"oct","k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow","kid":"HMAC key used in JWS spec Appendix A.1 example"}`)
 		for i := 0; i < b.N; i++ {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
@@ -275,14 +204,6 @@ func TestKey_Base64Error(t *testing.T) {
 			`"d":"!!!INVALID BASE64!!!",` +
 			`"use":"enc",` +
 			`"kid":"1"}`
-		_, err := ParseKey([]byte(rawKey))
-		if err == nil {
-			t.Error("want not nil, got nil")
-		}
-	})
-
-	t.Run("Symmetric Keys (HMAC)", func(t *testing.T) {
-		rawKey := `{"kty":"oct","k":"!!!INVALID BASE64!!!"}`
 		_, err := ParseKey([]byte(rawKey))
 		if err == nil {
 			t.Error("want not nil, got nil")
