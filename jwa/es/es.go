@@ -70,17 +70,17 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 		hash: alg.hash,
 	}
 	if k, ok := privateKey.(*ecdsa.PrivateKey); ok {
-		if k.Curve != alg.crv {
+		if k == nil || k.Curve != alg.crv {
 			return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 		}
 		key.privateKey = k
 	} else if privateKey != nil {
-		if k.Curve != alg.crv {
-			return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
-		}
 		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 	}
 	if k, ok := publicKey.(*ecdsa.PublicKey); ok {
+		if k == nil || k.Curve != alg.crv {
+			return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+		}
 		key.publicKey = k
 	} else if publicKey != nil {
 		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
