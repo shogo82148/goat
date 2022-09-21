@@ -29,23 +29,32 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	// parameters for public key
 	x := d.MustBigInt("x")
 	y := d.MustBigInt("y")
+	if err := d.Err(); err != nil {
+		return
+	}
 	pub := ecdsa.PublicKey{
 		Curve: curve,
 		X:     x,
 		Y:     y,
 	}
 	key.PublicKey = &pub
-	if x != nil && y != nil && !curve.IsOnCurve(x, y) {
-		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
+	if !curve.IsOnCurve(x, y) {
+		d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s public key", crv))
 	}
 
 	// parameters for private key
-	if d, ok := d.GetBigInt("d"); ok {
+	if dd, ok := d.GetBigInt("d"); ok {
 		priv := ecdsa.PrivateKey{
 			PublicKey: pub,
-			D:         d,
+			D:         dd,
 		}
 		key.PrivateKey = &priv
+
+		// sanity check of private key
+		xx, yy := priv.ScalarBaseMult(dd.Bytes())
+		if xx.Cmp(x) != 0 || yy.Cmp(y) != 0 {
+			d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s private key", crv))
+		}
 	}
 
 	// sanity check of the certificate
