@@ -14,13 +14,18 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-func TestParse(t *testing.T) {
-	nowFunc = func() time.Time {
-		return time.Unix(1300819379, 0)
+func mockTime(f func() time.Time) func() {
+	g := nowFunc
+	nowFunc = f
+	return func() {
+		nowFunc = g
 	}
-	defer func() {
-		nowFunc = time.Now
-	}()
+}
+
+func TestParse(t *testing.T) {
+	defer mockTime(func() time.Time {
+		return time.Unix(1300819379, 0)
+	})()
 
 	t.Run("RFC7519 Section 3.1. Example JWT", func(t *testing.T) {
 		raw := []byte(
@@ -90,12 +95,9 @@ func TestParse(t *testing.T) {
 
 func TestParse_Claims(t *testing.T) {
 	var now time.Time
-	nowFunc = func() time.Time {
+	defer mockTime(func() time.Time {
 		return now
-	}
-	defer func() {
-		nowFunc = time.Now
-	}()
+	})()
 
 	algNone := jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
 		alg := jwa.None.New()
@@ -138,4 +140,50 @@ func TestParse_Claims(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+func TestSign(t *testing.T) {
+	defer mockTime(func() time.Time {
+		return time.Unix(1300819379, 0)
+	})()
+
+	t.Run("RFC7519 Section 3.1. Example JWT", func(t *testing.T) {
+		rawKey := `{"kty":"oct",` +
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sigKey := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
+
+		header := &jws.Header{
+			Algorithm: jwa.HS256,
+			Type:      "JWT",
+		}
+		claims := &Claims{
+			Issuer:         "joe",
+			ExpirationTime: time.Unix(1300819380, 0),
+			Raw: map[string]any{
+				"http://example.com/is_root": true,
+			},
+		}
+
+		got, err := Sign(header, claims, sigKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+			"." +
+			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
+			"cnVlLCJpc3MiOiJqb2UifQ" +
+			"." +
+			"tu77b1J0ZCHMDd3tWZm36iolxZtBRaArSrtayOBDO34"
+
+		if string(got) != want {
+			t.Errorf("unexpected payload: want %s, got %s", want, got)
+		}
+	})
 }
