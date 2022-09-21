@@ -1,5 +1,5 @@
-// package hs implements no signature algorithm.
-package hs
+// package none implements no signature algorithm.
+package none
 
 import (
 	"github.com/shogo82148/goat/jwa"
