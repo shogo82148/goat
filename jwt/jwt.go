@@ -9,6 +9,7 @@ import (
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jws"
+	"github.com/shogo82148/goat/sig"
 )
 
 var nowFunc = time.Now // for testing
@@ -101,4 +102,47 @@ func parseClaims(data []byte) (*Claims, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+func Sign(header *jws.Header, claims *Claims, key sig.Key) ([]byte, error) {
+	payload, err := encodeClaims(claims)
+	if err != nil {
+		return nil, err
+	}
+	return jws.Sign(header, payload, key)
+}
+
+func encodeClaims(c *Claims) ([]byte, error) {
+	raw := make(map[string]any, len(c.Raw))
+	for k, v := range c.Raw {
+		raw[k] = v
+	}
+	e := jsonutils.NewEncoder(raw)
+
+	if iss := c.Issuer; iss != "" {
+		e.Set("iss", iss)
+	}
+	if sub := c.Subject; sub != "" {
+		e.Set("sub", sub)
+	}
+	if aud := c.Audience; aud != "" {
+		e.Set("aud", aud)
+	}
+	if exp := c.ExpirationTime; !exp.IsZero() {
+		e.SetTime("exp", exp)
+	}
+	if nbf := c.NotBefore; !nbf.IsZero() {
+		e.SetTime("nbf", nbf)
+	}
+	if iat := c.IssuedAt; !iat.IsZero() {
+		e.SetTime("iat", iat)
+	}
+	if jti := c.JWTID; jti != "" {
+		e.Set("jti", jti)
+	}
+
+	if err := e.Err(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(e.Data())
 }

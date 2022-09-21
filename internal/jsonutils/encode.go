@@ -2,7 +2,9 @@ package jsonutils
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"math/big"
+	"time"
 )
 
 type Encoder struct {
@@ -48,6 +50,15 @@ func (e *Encoder) SetBytes(name string, data []byte) {
 
 func (e *Encoder) SetBigInt(name string, i *big.Int) {
 	e.raw[name] = e.Encode(i.Bytes())
+}
+
+func (e *Encoder) SetTime(name string, t time.Time) {
+	data, err := NumericDate{Time: t}.MarshalJSON()
+	if err != nil {
+		e.SaveError(err)
+		return
+	}
+	e.raw[name] = json.RawMessage(data)
 }
 
 func (e *Encoder) Encode(s []byte) string {
