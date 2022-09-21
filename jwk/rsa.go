@@ -38,8 +38,9 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		}
 
 		// precomputed values
+		crtValues := []rsa.CRTValue{}
 		if oth, ok := d.GetArray("oth"); ok {
-			crtValues := make([]rsa.CRTValue, 0, len(oth))
+			crtValues = make([]rsa.CRTValue, 0, len(oth))
 			for i, v := range oth {
 				u, ok := v.(map[string]any)
 				if !ok {
@@ -54,13 +55,13 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 					R:     r,
 				})
 			}
-			if d.Has("dp") && d.Has("dq") && d.Has("qi") {
-				privateKey.Precomputed = rsa.PrecomputedValues{
-					Dp:        d.MustBigInt("dp"),
-					Dq:        d.MustBigInt("dq"),
-					Qinv:      d.MustBigInt("qi"),
-					CRTValues: crtValues,
-				}
+		}
+		if d.Has("dp") && d.Has("dq") && d.Has("qi") {
+			privateKey.Precomputed = rsa.PrecomputedValues{
+				Dp:        d.MustBigInt("dp"),
+				Dq:        d.MustBigInt("dq"),
+				Qinv:      d.MustBigInt("qi"),
+				CRTValues: crtValues,
 			}
 		}
 		if err := d.Err(); err != nil {
