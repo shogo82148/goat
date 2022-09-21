@@ -186,4 +186,34 @@ func TestSign(t *testing.T) {
 			t.Errorf("unexpected payload: want %s, got %s", want, got)
 		}
 	})
+
+	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
+		sigKey := jwa.None.New().NewKey(nil, nil)
+		header := &jws.Header{
+			Algorithm: jwa.None,
+			Type:      "JWT",
+		}
+		claims := &Claims{
+			Issuer:         "joe",
+			ExpirationTime: time.Unix(1300819380, 0),
+			Raw: map[string]any{
+				"http://example.com/is_root": true,
+			},
+		}
+
+		got, err := Sign(header, claims, sigKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0" +
+			"." +
+			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
+			"cnVlLCJpc3MiOiJqb2UifQ" +
+			"."
+
+		if string(got) != want {
+			t.Errorf("unexpected payload: want %s, got %s", want, got)
+		}
+	})
 }
