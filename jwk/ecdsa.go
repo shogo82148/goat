@@ -5,7 +5,6 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -33,8 +32,6 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	if err := d.Err(); err != nil {
 		return
 	}
-	log.Printf("dec: y = %d", y)
-	log.Printf("dec: y = %x", y.Bytes())
 	pub := ecdsa.PublicKey{
 		Curve: curve,
 		X:     x,
