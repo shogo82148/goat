@@ -3,6 +3,7 @@ package es
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
 	"math/big"
 	"testing"
 
@@ -132,6 +133,39 @@ func TestSign_NilPublicKey(t *testing.T) {
 		}
 		if err := key.Verify(test.in, sig); err != nil {
 			t.Errorf("test %d: %v", i, err)
+		}
+	}
+}
+
+func Test_InvalidCurve(t *testing.T) {
+	invalidCases := []struct {
+		alg func() sig.Algorithm
+		crv elliptic.Curve
+	}{
+		{New256, elliptic.P384()},
+		{New256, elliptic.P521()},
+		{New384, elliptic.P256()},
+		{New384, elliptic.P521()},
+		{New512, elliptic.P256()},
+		{New512, elliptic.P384()},
+	}
+	for i, test := range invalidCases {
+		priv, err := ecdsa.GenerateKey(test.crv, rand.Reader)
+		if err != nil {
+			t.Errorf("test %d: %v", i, err)
+		}
+		alg := test.alg()
+
+		key1 := alg.NewKey(priv, nil)
+		_, err = key1.Sign([]byte("payload"))
+		if err == nil {
+			t.Errorf("test %d: want error, but not", i)
+		}
+
+		key2 := alg.NewKey(nil, priv.PublicKey)
+		err = key2.Verify([]byte("payload"), []byte{})
+		if err == nil {
+			t.Errorf("test %d: want error, but not", i)
 		}
 	}
 }
