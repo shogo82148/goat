@@ -24,7 +24,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		E: e,
 		N: n,
 	}
-	key.PrivateKey = &pub
+	key.PublicKey = &pub
 
 	// parameters for private key
 	if d.Has("d") {
