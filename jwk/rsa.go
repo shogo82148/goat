@@ -19,7 +19,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	if err := d.Err(); err != nil {
 		return
 	}
-	if !e.IsInt64() || e.Int64() > math.MaxInt {
+	if !e.IsInt64() || e.Int64() > math.MaxInt || e.Int64() <= 0 {
 		d.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", e))
 		return
 	}
@@ -108,7 +108,7 @@ func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
 	e.Set("kty", jwa.RSA.String())
 
-	if pub.E < 0 {
+	if pub.E <= 0 {
 		e.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", pub.E))
 		return
 	}
