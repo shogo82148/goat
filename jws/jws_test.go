@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/es"   // for ECDSA
-	_ "github.com/shogo82148/goat/jwa/hs"   // for HMAC SHA-256
-	_ "github.com/shogo82148/goat/jwa/none" // for none
-	_ "github.com/shogo82148/goat/jwa/rs"   // for RSASSA-PKCS1-v1_5 SHA-256
+	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
+	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
+	_ "github.com/shogo82148/goat/jwa/hs"    // for HMAC SHA-256
+	_ "github.com/shogo82148/goat/jwa/none"  // for none
+	_ "github.com/shogo82148/goat/jwa/rs"    // for RSASSA-PKCS1-v1_5 SHA-256
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/sig"
 )
@@ -228,6 +229,37 @@ func TestParse(t *testing.T) {
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
 		if !bytes.Equal(payload, msg.Payload) {
+			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
+		}
+	})
+
+	t.Run("RFC 8037 Appendix A.4 Ed25519 Validation", func(t *testing.T) {
+		rawKey := `{"kty":"OKP","crv":"Ed25519",` +
+			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw := "eyJhbGciOiJFZERTQSJ9" +
+			"." +
+			"RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc" +
+			"." +
+			"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
+			"9g7sVvpAr_MuM0KAg"
+		msg, err := Parse(context.TODO(), []byte(raw), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
+			alg := header.Algorithm.New()
+			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if want, got := msg.Header.Algorithm, jwa.EdDSA; want != got {
+			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
+		}
+
+		payload := "Example of Ed25519 signing"
+		if payload != string(msg.Payload) {
 			t.Errorf("unexpected payload: want %q, got %q", string(payload), string(msg.Payload))
 		}
 	})

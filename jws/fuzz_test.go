@@ -6,14 +6,15 @@ import (
 	"errors"
 	"testing"
 
-	_ "github.com/shogo82148/goat/jwa/es" // for ECDSA
-	_ "github.com/shogo82148/goat/jwa/hs" // for HMAC SHA-256
-	_ "github.com/shogo82148/goat/jwa/rs" // for RSASSA-PKCS1-v1_5 SHA-256
+	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
+	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
+	_ "github.com/shogo82148/goat/jwa/hs"    // for HMAC SHA-256
+	_ "github.com/shogo82148/goat/jwa/rs"    // for RSASSA-PKCS1-v1_5 SHA-256
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/sig"
 )
 
-func FuzzJWK(f *testing.F) {
+func FuzzJWS(f *testing.F) {
 	f.Add(
 		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"+
 			"."+
@@ -101,6 +102,17 @@ func FuzzJWK(f *testing.F) {
 			`"d":"AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPA`+
 			`xerEzgdRhajnu0ferB0d53vM9mE15j2C"`+
 			`}`,
+	)
+	f.Add(
+		"eyJhbGciOiJFZERTQSJ9"+
+			"."+
+			"RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc"+
+			"."+
+			"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt"+
+			"9g7sVvpAr_MuM0KAg",
+		`{"kty":"OKP","crv":"Ed25519",`+
+			`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",`+
+			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`,
 	)
 	f.Fuzz(func(t *testing.T, data, key string) {
 		k, err := jwk.ParseKey([]byte(key))

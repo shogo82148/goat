@@ -59,6 +59,10 @@ const (
 	// None is no digital signature or MAC performed.
 	// import github.com/shogo82148/goat/jwa/none
 	None SignatureAlgorithm = "none"
+
+	// EdDSA is Edwards-Curve Digital Signature Algorithm.
+	// import github.com/shogo82148/goat/jwa/eddsa
+	EdDSA SignatureAlgorithm = "EdDSA"
 )
 
 func (alg SignatureAlgorithm) String() string {
@@ -96,6 +100,7 @@ var signatureAlgorithms = map[SignatureAlgorithm]func() sig.Algorithm{
 	PS384: nil,
 	PS512: nil,
 	None:  nil,
+	EdDSA: nil,
 }
 
 func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) {
