@@ -30,6 +30,9 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		N: n,
 	}
 	key.PublicKey = &pub
+	if err := d.Err(); err != nil {
+		return
+	}
 
 	// parameters for private key
 	if d.Has("d") {
@@ -72,6 +75,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		if err := d.Err(); err != nil {
 			return
 		}
+
 		if err := priv.Validate(); err != nil {
 			d.SaveError(err)
 			return
