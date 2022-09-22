@@ -16,6 +16,9 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 
 	// parameters for public key
 	e := d.MustBigInt("e")
+	if err := d.Err(); err != nil {
+		return
+	}
 	if !e.IsInt64() || e.Int64() > math.MaxInt {
 		d.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", e))
 		return
@@ -106,10 +109,10 @@ func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey
 		return
 	}
 	var buf [8]byte
-	i := 7
+	i := 8
 	for v := pub.E; v != 0; v >>= 8 {
-		buf[i] = byte(v % 0x100)
 		i--
+		buf[i] = byte(v % 0x100)
 	}
 	e.SetBytes("e", buf[i:])
 	e.SetBigInt("n", pub.N)
