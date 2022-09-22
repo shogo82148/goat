@@ -33,7 +33,7 @@ func New384() sig.Algorithm {
 }
 
 var es512 = &Algorithm{
-	alg:  jwa.ES256,
+	alg:  jwa.ES512,
 	hash: crypto.SHA512,
 	crv:  elliptic.P521(),
 }
