@@ -252,9 +252,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	// remove optional parameters
 	thumbKey := &Key{
-		KeyType:    key.KeyType,
-		PrivateKey: key.PrivateKey,
-		PublicKey:  key.PublicKey,
+		KeyType:   key.KeyType,
+		PublicKey: key.PublicKey,
 	}
 	data, err := thumbKey.MarshalJSON()
 	if err != nil {
