@@ -21,33 +21,43 @@ const (
 	HS512 SignatureAlgorithm = "HS512"
 
 	// RS256 is RSASSA-PKCS1-v1_5 using SHA-256.
+	// import github.com/shogo82148/goat/jwa/rs
 	RS256 SignatureAlgorithm = "RS256"
 
 	// RS384 is RSASSA-PKCS1-v1_5 using SHA-384.
+	// import github.com/shogo82148/goat/jwa/rs
 	RS384 SignatureAlgorithm = "RS384"
 
 	// RS512 is RSASSA-PKCS1-v1_5 using SHA-512.
+	// import github.com/shogo82148/goat/jwa/rs
 	RS512 SignatureAlgorithm = "RS512"
 
 	// ES256 is ECDSA using P-256 and SHA-256.
+	// import github.com/shogo82148/goat/jwa/es
 	ES256 SignatureAlgorithm = "ES256"
 
 	// ES384 is ECDSA using P-384 and SHA-384.
+	// import github.com/shogo82148/goat/jwa/es
 	ES384 SignatureAlgorithm = "ES384"
 
 	// ES512 is ECDSA using P-521 and SHA-512.
+	// import github.com/shogo82148/goat/jwa/es
 	ES512 SignatureAlgorithm = "ES512"
 
 	// PS256 is RSASSA-PSS using SHA-256 and MGF1 with SHA-256.
+	// import github.com/shogo82148/goat/jwa/ps
 	PS256 SignatureAlgorithm = "PS256"
 
 	// PS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
+	// import github.com/shogo82148/goat/jwa/ps
 	PS384 SignatureAlgorithm = "PS384"
 
 	// PS512 is RSASSA-PSS using SHA-512 and MGF1 with SHA-512.
+	// import github.com/shogo82148/goat/jwa/ps
 	PS512 SignatureAlgorithm = "PS512"
 
 	// None is no digital signature or MAC performed.
+	// import github.com/shogo82148/goat/jwa/none
 	None SignatureAlgorithm = "none"
 )
 

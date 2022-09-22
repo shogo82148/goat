@@ -1,4 +1,5 @@
-package rs
+// Package ps implements RSASSA-PSS Digital Signature.
+package ps
 
 import (
 	"crypto"
@@ -9,37 +10,37 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-var rs256 = &Algorithm{
-	alg:  jwa.RS256,
+var ps256 = &Algorithm{
+	alg:  jwa.PS256,
 	hash: crypto.SHA256,
 }
 
 func New256() sig.Algorithm {
-	return rs256
+	return ps256
 }
 
-var rs384 = &Algorithm{
-	alg:  jwa.RS384,
+var ps384 = &Algorithm{
+	alg:  jwa.PS384,
 	hash: crypto.SHA384,
 }
 
 func New384() sig.Algorithm {
-	return rs384
+	return ps384
 }
 
-var rs512 = &Algorithm{
-	alg:  jwa.RS512,
+var ps512 = &Algorithm{
+	alg:  jwa.PS512,
 	hash: crypto.SHA512,
 }
 
 func New512() sig.Algorithm {
-	return rs512
+	return ps512
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.RS256, New256)
-	jwa.RegisterSignatureAlgorithm(jwa.RS384, New384)
-	jwa.RegisterSignatureAlgorithm(jwa.RS512, New512)
+	jwa.RegisterSignatureAlgorithm(jwa.PS256, New256)
+	jwa.RegisterSignatureAlgorithm(jwa.PS384, New384)
+	jwa.RegisterSignatureAlgorithm(jwa.PS512, New512)
 }
 
 var _ sig.Algorithm = (*Algorithm)(nil)
@@ -90,7 +91,7 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 	if _, err := hash.Write(payload); err != nil {
 		return nil, err
 	}
-	return rsa.SignPKCS1v15(rand.Reader, key.privateKey, key.hash, hash.Sum(nil))
+	return rsa.SignPSS(rand.Reader, key.privateKey, key.hash, hash.Sum(nil), nil)
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
@@ -102,5 +103,5 @@ func (key *Key) Verify(payload, signature []byte) error {
 	if _, err := hash.Write(payload); err != nil {
 		return err
 	}
-	return rsa.VerifyPKCS1v15(key.publicKey, key.hash, hash.Sum(nil), signature)
+	return rsa.VerifyPSS(key.publicKey, key.hash, hash.Sum(nil), signature, nil)
 }
