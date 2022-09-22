@@ -68,3 +68,25 @@ func (key *invalidKey) Error() string {
 	}
 	return "sig: invalid key type for algorithm " + key.alg + ": " + priv + ", " + pub
 }
+
+type errKey struct {
+	err error
+}
+
+// NewInvalidKey returns a new key that returns an error for all
+// Sign and Verify operations.
+func NewErrorKey(err error) Key {
+	return &errKey{
+		err: err,
+	}
+}
+
+// Sign implements Key.
+func (key *errKey) Sign(payload []byte) (signature []byte, err error) {
+	return nil, key.err
+}
+
+// Verify implements Key.
+func (key *errKey) Verify(payload, signature []byte) error {
+	return key.err
+}

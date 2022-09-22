@@ -4,6 +4,7 @@ package hs
 import (
 	"crypto"
 	"crypto/hmac"
+	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/sig"
@@ -47,6 +48,7 @@ var _ sig.Algorithm = (*Algorithm)(nil)
 type Algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
+	weak bool
 }
 
 var _ sig.Key = (*Key)(nil)
@@ -61,6 +63,14 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 	key, ok := privateKey.([]byte)
 	if !ok || key == nil {
 		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	}
+	if publicKey != nil {
+		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	}
+	if !alg.weak {
+		if len(key) < alg.hash.Size() {
+			return sig.NewErrorKey(fmt.Errorf("hs: weak key size: %d", len(key)))
+		}
 	}
 	return &Key{
 		hash: alg.hash,

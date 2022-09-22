@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/sig"
@@ -47,6 +48,7 @@ var _ sig.Algorithm = (*Algorithm)(nil)
 type Algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
+	weak bool
 }
 
 var _ sig.Key = (*Key)(nil)
@@ -74,6 +76,14 @@ func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
 	}
 	if key.privateKey != nil && key.publicKey == nil {
 		key.publicKey = &key.privateKey.PublicKey
+	}
+	if key.publicKey == nil {
+		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	}
+	if !alg.weak {
+		if size := key.publicKey.N.BitLen(); size < 2048 {
+			return sig.NewErrorKey(fmt.Errorf("rs: weak key bit length: %d", size))
+		}
 	}
 	return key
 }
