@@ -8,6 +8,9 @@ import (
 
 var none = &Algorithm{}
 
+// New returns a new signature algorithm that does nothing.
+//
+// Deprecated: Never use none algorithm.
 func New() sig.Algorithm {
 	return none
 }

@@ -15,6 +15,10 @@ var rs256 = &Algorithm{
 	hash: crypto.SHA256,
 }
 
+// New256 returns RS256 signature algorithm.
+//
+// New256 doesn't accept weak keys less than 2048 bit.
+// If you want to use weak keys, use New256Weak instead.
 func New256() sig.Algorithm {
 	return rs256
 }
@@ -24,6 +28,10 @@ var rs384 = &Algorithm{
 	hash: crypto.SHA384,
 }
 
+// New384 returns RS384 signature algorithm.
+//
+// New384 doesn't accept weak keys less than 2048 bit.
+// If you want to use weak keys, use New384Weak instead.
 func New384() sig.Algorithm {
 	return rs384
 }
@@ -33,8 +41,51 @@ var rs512 = &Algorithm{
 	hash: crypto.SHA512,
 }
 
+// New512 returns RS512 signature algorithm.
+//
+// New512 doesn't accept weak keys less than 2048 bit.
+// If you want to use weak keys, use New512Weak instead.
 func New512() sig.Algorithm {
 	return rs512
+}
+
+var rs256w = &Algorithm{
+	alg:  jwa.RS256,
+	hash: crypto.SHA256,
+	weak: true,
+}
+
+// New256Weak is same as New256, but it accepts the weak keys.
+//
+// Deprecated: Use New256 instead.
+func New256Weak() sig.Algorithm {
+	return rs256w
+}
+
+var rs384w = &Algorithm{
+	alg:  jwa.RS384,
+	hash: crypto.SHA384,
+	weak: true,
+}
+
+// New384Weak is same as New384, but it accepts the weak keys.
+//
+// Deprecated: Use New384 instead.
+func New384Weak() sig.Algorithm {
+	return rs384w
+}
+
+var rs512w = &Algorithm{
+	alg:  jwa.RS512,
+	hash: crypto.SHA512,
+	weak: true,
+}
+
+// New512Weak is same as New512, but it accepts the weak keys.
+//
+// Deprecated: Use New512 instead.
+func New512Weak() sig.Algorithm {
+	return rs512w
 }
 
 func init() {
@@ -45,6 +96,11 @@ func init() {
 
 var _ sig.Algorithm = (*Algorithm)(nil)
 
+// Algorithm is RSASSA-PKCS1-v1_5.
+//
+// By default, using weak keys less 2048 bits fails.
+// If you want to use weak keys, use New256Weak, New384Weak, and New512Weak instead of
+// New256, New384, and New512.
 type Algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
