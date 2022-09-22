@@ -10,12 +10,12 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
 	"reflect"
-	"strconv"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -83,7 +83,10 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	if x5c, ok := d.GetStringArray("x5c"); ok {
 		var certs []*x509.Certificate
 		for i, s := range x5c {
-			der := d.DecodeStd(s, "x5c["+strconv.Itoa(i)+"]")
+			der, err := base64.StdEncoding.DecodeString(s)
+			if err != nil {
+				d.SaveError(fmt.Errorf("jwk: failed to parse the parameter x5c[%d]: %w", i, err))
+			}
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
 				d.SaveError(fmt.Errorf("jwk: failed to parse certificate: %w", err))

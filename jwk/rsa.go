@@ -4,6 +4,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -14,17 +15,24 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	var privateKey rsa.PrivateKey
 
 	// parameters for public key
-	var e int
-	for _, v := range d.MustBytes("e") {
-		e = (e << 8) | int(v)
+	e := d.MustBigInt("e")
+	if err := d.Err(); err != nil {
+		return
 	}
-	privateKey.PublicKey.E = e
+	if !e.IsInt64() || e.Int64() > math.MaxInt || e.Int64() <= 0 {
+		d.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", e))
+		return
+	}
+	privateKey.PublicKey.E = int(e.Int64())
 	n := d.MustBigInt("n")
 	pub := rsa.PublicKey{
-		E: e,
+		E: int(e.Int64()),
 		N: n,
 	}
 	key.PublicKey = &pub
+	if err := d.Err(); err != nil {
+		return
+	}
 
 	// parameters for private key
 	if d.Has("d") {
@@ -67,6 +75,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		if err := d.Err(); err != nil {
 			return
 		}
+
 		if err := priv.Validate(); err != nil {
 			d.SaveError(err)
 			return
@@ -99,6 +108,10 @@ func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
 	e.Set("kty", jwa.RSA.String())
 
+	if pub.E <= 0 {
+		e.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", pub.E))
+		return
+	}
 	var buf [8]byte
 	i := 8
 	for v := pub.E; v != 0; v >>= 8 {
