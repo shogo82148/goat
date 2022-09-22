@@ -275,7 +275,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PrivateKey)
+		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
 		h := &Header{Algorithm: jwa.HS256, Type: "JWT"}
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +

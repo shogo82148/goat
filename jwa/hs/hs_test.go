@@ -2,6 +2,7 @@ package hs
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/hex"
@@ -19,7 +20,7 @@ var tests = []struct {
 }{
 	// Tests from RFC 4231
 	{
-		New256,
+		New256Weak,
 		[]byte{
 			0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
 			0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
@@ -29,13 +30,13 @@ var tests = []struct {
 		"b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7",
 	},
 	{
-		New256,
+		New256Weak,
 		[]byte("Jefe"),
 		[]byte("what do ya want for nothing?"),
 		"5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
 	},
 	{
-		New256,
+		New256Weak,
 		[]byte{
 			0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
 			0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
@@ -53,7 +54,7 @@ var tests = []struct {
 		"773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe",
 	},
 	{
-		New256,
+		New256Weak,
 		[]byte{
 			0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
 			0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10,
@@ -271,19 +272,19 @@ var tests = []struct {
 
 	// HMAC without key is dumb but should probably not fail.
 	{
-		New256,
+		New256Weak,
 		[]byte{},
 		[]byte("message"),
 		"eb08c1f56d5ddee07f7bdf80468083da06b64cf4fac64fe3a90883df5feacae4",
 	},
 	{
-		New384,
+		New384Weak,
 		[]byte{},
 		[]byte("message"),
 		"a1302a8028a419bb834bfae53c5e98ab48e07aed9ef8b980a821df28685902003746ade315072edd8ce009a1d23705ec",
 	},
 	{
-		New512,
+		New512Weak,
 		[]byte{},
 		[]byte("message"),
 		"08fce52f6395d59c2a3fb8abb281d74ad6f112b9a9c787bcea290d94dadbc82b2ca3e5e12bf2277c7fedbb0154d5493e41bb7459f63c8e39554ea3651b812492",
@@ -373,5 +374,23 @@ func TestVerify_Mismatch(t *testing.T) {
 			t.Errorf("test %d: want sig.ErrSignatureMismatch, got %v", i, err)
 			continue
 		}
+	}
+}
+
+func TestWeakKeys(t *testing.T) {
+	priv := make([]byte, 31)
+	_, err := rand.Read(priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key := New256().NewKey(priv, nil)
+	if _, err := key.Sign([]byte("payload")); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	key = New256Weak().NewKey(priv, nil)
+	if _, err := key.Sign([]byte("payload")); err != nil {
+		t.Error(err)
 	}
 }
