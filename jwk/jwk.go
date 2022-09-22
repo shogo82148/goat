@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash"
 	"net/url"
 	"reflect"
 
@@ -243,6 +244,25 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(e.Data())
+}
+
+// Thumbprint computes the thumbprint of the key defined in [RFC 7638].
+//
+// [RFC 7638]: https://www.rfc-editor.org/rfc/rfc7638
+func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
+	// remove optional parameters
+	thumbKey := &Key{
+		KeyType:   key.KeyType,
+		PublicKey: key.PublicKey,
+	}
+	data, err := thumbKey.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := h.Write(data); err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
 }
 
 // ParseMap parses a JWK that is decoded by the json package.
