@@ -2,6 +2,7 @@ package hs
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	_ "crypto/sha256"
 	_ "crypto/sha512"
 	"encoding/hex"
@@ -373,5 +374,23 @@ func TestVerify_Mismatch(t *testing.T) {
 			t.Errorf("test %d: want sig.ErrSignatureMismatch, got %v", i, err)
 			continue
 		}
+	}
+}
+
+func TestWeakKeys(t *testing.T) {
+	priv := make([]byte, 31)
+	_, err := rand.Read(priv)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key := New256().NewKey(priv, nil)
+	if _, err := key.Sign([]byte("payload")); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	key = New256Weak().NewKey(priv, nil)
+	if _, err := key.Sign([]byte("payload")); err != nil {
+		t.Error(err)
 	}
 }

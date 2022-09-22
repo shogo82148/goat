@@ -1,6 +1,7 @@
 package ps
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
 	"testing"
@@ -119,5 +120,22 @@ func TestSignAndVerify(t *testing.T) {
 			t.Errorf("test %d: %v", i, err)
 			continue
 		}
+	}
+}
+
+func TestWeakKeys(t *testing.T) {
+	rsakey, err := rsa.GenerateKey(rand.Reader, 2047)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key := New256().NewKey(rsakey, rsakey.Public())
+	if _, err := key.Sign([]byte("payload")); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	key = New256Weak().NewKey(rsakey, rsakey.Public())
+	if _, err := key.Sign([]byte("payload")); err != nil {
+		t.Error(err)
 	}
 }
