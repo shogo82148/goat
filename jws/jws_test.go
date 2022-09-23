@@ -35,7 +35,7 @@ func TestParse(t *testing.T) {
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
 			alg := header.Algorithm.New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -106,7 +106,7 @@ func TestParse(t *testing.T) {
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
 			alg := header.Algorithm.New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -146,7 +146,7 @@ func TestParse(t *testing.T) {
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
 			alg := header.Algorithm.New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -189,7 +189,7 @@ func TestParse(t *testing.T) {
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
 			alg := header.Algorithm.New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -248,7 +248,7 @@ func TestParse(t *testing.T) {
 			"9g7sVvpAr_MuM0KAg"
 		msg, err := Parse(context.TODO(), []byte(raw), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
 			alg := header.Algorithm.New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
