@@ -1,0 +1,88 @@
+{
+  "keys": [
+    {
+      "kty": "RSA",
+      "alg": "RS256",
+      "use": "sig",
+      "kid": "16e6c7334cf754186f877ff1f4a0bc128e1c97ca",
+      "n": "ALk6-zOoZqVpGNvuEcJWBzDsPdwGwxl8M-c2acIMFkqPPdP9IJt0W3KUd5fHdyl1v_pO05kzQPGkKfgTrAL6X0dD2_48xzkkLN2ieiemc-DcfN971XX5Z0ITprPM1BiofYx_h_pJMiydHLQSJ485oyt0ZHPGysHa8w00x7D1OtqMToxfiwFsxcCyBlcPMOs7aijVWz7NGZxpgTb8OJZmOzVF0oVIhjek0oqXIQzQRlivBLhU4yYPnGdQ1g0Lcj5lkry5sZrNVijqn2E3yHDgiBSk-mKhLhCNwj3pQ4EfP42Kv_o-Gg-l2FRqQ1M0DJMcZiYv_vCteJY-HLpClS-BeF8",
+      "e": "AQAB"
+    },
+    {
+      "kty": "RSA",
+      "alg": "RS256",
+      "e": "AQAB",
+      "use": "sig",
+      "kid": "53ef2b2d6d6f79b1a15aa95fd2f083307ca01809",
+      "n": "nO5SrT_qxJod_CnTSfDcT1JQdKSScsHkGcgs5vLgi19-kSgG8ZYyK6Tw1hG_kdKLuNOCKtXB6H9vhBRAoPqDZGBfmLKcYB2aTGQvOHhQRJwCI5I3slaZR04WARuChxMCJfD8u3xSJpfQbJZTBA-6eSeGUHBYMHAn0sj8oVWtd16kuwvkN3rz8wu4qPgTf5Vi7pGJIahFTtnmyvQVg0XAxkY3yRgKS4sMV40vyCUc0Ezur44-wH6SPZbCu56RrVlbyr1vdrt5VJQsVptk6YuxZlU3quCtlnz7c6JBqbjiMQioR27BtRCMTnE4ipbBY6q7BskSYhzkOXCaCWRVbQE3Ew"
+    },
+    {
+      "kty": "RSA",
+      "alg": "RS256",
+      "e": "AQAB",
+      "use": "sig",
+      "kid": "a92c6f340d0f4d399f9100a20c44cb09",
+      "n": "AK2OWIupaofmLLf42BnpD1rghI_PdkY3hGO3bMV7bNI13O8Ev7HmPO_0IQj9fgSxPcv8zWhGITftJnedkTulwX-hiwnqFgDYENcXbWB-CWzGjo7EaTnbs5JFZTOR0maRgGvGIqpZuidhgdX9Eby1FUl5Je-cvybOku6iuM90-i4Rr_ncIIRu53c0XCvVBWaR8gol-XbZmqV2RdBENu76TCVsOjnp5IjQIWzByMLcdWV7KdNIszXfpTuXw56Cee2tEXNkqELD1kD2ku_vv4ZabNPOUL-1kv5CI2tAMvRbww2stZxpxMmYashulxZK03L8l8Zifgep0Gd4az0T574E3YU"
+    },
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "PhZg_0E9fCp41a11ytXqoU0_kwTVC_iDBnVjis5EYXc",
+      "y": "7CknEyKupLJ6jkOI9GbSkY-EAkZh0G2kIxC0e2hycTM",
+      "kid": "f16b4522a7c8ad2358df9a57a500851114d2e7d2",
+      "acr": [
+        "idp",
+        "server",
+        "native",
+        "user"
+      ]
+    },
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "07voMi4E6pFjgZkyLLQJSzn6SqVV3gLv09UPJtlSEdY",
+      "y": "zIQoRJSGngYG7PPQCj8icKMV8gTRbb5efWvunK4z3cY",
+      "kid": "e19642fc69a641c9aef49f6064fc591f",
+      "acr": [
+        "idp",
+        "server",
+        "native",
+        "user"
+      ]
+    },
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "g9JCShMJJ2ZJ44-xDqizdxZd-djtmb_HTnI6ckkxo0w",
+      "y": "L3BLOdn_DUveu6N0Vi9M7rofoBfRPQ5UOcA4DCEaiBA",
+      "kid": "3cec3e5e7f129111f1aa509f7cb69d6daf816c6c",
+      "acr": [
+        "client"
+      ]
+    },
+    {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "bb2yUnMwN9P4QULXTmJ5QY55hoNPtqS4N3pn8Y108Mg",
+      "y": "KX0Uk-VmGULzCqeWBDP9hHmTS1x8_qvVXRwcMGYjYUU",
+      "kid": "caaca9c825e94fb184d095c789f165a3",
+      "acr": [
+        "client"
+      ]
+    },
+    {
+      "kty": "OKP",
+      "crv": "X25519",
+      "x": "IA0SO6bFK5u0O1ij3b0yXbAMEqJkaSZiDu6qxoEOnHY=",
+      "kid": "753778214125442a472d4b6150645367"
+    },
+    {
+      "kty": "RSA",
+      "alg": "PS256",
+      "use": "sig",
+      "kid": "10aba280c5c211ec9d640242ac120002",
+      "n": "AJVShCNXgM2bJzRTa9qMnv-34-k78pG7PdLsniaf6M8sH3SCRXcYvrsgLy6EHCcdEyRiG4_-U2pNY_tva64P03YoL85dsS59u4edUeEEQmwZL7r8qSQBfO14VnBfsKARpqFSn9cC_3wF2RS0z79fFrf9zxaXUEGt_LIgBlot1yMwBXXVZ7t4kD33G8DqP-3On287uWVXysoF9ZYrzuJ2thE19PhM3j0ovhyC32tR6TQh2Uo8QIYEykF4T00fiMYuyfavPlk-dwoAyWdrUY97-B_43nF_KolEA9gatipiBTSvdIKnA6M0--L_AbGhwP0RKlUXe3fm9sJde27xrWlGU_k",
+      "e": "AQAB"
+    }
+  ]
+}
