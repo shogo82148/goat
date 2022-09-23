@@ -265,6 +265,11 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+// KeyPair returns a pair of private key and public key.
+func (key *Key) KeyPair() (privateKey, publicKey any) {
+	return key.PrivateKey, key.PublicKey
+}
+
 // ParseMap parses a JWK that is decoded by the json package.
 func ParseMap(raw map[string]any) (*Key, error) {
 	d := jsonutils.NewDecoder("jwk", raw)

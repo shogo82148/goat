@@ -125,7 +125,7 @@ func FuzzJWS(f *testing.F) {
 			if !alg.Available() {
 				return nil, errors.New("unknown algorithm")
 			}
-			sigKey = alg.New().NewKey(k.PrivateKey, k.PublicKey)
+			sigKey = alg.New().NewKey(k.KeyPair())
 			return sigKey, nil
 		}))
 		if err != nil {
