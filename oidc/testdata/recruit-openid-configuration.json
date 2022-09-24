@@ -1,0 +1,66 @@
+{
+  "issuer": "https://point.recruit.co.jp/",
+  "authorization_endpoint": "https://point.recruit.co.jp/member/OIDCLogin/",
+  "token_endpoint": "https://gate.point.recruit.co.jp/api/gate/oidc/OIDCAccessTokenReq/",
+  "userinfo_endpoint": "https://gate.point.recruit.co.jp/api/gate/oidc/OIDCMemInfoGet/",
+  "jwks_uri": "https://point.recruit.co.jp/oidc/certs",
+  "scopes_supported": [
+    "openid",
+    "profile",
+    "email",
+    "address"
+  ],
+  "response_types_supported": [
+    "code"
+  ],
+  "grant_types_supported": [
+    "authorization_code"
+  ],
+  "acr_values_supported": [
+    "urn:recruit:acr:stdauth"
+  ],
+  "subject_types_supported": [
+    "public"
+  ],
+  "id_token_signing_alg_values_supported": [
+    "RS256"
+  ],
+  "token_endpoint_auth_methods_supported": [
+    "client_secret_post",
+    "client_secret_basic"
+  ],
+  "claims_supported": [
+    "sub",
+    "name",
+    "given_name",
+    "given_name#ja-Hani-JP",
+    "given_name#ja-Kana-JP",
+    "family_name",
+    "family_name#ja-Hani-JP",
+    "family_name#ja-Kana-JP",
+    "nickname",
+    "locale",
+    "gender",
+    "birthdate",
+    "updated_at",
+    "email",
+    "email_verified",
+    "address",
+    "postal_code",
+    "region",
+    "formatted",
+    "iss",
+    "aud",
+    "iat",
+    "exp"
+  ],
+  "claims_locales_supported": [
+    "ja-JP"
+  ],
+  "ui_locales_supported": [
+    "ja-JP"
+  ],
+  "code_challenge_methods_supported": [
+    "S256"
+  ]
+}
