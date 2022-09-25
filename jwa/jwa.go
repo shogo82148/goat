@@ -180,9 +180,32 @@ func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
 // types of algorithms in its `alg` field.
 type KeyAlgorithm string
 
-// ContentEncryptionAlgorithm an algorithm for content encryption
+// EncryptionAlgorithm an algorithm for content encryption
 // defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.
-type ContentEncryptionAlgorithm string
+type EncryptionAlgorithm string
+
+const (
+	// A128CBC_HS256 is AES_128_CBC_HMAC_SHA_256 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.3.
+	A128CBC_HS256 EncryptionAlgorithm = "A128CBC-HS256"
+
+	// A192CBC_HS384 is AES_192_CBC_HMAC_SHA_384 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.4.
+	A192CBC_HS384 EncryptionAlgorithm = "A192CBC-HS384"
+
+	// A256CBC_HS512 is AES_256_CBC_HMAC_SHA_512 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.5.
+	A256CBC_HS512 EncryptionAlgorithm = "A256CBC-HS512"
+
+	// A128GCM is AES GCM using 128-bit key.
+	A128GCM EncryptionAlgorithm = "A128GCM"
+
+	// A192GCM is AES GCM using 192-bit key.
+	A192GCM EncryptionAlgorithm = "A192GCM"
+
+	// A256GCM is AES GCM using 256-bit key.
+	A256GCM EncryptionAlgorithm = "A256GCM"
+)
 
 // KeyType is a key type defined in the IANA "JSON Web Key Types".
 type KeyType string
