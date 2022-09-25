@@ -11,6 +11,6 @@ type Algorithm interface {
 
 // Key is a content encryption key.
 type Key interface {
-	Decrypt(rand io.Reader, ciphertext []byte) (plaintext []byte, err error)
-	Encrypt(rand io.Reader, plaintext []byte) (ciphertext []byte, err error)
+	Decrypt(rand io.Reader, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error)
+	Encrypt(rand io.Reader, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error)
 }

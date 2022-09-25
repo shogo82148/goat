@@ -4,6 +4,7 @@ Go Authentication Toolkit
 ## References
 
 - [RFC7515 JSON Web Signature (JWS)](https://www.rfc-editor.org/rfc/rfc7515)
+- [RFC7516 JSON Web Encryption (JWE)](https://www.rfc-editor.org/rfc/rfc7516)
 - [RFC7517 JSON Web Key (JWK)](https://www.rfc-editor.org/rfc/rfc7517)
 - [RFC7518 JSON Web Algorithms (JWA)](https://www.rfc-editor.org/rfc/rfc7518)
 - [RFC7519 JSON Web Token (JWT)](https://www.rfc-editor.org/rfc/rfc7519)

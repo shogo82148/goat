@@ -3,8 +3,7 @@ package jwe
 import (
 	"bytes"
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwa/acbc"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -112,7 +112,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	header := data[:idx1]
 	encryptedKey := data[idx1+1 : idx2]
 	initVector := data[idx2+1 : idx3]
-	cipherText := data[idx3+1 : idx4]
+	ciphertext := data[idx3+1 : idx4]
 	authTag := data[idx4+1:]
 
 	// parse the header
@@ -146,21 +146,19 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 		return nil, err
 	}
 
-	block, err := aes.NewCipher(cek[16:])
+	key := acbc.New128CBC_HS256().NewCEK(cek)
+	rawCiphertext, err := b64Decode(ciphertext)
 	if err != nil {
 		return nil, err
 	}
-	mode := cipher.NewCBCDecrypter(block, iv)
-
-	plaintext, err := b64Decode(cipherText)
+	rawAuthTag, err := b64Decode(authTag)
 	if err != nil {
 		return nil, err
 	}
-	for i := 0; i+16 <= len(plaintext); i += 16 {
-		mode.CryptBlocks(plaintext[i:i+16], plaintext[i:i+16])
+	plaintext, err := key.Decrypt(rand.Reader, iv, header, rawCiphertext, rawAuthTag)
+	if err != nil {
+		return nil, err
 	}
-
-	_ = authTag
 
 	return &Message{
 		Header:    h,

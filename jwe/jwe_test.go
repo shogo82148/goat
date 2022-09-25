@@ -2,7 +2,6 @@ package jwe
 
 import (
 	"context"
-	"log"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa/rsa"
@@ -63,5 +62,9 @@ func TestParse(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	log.Println(string(got.Plaintext))
+
+	want := "Live long and prosper."
+	if string(got.Plaintext) != want {
+		t.Errorf("want %s, got %s", want, got.Plaintext)
+	}
 }
