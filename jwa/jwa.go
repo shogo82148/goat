@@ -175,6 +175,10 @@ func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
 	return KeyAlgorithm(alg)
 }
 
+func (alg KeyManagementAlgorithm) String() string {
+	return string(alg)
+}
+
 // KeyAlgorithm may be either SignatureAlgorithm or KeyManagementAlgorithm.
 // It is a workaround for jwk.Key being able to contain different
 // types of algorithms in its `alg` field.

@@ -146,7 +146,6 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 		return nil, err
 	}
 
-	key := acbc.New128CBC_HS256().NewCEK(cek)
 	rawCiphertext, err := b64Decode(ciphertext)
 	if err != nil {
 		return nil, err
@@ -155,7 +154,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if err != nil {
 		return nil, err
 	}
-	plaintext, err := key.Decrypt(rand.Reader, iv, header, rawCiphertext, rawAuthTag)
+	plaintext, err := acbc.New128CBC_HS256().Decrypt(rand.Reader, cek, iv, header, rawCiphertext, rawAuthTag)
 	if err != nil {
 		return nil, err
 	}
@@ -258,4 +257,115 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		return nil, err
 	}
 	return h, nil
+}
+
+func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
+	rawHeader, err := encodeHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	encodedHeader := b64Encode(rawHeader)
+	cek, iv, payload, authTag, err := acbc.New128CBC_HS256().Encrypt(rand.Reader, encodedHeader, plaintext)
+	if err != nil {
+		return nil, err
+	}
+	encryptedKey, err := keyWrapper.WrapKey(cek)
+	if err != nil {
+		return nil, err
+	}
+	ciphertext = encodedHeader
+	ciphertext = append(ciphertext, '.')
+	ciphertext = append(ciphertext, b64Encode(encryptedKey)...)
+	ciphertext = append(ciphertext, '.')
+	ciphertext = append(ciphertext, b64Encode(iv)...)
+	ciphertext = append(ciphertext, '.')
+	ciphertext = append(ciphertext, b64Encode(payload)...)
+	ciphertext = append(ciphertext, '.')
+	ciphertext = append(ciphertext, b64Encode(authTag)...)
+	return ciphertext, nil
+}
+
+func b64Encode(src []byte) []byte {
+	dst := make([]byte, b64.EncodedLen(len(src)))
+	b64.Encode(dst, src)
+	return dst
+}
+
+func encodeHeader(h *Header) ([]byte, error) {
+	raw := make(map[string]any, len(h.Raw))
+	for k, v := range h.Raw {
+		raw[k] = v
+	}
+	e := jsonutils.NewEncoder(raw)
+	if v := h.Algorithm; v != "" {
+		e.Set("alg", v.String())
+	}
+
+	if enc := h.Encryption; enc != "" {
+		e.Set("enc", string(enc))
+	}
+
+	if zip := h.Zip; zip != "" {
+		e.Set("zip", string(zip))
+	}
+
+	if u := h.JWKSetURL; u != nil {
+		e.Set("jku", u.String())
+	}
+
+	if key := h.JWK; key != nil {
+		data, err := key.MarshalJSON()
+		if err != nil {
+			e.SaveError(err)
+		} else {
+			e.Set("jwk", json.RawMessage(data))
+		}
+	}
+
+	if kid := h.KeyID; kid != "" {
+		e.Set("kid", kid)
+	}
+
+	if x5u := h.X509URL; x5u != nil {
+		e.Set("x5u", x5u.String())
+	}
+
+	if x5c := h.X509CertificateChain; x5c != nil {
+		chain := make([][]byte, 0, len(x5c))
+		for _, cert := range x5c {
+			chain = append(chain, cert.Raw)
+		}
+		e.Set("x5c", chain)
+	}
+	if x5t := h.X509CertificateSHA1; x5t != nil {
+		e.SetBytes("x5t", x5t)
+	} else if len(h.X509CertificateChain) > 0 {
+		cert := h.X509CertificateChain[0]
+		sum := sha1.Sum(cert.Raw)
+		e.SetBytes("x5t", sum[:])
+	}
+	if x5t256 := h.X509CertificateSHA256; x5t256 != nil {
+		e.SetBytes("x5t#S256", x5t256)
+	} else if len(h.X509CertificateChain) > 0 {
+		cert := h.X509CertificateChain[0]
+		sum := sha256.Sum256(cert.Raw)
+		e.SetBytes("x5t#S256", sum[:])
+	}
+
+	if typ := h.Type; typ != "" {
+		e.Set("typ", typ)
+	}
+
+	if cty := h.ContentType; cty != "" {
+		e.Set("cty", cty)
+	}
+
+	if crit := h.Critical; len(crit) > 0 {
+		e.Set("crit", crit)
+	}
+
+	if err := e.Err(); err != nil {
+		return nil, err
+	}
+	return json.Marshal(e.Data())
 }
