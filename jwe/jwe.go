@@ -28,39 +28,40 @@ type Header struct {
 	// Algorithm is RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
 	Algorithm jwa.KeyManagementAlgorithm
 
-	// Encryption is RFC7516 Section 4.1.1. "enc" (Encryption Algorithm) Header Parameter.
+	// Encryption is RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
 	Encryption jwa.EncryptionAlgorithm
 
-	Zip string
+	// Compression is RFC7516 Section 4.1.3. "zip" (Compression Algorithm) Header Parameter.
+	Compression jwa.CompressionAlgorithm
 
-	// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
+	// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
 	JWKSetURL *url.URL
 
-	// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
+	// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
 	JWK *jwk.Key
 
-	// KeyID is RFC7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
+	// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
 	KeyID string
 
-	// X509URL is RFC7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
+	// X509URL is RFC7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
 	X509URL *url.URL
 
-	// X509CertificateChain is RFC7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
+	// X509CertificateChain is RFC7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
 	X509CertificateChain []*x509.Certificate
 
-	// X509CertificateSHA1 is RFC7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
+	// X509CertificateSHA1 is RFC7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
 	X509CertificateSHA1 []byte
 
-	// X509CertificateSHA256 is RFC7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
+	// X509CertificateSHA256 is RFC7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
 	X509CertificateSHA256 []byte
 
-	// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
+	// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
 	Type string
 
-	// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
+	// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
 	ContentType string
 
-	// Critical is 4.1.11. "crit" (Critical) Header Parameter.
+	// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
 	Critical []string
 
 	// Raw is the raw data of JSON-decoded JOSE header.
@@ -189,7 +190,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if zip, ok := d.GetString("zip"); ok {
-		h.Zip = zip
+		h.Compression = jwa.CompressionAlgorithm(zip)
 	}
 
 	if jku, ok := d.GetURL("jku"); ok {
@@ -302,11 +303,11 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 
 	if enc := h.Encryption; enc != "" {
-		e.Set("enc", string(enc))
+		e.Set("enc", enc.String())
 	}
 
-	if zip := h.Zip; zip != "" {
-		e.Set("zip", string(zip))
+	if zip := h.Compression; zip != "" {
+		e.Set("zip", zip.String())
 	}
 
 	if u := h.JWKSetURL; u != nil {

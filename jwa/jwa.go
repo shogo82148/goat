@@ -8,6 +8,8 @@ import "github.com/shogo82148/goat/sig"
 type SignatureAlgorithm string
 
 const (
+	SignatureAlgorithmUnknown SignatureAlgorithm = ""
+
 	// HS256 is HMAC using SHA-256.
 	// import github.com/shogo82148/goat/jwa/hs
 	HS256 SignatureAlgorithm = "HS256"
@@ -119,6 +121,8 @@ func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) 
 type KeyManagementAlgorithm string
 
 const (
+	KeyManagementAlgorithmUnknown KeyManagementAlgorithm = ""
+
 	// RSA1_5 is RSAES-PKCS1-v1_5.
 	RSA1_5 KeyManagementAlgorithm = "RSA1_5"
 
@@ -211,10 +215,16 @@ const (
 	A256GCM EncryptionAlgorithm = "A256GCM"
 )
 
+func (enc EncryptionAlgorithm) String() string {
+	return string(enc)
+}
+
 // KeyType is a key type defined in the IANA "JSON Web Key Types".
 type KeyType string
 
 const (
+	KeyTypeUnknown KeyType = ""
+
 	// EC is Elliptic Curve.
 	EC KeyType = "EC"
 
@@ -230,6 +240,9 @@ const (
 )
 
 func (kyt KeyType) String() string {
+	if kyt == KeyTypeUnknown {
+		return "(unknown)"
+	}
 	return string(kyt)
 }
 
@@ -264,4 +277,17 @@ const (
 
 func (crv EllipticCurve) String() string {
 	return string(crv)
+}
+
+type CompressionAlgorithm string
+
+const (
+	CompressionAlgorithmUnknown CompressionAlgorithm = ""
+
+	// DEF is compression with the DEFLATE [RFC1951] algorithm.
+	DEF CompressionAlgorithm = "DEF"
+)
+
+func (zip CompressionAlgorithm) String() string {
+	return string(zip)
 }
