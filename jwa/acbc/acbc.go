@@ -24,6 +24,9 @@ func New128CBC_HS256() enc.Algorithm {
 	return a128cbc_hs256
 }
 
+func init() {
+}
+
 var _ enc.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct {

@@ -1,7 +1,11 @@
 // Package jwa implements RFC7518.
 package jwa
 
-import "github.com/shogo82148/goat/sig"
+import (
+	"github.com/shogo82148/goat/enc"
+	"github.com/shogo82148/goat/keymanage"
+	"github.com/shogo82148/goat/sig"
+)
 
 // SignatureAlgorithm is an algorithm for JSON Web Signature (JWS)
 // defined in the IANA "JSON Web Signature and Encryption Algorithms".
@@ -78,7 +82,7 @@ func (alg SignatureAlgorithm) KeyAlgorithm() KeyAlgorithm {
 func (alg SignatureAlgorithm) New() sig.Algorithm {
 	f := signatureAlgorithms[alg]
 	if f == nil {
-		panic("jwa: requested signature algorithm " + string(alg) + " is not available")
+		panic("jwa: requested signature algorithm " + alg.String() + " is not available")
 	}
 	return f()
 }
@@ -175,11 +179,58 @@ const (
 	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
 
+var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algorithm{
+	RSA1_5:             nil,
+	RSA_OAEP:           nil,
+	RSA_OAEP_256:       nil,
+	A128KW:             nil,
+	A192KW:             nil,
+	A256KW:             nil,
+	Direct:             nil,
+	ECDH_ES:            nil,
+	ECDH_ES_A128KW:     nil,
+	ECDH_ES_A192KW:     nil,
+	ECDH_ES_A256KW:     nil,
+	A128GCMKW:          nil,
+	A192GCMKW:          nil,
+	A256GCMKW:          nil,
+	PBES2_HS256_A128KW: nil,
+	PBES2_HS384_A192KW: nil,
+	PBES2_HS512_A256KW: nil,
+}
+
+func RegisterKeyManagementAlgorithm(alg KeyManagementAlgorithm, f func() keymanage.Algorithm) {
+	g, ok := keyManagementAlgorithms[alg]
+	if !ok {
+		panic("jwa: RegisterKeyManagementAlgorithm of unknown algorithm")
+	}
+	if g != nil {
+		panic("jwa: RegisterKeyManagementAlgorithm of already registered algorithm")
+	}
+	keyManagementAlgorithms[alg] = f
+}
+
 func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
 	return KeyAlgorithm(alg)
 }
 
+func (alg KeyManagementAlgorithm) New() keymanage.Algorithm {
+	f := keyManagementAlgorithms[alg]
+	if f == nil {
+		panic("jwa: requested key management algorithm " + alg.String() + " is not available")
+	}
+	return f()
+}
+
+func (alg KeyManagementAlgorithm) Available() bool {
+	f := keyManagementAlgorithms[alg]
+	return f != nil
+}
+
 func (alg KeyManagementAlgorithm) String() string {
+	if alg == KeyManagementAlgorithmUnknown {
+		return "(unknown)"
+	}
 	return string(alg)
 }
 
@@ -215,8 +266,41 @@ const (
 	A256GCM EncryptionAlgorithm = "A256GCM"
 )
 
+var encryptionAlgorithm = map[EncryptionAlgorithm]func() enc.Algorithm{
+	A128CBC_HS256: nil,
+	A192CBC_HS384: nil,
+	A256CBC_HS512: nil,
+	A128GCM:       nil,
+	A192GCM:       nil,
+	A256GCM:       nil,
+}
+
+func RegisterEncryptionAlgorithm(alg EncryptionAlgorithm, f func() enc.Algorithm) {
+	g, ok := encryptionAlgorithm[alg]
+	if !ok {
+		panic("jwa: RegisterKeyManagementAlgorithm of unknown algorithm")
+	}
+	if g != nil {
+		panic("jwa: RegisterKeyManagementAlgorithm of already registered algorithm")
+	}
+	encryptionAlgorithm[alg] = f
+}
+
 func (enc EncryptionAlgorithm) String() string {
 	return string(enc)
+}
+
+func (enc EncryptionAlgorithm) New() enc.Algorithm {
+	f := encryptionAlgorithm[enc]
+	if f == nil {
+		panic("jwa: requested key management algorithm " + enc.String() + " is not available")
+	}
+	return f()
+}
+
+func (enc EncryptionAlgorithm) Available() bool {
+	f := encryptionAlgorithm[enc]
+	return f != nil
 }
 
 // KeyType is a key type defined in the IANA "JSON Web Key Types".

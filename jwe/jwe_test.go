@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	"github.com/shogo82148/goat/jwa/rsa"
+	_ "github.com/shogo82148/goat/jwa/rsa" // for RSA1_5
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -57,7 +57,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		alg := &rsa.Algorithm{}
+		alg := header.Algorithm.New()
 		return alg.NewKeyWrapper(k.PrivateKey), nil
 	}))
 	if err != nil {
@@ -105,7 +105,7 @@ func TestEncrypt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	alg := &rsa.Algorithm{}
+	alg := jwa.RSA1_5.New()
 	key := alg.NewKeyWrapper(k.PublicKey)
 
 	header := &Header{

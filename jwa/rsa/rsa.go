@@ -4,8 +4,19 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 
+	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/keymanage"
 )
+
+var alg = &Algorithm{}
+
+func New() keymanage.Algorithm {
+	return alg
+}
+
+func init() {
+	jwa.RegisterKeyManagementAlgorithm(jwa.RSA1_5, New)
+}
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)
 
