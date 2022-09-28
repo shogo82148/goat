@@ -64,6 +64,10 @@ var defaultIV = []byte{0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6}
 
 const chunkLen = 8
 
+// WrapKey wraps cek with AWS Key Wrap algorithm
+// defined in [RFC 3394].
+//
+// [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
 func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
@@ -74,39 +78,38 @@ func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 	}
 
 	n := len(cek) / chunkLen
-	r := make([]byte, len(cek))
+	buf := make([]byte, len(cek)+chunkLen*2)
+	r := buf[chunkLen*2:]
 	copy(r, cek)
 
-	buf := make([]byte, chunkLen*2)
-	copy(buf, defaultIV)
+	a := buf[:chunkLen]
+	b := buf[chunkLen : chunkLen*2]
+	ab := buf[:chunkLen*2]
+	copy(a, defaultIV)
 	for t := 0; t < 6*n; t++ {
 		// A[t-1] | R[t-1][1]
-		copy(buf[chunkLen:], r[(t%n)*chunkLen:])
+		copy(b, r[(t%n)*chunkLen:])
 
 		// AES(K, A[t-1] | R[t-1][1])
-		block.Encrypt(buf, buf)
+		block.Encrypt(ab, ab)
 
 		// MSB(64, AES(K, A[t-1] | R[t-1][1])) ^ t
 		u := t + 1
-		buf[0] ^= byte(u >> 56)
-		buf[1] ^= byte(u >> 48)
-		buf[2] ^= byte(u >> 40)
-		buf[3] ^= byte(u >> 32)
-		buf[4] ^= byte(u >> 24)
-		buf[5] ^= byte(u >> 16)
-		buf[6] ^= byte(u >> 8)
-		buf[7] ^= byte(u)
+		a[0] ^= byte(u >> 56)
+		a[1] ^= byte(u >> 48)
+		a[2] ^= byte(u >> 40)
+		a[3] ^= byte(u >> 32)
+		a[4] ^= byte(u >> 24)
+		a[5] ^= byte(u >> 16)
+		a[6] ^= byte(u >> 8)
+		a[7] ^= byte(u)
 
 		// R[t][n] = LSB(64, AES(K, A[t-1] | R[t-1][1]))
-		copy(r[(t%n)*chunkLen:], buf[chunkLen:])
+		copy(r[(t%n)*chunkLen:], b)
 	}
 
-	out := make([]byte, (n+1)*chunkLen)
-	copy(out, buf[:chunkLen])
-	for i := 0; i < n; i++ {
-		copy(out[(i+1)*chunkLen:], r[i*chunkLen:(i+1)*chunkLen])
-	}
-	return out, nil
+	copy(b, a)
+	return buf[chunkLen:], nil
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {

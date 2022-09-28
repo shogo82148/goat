@@ -17,7 +17,7 @@ func mustHex(s string) []byte {
 }
 
 func TestWrap(t *testing.T) {
-	t.Run("", func(t *testing.T) {
+	t.Run("RFC 3394 Section 4.1 Wrap 128 bits of Key Data with a 128-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
 		w := New128().NewKeyWrapper(key)
@@ -33,7 +33,7 @@ func TestWrap(t *testing.T) {
 			t.Errorf("want %#v, got %#v", want, got)
 		}
 	})
-	t.Run("", func(t *testing.T) {
+	t.Run("RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256", func(t *testing.T) {
 		jsonKey := `{"kty":"oct",` +
 			`"k":"GawgguFyGrWKav7AX4VKUg"` +
 			`}`
