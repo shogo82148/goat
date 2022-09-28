@@ -2,6 +2,7 @@ package akw
 
 import (
 	"bytes"
+	"crypto/subtle"
 	"encoding/hex"
 	"testing"
 
@@ -33,6 +34,7 @@ func TestWrap(t *testing.T) {
 			t.Errorf("want %#v, got %#v", want, got)
 		}
 	})
+
 	t.Run("RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256", func(t *testing.T) {
 		jsonKey := `{"kty":"oct",` +
 			`"k":"GawgguFyGrWKav7AX4VKUg"` +
@@ -59,6 +61,55 @@ func TestWrap(t *testing.T) {
 		}
 
 		if !bytes.Equal(want, got) {
+			t.Errorf("want %#v, got %#v", want, got)
+		}
+	})
+}
+
+func TestUnwrap(t *testing.T) {
+	t.Run("RFC 3394 Section 4.1 Wrap 128 bits of Key Data with a 128-bit KEK", func(t *testing.T) {
+		key := mustHex("000102030405060708090A0B0C0D0E0F")
+		data := mustHex("1FA68B0A8112B447" +
+			"AEF34BD8FB5A7B82" +
+			"9D3E862371D2CFE5")
+		want := mustHex("00112233445566778899AABBCCDDEEFF")
+
+		w := New128().NewKeyWrapper(key)
+		got, err := w.UnwrapKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if subtle.ConstantTimeCompare(want, got) == 0 {
+			t.Errorf("want %#v, got %#v", want, got)
+		}
+	})
+
+	t.Run("RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256", func(t *testing.T) {
+		jsonKey := `{"kty":"oct",` +
+			`"k":"GawgguFyGrWKav7AX4VKUg"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(jsonKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := New128().NewKeyWrapper(key.PrivateKey)
+
+		data := []byte{
+			232, 160, 123, 211, 183, 76, 245, 132, 200, 128, 123, 75, 190, 216,
+			22, 67, 201, 138, 193, 186, 9, 91, 122, 31, 246, 90, 28, 139, 57, 3,
+			76, 124, 193, 11, 98, 37, 173, 61, 104, 57,
+		}
+		want := []byte{
+			4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106,
+			206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
+			44, 207,
+		}
+		got, err := w.UnwrapKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if subtle.ConstantTimeCompare(want, got) == 0 {
 			t.Errorf("want %#v, got %#v", want, got)
 		}
 	})

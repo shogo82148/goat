@@ -3,6 +3,8 @@ package akw
 
 import (
 	"crypto/aes"
+	"crypto/subtle"
+	"errors"
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
@@ -113,5 +115,48 @@ func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
-	return nil, nil
+	if len(data)%chunkLen != 0 {
+		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
+	}
+	block, err := aes.NewCipher(w.key)
+	if err != nil {
+		return nil, err
+	}
+
+	n := (len(data) / chunkLen) - 1
+	buf := make([]byte, len(data)+chunkLen)
+	r := buf[chunkLen*2:]
+	copy(r, data[chunkLen:])
+
+	a := buf[:chunkLen]
+	b := buf[chunkLen : chunkLen*2]
+	ab := buf[:chunkLen*2]
+	copy(a, data)
+	for t := 0; t < 6*n; t++ {
+		// A[t] ^ t
+		u := 6*n - t
+		a[0] ^= byte(u >> 56)
+		a[1] ^= byte(u >> 48)
+		a[2] ^= byte(u >> 40)
+		a[3] ^= byte(u >> 32)
+		a[4] ^= byte(u >> 24)
+		a[5] ^= byte(u >> 16)
+		a[6] ^= byte(u >> 8)
+		a[7] ^= byte(u)
+
+		// A[t] ^ t) | R[t][n]
+		copy(b, r[((u-1)%n)*chunkLen:])
+
+		// A[t-1] = MSB(64, AES-1(K, ((A[t] ^ t) | R[t][n]))
+		block.Decrypt(ab, ab)
+
+		// R[t-1][1] = LSB(64, AES-1(K, ((A[t]^t) | R[t][n]))
+		copy(r[((u-1)%n)*chunkLen:], b)
+	}
+
+	if subtle.ConstantTimeCompare(a, defaultIV) == 0 {
+		return nil, errors.New("akw: failed to unwrap key")
+	}
+
+	return buf[chunkLen*2:], nil
 }
