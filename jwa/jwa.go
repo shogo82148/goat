@@ -128,12 +128,15 @@ const (
 	KeyManagementAlgorithmUnknown KeyManagementAlgorithm = ""
 
 	// RSA1_5 is RSAES-PKCS1-v1_5.
+	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
 	RSA1_5 KeyManagementAlgorithm = "RSA1_5"
 
 	// RSA_OAEP is RSAES OAEP using.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
 	RSA_OAEP KeyManagementAlgorithm = "RSA-OAEP"
 
 	// RSA_OAEP_256 is RSAES OAEP using SHA-256 and MGF1 with SHA-256.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
 	RSA_OAEP_256 KeyManagementAlgorithm = "RSA-OAEP-256"
 
 	// A128KW is AES Key Wrap with default initial value using 128-bit key.

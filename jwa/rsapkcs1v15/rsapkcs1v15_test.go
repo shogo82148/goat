@@ -1,4 +1,4 @@
-package rsa
+package rsapkcs1
 
 import (
 	"bytes"
