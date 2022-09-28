@@ -140,12 +140,15 @@ const (
 	RSA_OAEP_256 KeyManagementAlgorithm = "RSA-OAEP-256"
 
 	// A128KW is AES Key Wrap with default initial value using 128-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
 	A128KW KeyManagementAlgorithm = "A128KW"
 
 	// A192KW is AES Key Wrap with default initial value using 192-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
 	A192KW KeyManagementAlgorithm = "A192KW"
 
 	// A256KW is AES Key Wrap with default initial value using 256-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
 	A256KW KeyManagementAlgorithm = "A256KW"
 
 	// Direct is direct use of a shared symmetric key as the CEK.

@@ -3,6 +3,7 @@ Go Authentication Toolkit
 
 ## References
 
+- [RFC3394 Advanced Encryption Standard (AES) Key Wrap Algorithm](https://www.rfc-editor.org/rfc/rfc3394)
 - [RFC7515 JSON Web Signature (JWS)](https://www.rfc-editor.org/rfc/rfc7515)
 - [RFC7516 JSON Web Encryption (JWE)](https://www.rfc-editor.org/rfc/rfc7516)
 - [RFC7517 JSON Web Key (JWK)](https://www.rfc-editor.org/rfc/rfc7517)
