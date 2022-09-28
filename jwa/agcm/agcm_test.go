@@ -2,7 +2,6 @@ package agcm
 
 import (
 	"bytes"
-	"crypto/subtle"
 	"testing"
 )
 
@@ -85,7 +84,7 @@ func TestEncrypt(t *testing.T) {
 		123, 143, 168, 226, 73, 216, 176, 144, 138, 247, 106, 60, 16, 205,
 		160, 109, 64, 63, 192,
 	}
-	if subtle.ConstantTimeCompare(ciphertext, wantCiphertext) == 0 {
+	if !bytes.Equal(ciphertext, wantCiphertext) {
 		t.Errorf("want %#v, got %#v", wantCiphertext, ciphertext)
 	}
 
@@ -93,7 +92,7 @@ func TestEncrypt(t *testing.T) {
 		92, 80, 104, 49, 133, 25, 161, 215, 173, 101, 219, 211, 136, 91,
 		210, 145,
 	}
-	if subtle.ConstantTimeCompare(authTag, wantAuthTag) == 0 {
+	if !bytes.Equal(authTag, wantAuthTag) {
 		t.Errorf("want %#v, got %#v", wantAuthTag, authTag)
 	}
 }

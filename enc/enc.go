@@ -6,7 +6,7 @@ type Algorithm interface {
 	// CEKSize returns the byte size of CEK(Content Encryption Key) for the algorithm.
 	CEKSize() int
 
-	// IVSice returns the byte size of IV(Initial Vector) for the algorithm.
+	// IVSice returns the byte size of IV(Initialization Vector) for the algorithm.
 	IVSize() int
 
 	// Decrypt decrypts and verifies ciphertext.
