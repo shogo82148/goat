@@ -114,6 +114,10 @@ func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 	return buf[chunkLen:], nil
 }
 
+// UnwrapKey unwraps cek with AWS Key Wrap algorithm
+// defined in [RFC 3394].
+//
+// [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
