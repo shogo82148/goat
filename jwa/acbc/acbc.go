@@ -24,8 +24,32 @@ func New128CBC_HS256() enc.Algorithm {
 	return a128cbc_hs256
 }
 
+var a192cbc_hs384 = &Algorithm{
+	encKeyLen: 24,
+	macKeyLen: 24,
+	hash:      crypto.SHA384,
+	tLen:      24,
+}
+
+func New192CBC_HS384() enc.Algorithm {
+	return a192cbc_hs384
+}
+
+var a256cbc_hs512 = &Algorithm{
+	encKeyLen: 32,
+	macKeyLen: 32,
+	hash:      crypto.SHA512,
+	tLen:      32,
+}
+
+func New256CBC_HS512() enc.Algorithm {
+	return a256cbc_hs512
+}
+
 func init() {
 	jwa.RegisterEncryptionAlgorithm(jwa.A128CBC_HS256, New128CBC_HS256)
+	jwa.RegisterEncryptionAlgorithm(jwa.A192CBC_HS384, New192CBC_HS384)
+	jwa.RegisterEncryptionAlgorithm(jwa.A256CBC_HS512, New256CBC_HS512)
 }
 
 var _ enc.Algorithm = (*Algorithm)(nil)
