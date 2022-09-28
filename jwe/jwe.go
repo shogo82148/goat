@@ -16,7 +16,6 @@ import (
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
-	"github.com/shogo82148/goat/jwa/acbc"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -146,7 +145,6 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if err != nil {
 		return nil, err
 	}
-
 	rawCiphertext, err := b64Decode(ciphertext)
 	if err != nil {
 		return nil, err
@@ -155,7 +153,13 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if err != nil {
 		return nil, err
 	}
-	plaintext, err := acbc.New128CBC_HS256().Decrypt(rand.Reader, cek, iv, header, rawCiphertext, rawAuthTag)
+
+	// Decrypt the content
+	enc := h.Encryption
+	if !enc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
+	}
+	plaintext, err := enc.New().Decrypt(rand.Reader, cek, iv, header, rawCiphertext, rawAuthTag)
 	if err != nil {
 		return nil, err
 	}
@@ -261,12 +265,16 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
+	enc := header.Encryption
+	if !enc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
+	}
 	rawHeader, err := encodeHeader(header)
 	if err != nil {
 		return nil, err
 	}
 	encodedHeader := b64Encode(rawHeader)
-	cek, iv, payload, authTag, err := acbc.New128CBC_HS256().Encrypt(rand.Reader, encodedHeader, plaintext)
+	cek, iv, payload, authTag, err := enc.New().Encrypt(rand.Reader, encodedHeader, plaintext)
 	if err != nil {
 		return nil, err
 	}

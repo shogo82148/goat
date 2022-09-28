@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/rsa" // for RSA1_5
+	_ "github.com/shogo82148/goat/jwa/acbc" // for AES-CBC-HMAC-SHA2
+	_ "github.com/shogo82148/goat/jwa/rsa"  // for RSA1_5
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )

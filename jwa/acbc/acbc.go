@@ -11,6 +11,7 @@ import (
 	"io"
 
 	"github.com/shogo82148/goat/enc"
+	"github.com/shogo82148/goat/jwa"
 )
 
 var a128cbc_hs256 = &Algorithm{
@@ -25,6 +26,7 @@ func New128CBC_HS256() enc.Algorithm {
 }
 
 func init() {
+	jwa.RegisterEncryptionAlgorithm(jwa.A128CBC_HS256, New128CBC_HS256)
 }
 
 var _ enc.Algorithm = (*Algorithm)(nil)

@@ -293,7 +293,7 @@ func (enc EncryptionAlgorithm) String() string {
 func (enc EncryptionAlgorithm) New() enc.Algorithm {
 	f := encryptionAlgorithm[enc]
 	if f == nil {
-		panic("jwa: requested key management algorithm " + enc.String() + " is not available")
+		panic("jwa: requested content encryption algorithm " + enc.String() + " is not available")
 	}
 	return f()
 }
