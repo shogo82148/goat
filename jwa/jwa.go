@@ -1,13 +1,19 @@
 // Package jwa implements RFC7518.
 package jwa
 
-import "github.com/shogo82148/goat/sig"
+import (
+	"github.com/shogo82148/goat/enc"
+	"github.com/shogo82148/goat/keymanage"
+	"github.com/shogo82148/goat/sig"
+)
 
 // SignatureAlgorithm is an algorithm for JSON Web Signature (JWS)
 // defined in the IANA "JSON Web Signature and Encryption Algorithms".
 type SignatureAlgorithm string
 
 const (
+	SignatureAlgorithmUnknown SignatureAlgorithm = ""
+
 	// HS256 is HMAC using SHA-256.
 	// import github.com/shogo82148/goat/jwa/hs
 	HS256 SignatureAlgorithm = "HS256"
@@ -76,7 +82,7 @@ func (alg SignatureAlgorithm) KeyAlgorithm() KeyAlgorithm {
 func (alg SignatureAlgorithm) New() sig.Algorithm {
 	f := signatureAlgorithms[alg]
 	if f == nil {
-		panic("jwa: requested signature algorithm " + string(alg) + " is not available")
+		panic("jwa: requested signature algorithm " + alg.String() + " is not available")
 	}
 	return f()
 }
@@ -119,13 +125,18 @@ func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) 
 type KeyManagementAlgorithm string
 
 const (
+	KeyManagementAlgorithmUnknown KeyManagementAlgorithm = ""
+
 	// RSA1_5 is RSAES-PKCS1-v1_5.
+	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
 	RSA1_5 KeyManagementAlgorithm = "RSA1_5"
 
 	// RSA_OAEP is RSAES OAEP using.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
 	RSA_OAEP KeyManagementAlgorithm = "RSA-OAEP"
 
 	// RSA_OAEP_256 is RSAES OAEP using SHA-256 and MGF1 with SHA-256.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
 	RSA_OAEP_256 KeyManagementAlgorithm = "RSA-OAEP-256"
 
 	// A128KW is AES Key Wrap with default initial value using 128-bit key.
@@ -171,8 +182,59 @@ const (
 	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
 
+var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algorithm{
+	RSA1_5:             nil,
+	RSA_OAEP:           nil,
+	RSA_OAEP_256:       nil,
+	A128KW:             nil,
+	A192KW:             nil,
+	A256KW:             nil,
+	Direct:             nil,
+	ECDH_ES:            nil,
+	ECDH_ES_A128KW:     nil,
+	ECDH_ES_A192KW:     nil,
+	ECDH_ES_A256KW:     nil,
+	A128GCMKW:          nil,
+	A192GCMKW:          nil,
+	A256GCMKW:          nil,
+	PBES2_HS256_A128KW: nil,
+	PBES2_HS384_A192KW: nil,
+	PBES2_HS512_A256KW: nil,
+}
+
+func RegisterKeyManagementAlgorithm(alg KeyManagementAlgorithm, f func() keymanage.Algorithm) {
+	g, ok := keyManagementAlgorithms[alg]
+	if !ok {
+		panic("jwa: RegisterKeyManagementAlgorithm of unknown algorithm")
+	}
+	if g != nil {
+		panic("jwa: RegisterKeyManagementAlgorithm of already registered algorithm")
+	}
+	keyManagementAlgorithms[alg] = f
+}
+
 func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
 	return KeyAlgorithm(alg)
+}
+
+func (alg KeyManagementAlgorithm) New() keymanage.Algorithm {
+	f := keyManagementAlgorithms[alg]
+	if f == nil {
+		panic("jwa: requested key management algorithm " + alg.String() + " is not available")
+	}
+	return f()
+}
+
+func (alg KeyManagementAlgorithm) Available() bool {
+	f := keyManagementAlgorithms[alg]
+	return f != nil
+}
+
+func (alg KeyManagementAlgorithm) String() string {
+	if alg == KeyManagementAlgorithmUnknown {
+		return "(unknown)"
+	}
+	return string(alg)
 }
 
 // KeyAlgorithm may be either SignatureAlgorithm or KeyManagementAlgorithm.
@@ -180,14 +242,82 @@ func (alg KeyManagementAlgorithm) KeyAlgorithm() KeyAlgorithm {
 // types of algorithms in its `alg` field.
 type KeyAlgorithm string
 
-// ContentEncryptionAlgorithm an algorithm for content encryption
+// EncryptionAlgorithm an algorithm for content encryption
 // defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.
-type ContentEncryptionAlgorithm string
+type EncryptionAlgorithm string
+
+const (
+	// A128CBC_HS256 is AES_128_CBC_HMAC_SHA_256 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.3.
+	// import github.com/shogo82148/goat/jwa/acbc
+	A128CBC_HS256 EncryptionAlgorithm = "A128CBC-HS256"
+
+	// A192CBC_HS384 is AES_192_CBC_HMAC_SHA_384 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.4.
+	// import github.com/shogo82148/goat/jwa/acbc
+	A192CBC_HS384 EncryptionAlgorithm = "A192CBC-HS384"
+
+	// A256CBC_HS512 is AES_256_CBC_HMAC_SHA_512 authenticated encryption
+	// algorithm, as defined in RFC 7518 Section 5.2.5.
+	// import github.com/shogo82148/goat/jwa/acbc
+	A256CBC_HS512 EncryptionAlgorithm = "A256CBC-HS512"
+
+	// A128GCM is AES GCM using 128-bit key.
+	// import github.com/shogo82148/goat/jwa/agcm
+	A128GCM EncryptionAlgorithm = "A128GCM"
+
+	// A192GCM is AES GCM using 192-bit key.
+	// import github.com/shogo82148/goat/jwa/agcm
+	A192GCM EncryptionAlgorithm = "A192GCM"
+
+	// A256GCM is AES GCM using 256-bit key.
+	// import github.com/shogo82148/goat/jwa/agcm
+	A256GCM EncryptionAlgorithm = "A256GCM"
+)
+
+var encryptionAlgorithm = map[EncryptionAlgorithm]func() enc.Algorithm{
+	A128CBC_HS256: nil,
+	A192CBC_HS384: nil,
+	A256CBC_HS512: nil,
+	A128GCM:       nil,
+	A192GCM:       nil,
+	A256GCM:       nil,
+}
+
+func RegisterEncryptionAlgorithm(alg EncryptionAlgorithm, f func() enc.Algorithm) {
+	g, ok := encryptionAlgorithm[alg]
+	if !ok {
+		panic("jwa: RegisterKeyManagementAlgorithm of unknown algorithm")
+	}
+	if g != nil {
+		panic("jwa: RegisterKeyManagementAlgorithm of already registered algorithm")
+	}
+	encryptionAlgorithm[alg] = f
+}
+
+func (enc EncryptionAlgorithm) String() string {
+	return string(enc)
+}
+
+func (enc EncryptionAlgorithm) New() enc.Algorithm {
+	f := encryptionAlgorithm[enc]
+	if f == nil {
+		panic("jwa: requested content encryption algorithm " + enc.String() + " is not available")
+	}
+	return f()
+}
+
+func (enc EncryptionAlgorithm) Available() bool {
+	f := encryptionAlgorithm[enc]
+	return f != nil
+}
 
 // KeyType is a key type defined in the IANA "JSON Web Key Types".
 type KeyType string
 
 const (
+	KeyTypeUnknown KeyType = ""
+
 	// EC is Elliptic Curve.
 	EC KeyType = "EC"
 
@@ -203,6 +333,9 @@ const (
 )
 
 func (kyt KeyType) String() string {
+	if kyt == KeyTypeUnknown {
+		return "(unknown)"
+	}
 	return string(kyt)
 }
 
@@ -237,4 +370,17 @@ const (
 
 func (crv EllipticCurve) String() string {
 	return string(crv)
+}
+
+type CompressionAlgorithm string
+
+const (
+	CompressionAlgorithmUnknown CompressionAlgorithm = ""
+
+	// DEF is compression with the DEFLATE [RFC1951] algorithm.
+	DEF CompressionAlgorithm = "DEF"
+)
+
+func (zip CompressionAlgorithm) String() string {
+	return string(zip)
 }
