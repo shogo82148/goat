@@ -159,7 +159,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
 	}
-	plaintext, err := enc.New().Decrypt(rand.Reader, cek, iv, header, rawCiphertext, rawAuthTag)
+	plaintext, err := enc.New().Decrypt(cek, iv, header, rawCiphertext, rawAuthTag)
 	if err != nil {
 		return nil, err
 	}
@@ -265,16 +265,22 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	enc := header.Encryption
-	if !enc.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
+	if !header.Encryption.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + header.Encryption.String() + " is not available")
 	}
+	enc := header.Encryption.New()
+	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
+	if _, err := rand.Read(entropy); err != nil {
+		return nil, err
+	}
+	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+
 	rawHeader, err := encodeHeader(header)
 	if err != nil {
 		return nil, err
 	}
 	encodedHeader := b64Encode(rawHeader)
-	cek, iv, payload, authTag, err := enc.New().Encrypt(rand.Reader, encodedHeader, plaintext)
+	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
 	if err != nil {
 		return nil, err
 	}

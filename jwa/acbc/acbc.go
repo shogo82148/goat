@@ -8,7 +8,6 @@ import (
 	"crypto/hmac"
 	"encoding/binary"
 	"errors"
-	"io"
 
 	"github.com/shogo82148/goat/enc"
 	"github.com/shogo82148/goat/jwa"
@@ -38,7 +37,15 @@ type Algorithm struct {
 	tLen      int
 }
 
-func (alg *Algorithm) Decrypt(rand io.Reader, cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
+func (alg *Algorithm) CEKSize() int {
+	return alg.encKeyLen + alg.macKeyLen
+}
+
+func (alg *Algorithm) IVSize() int {
+	return aes.BlockSize
+}
+
+func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
 	if len(cek) != alg.macKeyLen+alg.encKeyLen {
 		return nil, errors.New("acbc: invalid content encryption key")
 	}
@@ -68,16 +75,12 @@ func (alg *Algorithm) Decrypt(rand io.Reader, cek, iv, aad, ciphertext, authTag 
 	return
 }
 
-func (alg *Algorithm) Encrypt(rand io.Reader, aad, plaintext []byte) (cek, iv, ciphertext, authTag []byte, err error) {
-	cek = make([]byte, alg.encKeyLen+alg.macKeyLen)
-	if _, err := io.ReadFull(rand, cek); err != nil {
-		return nil, nil, nil, nil, err
-	}
+func (alg *Algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error) {
 	mac := cek[:alg.macKeyLen]
 	enc := cek[alg.macKeyLen:]
 	block, err := aes.NewCipher(enc)
 	if err != nil {
-		return nil, nil, nil, nil, err
+		return nil, nil, err
 	}
 	size := block.BlockSize()
 
@@ -87,10 +90,6 @@ func (alg *Algorithm) Encrypt(rand io.Reader, aad, plaintext []byte) (cek, iv, c
 	l += pad
 
 	// encrypt
-	iv = make([]byte, size)
-	if _, err := io.ReadFull(rand, iv); err != nil {
-		return nil, nil, nil, nil, err
-	}
 	ciphertext = make([]byte, l)
 	copy(ciphertext, plaintext)
 	for i := len(plaintext); i < l; i++ {
