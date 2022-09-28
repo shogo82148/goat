@@ -7,6 +7,7 @@ import (
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/acbc"        // for AES-CBC-HMAC-SHA2
 	_ "github.com/shogo82148/goat/jwa/agcm"        // for AES-GCM
+	_ "github.com/shogo82148/goat/jwa/akw"         // for AES128KW
 	_ "github.com/shogo82148/goat/jwa/rsaoaep"     // for RSAES-OAEP
 	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15" // for RSA1_5
 	"github.com/shogo82148/goat/jwk"
@@ -133,6 +134,34 @@ func TestParse(t *testing.T) {
 			t.Errorf("want %s, got %s", want, got.Plaintext)
 		}
 	})
+
+	t.Run("RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256", func(t *testing.T) {
+		raw := `eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0.` +
+			`6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ.` +
+			`AxY8DCtDaGlsbGljb3RoZQ.` +
+			`KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY.` +
+			`U0m_YmjN04DJvceFICbCVQ`
+
+		got, err := Parse(context.TODO(), []byte(raw), FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			rawKey := `{"kty":"oct",` +
+				`"k":"GawgguFyGrWKav7AX4VKUg"` +
+				`}`
+			k, err := jwk.ParseKey([]byte(rawKey))
+			if err != nil {
+				return nil, err
+			}
+			alg := header.Algorithm.New()
+			return alg.NewKeyWrapper(k.PrivateKey), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := "Live long and prosper."
+		if string(got.Plaintext) != want {
+			t.Errorf("want %s, got %s", want, got.Plaintext)
+		}
+	})
 }
 
 func TestEncrypt(t *testing.T) {
@@ -236,6 +265,39 @@ func TestEncrypt(t *testing.T) {
 
 		header := &Header{
 			Algorithm:  jwa.RSA1_5,
+			Encryption: jwa.A128CBC_HS256,
+		}
+		plaintext := "Live long and prosper."
+		ciphertext, err := Encrypt(header, []byte(plaintext), key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(k.PrivateKey), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got.Plaintext) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
+		}
+	})
+
+	t.Run("RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256", func(t *testing.T) {
+		rawKey := `{"kty":"oct",` +
+			`"k":"GawgguFyGrWKav7AX4VKUg"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		alg := jwa.A128KW.New()
+		key := alg.NewKeyWrapper(k.PrivateKey)
+
+		header := &Header{
+			Algorithm:  jwa.A128KW,
 			Encryption: jwa.A128CBC_HS256,
 		}
 		plaintext := "Live long and prosper."
