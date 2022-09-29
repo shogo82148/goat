@@ -11,22 +11,80 @@ import (
 	"io"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwa/akw"
+	"github.com/shogo82148/goat/jwa/dir"
 	"github.com/shogo82148/goat/keymanage"
 )
 
-var alg = &Algorithm{}
+var alg = &Algorithm{
+	f: func(key []byte) keymanage.KeyWrapper {
+		return dir.New().NewKeyWrapper(&dir.Options{
+			Key: key,
+		})
+	},
+}
 
+// New returns a new algorithm
+// Elliptic Curve Diffie-Hellman Ephemeral Static key agreement using Concat KDF.
 func New() keymanage.Algorithm {
 	return alg
 }
 
+var a128kw = &Algorithm{
+	size: 16,
+	f: func(key []byte) keymanage.KeyWrapper {
+		return akw.New128().NewKeyWrapper(&akw.Options{
+			Key: key,
+		})
+	},
+}
+
+// NewA128KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A128KW".
+func NewA128KW() keymanage.Algorithm {
+	return a128kw
+}
+
+var a192kw = &Algorithm{
+	size: 24,
+	f: func(key []byte) keymanage.KeyWrapper {
+		return akw.New192().NewKeyWrapper(&akw.Options{
+			Key: key,
+		})
+	},
+}
+
+// NewA192KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A192KW".
+func NewA192KW() keymanage.Algorithm {
+	return a192kw
+}
+
+var a256kw = &Algorithm{
+	size: 32,
+	f: func(key []byte) keymanage.KeyWrapper {
+		return akw.New256().NewKeyWrapper(&akw.Options{
+			Key: key,
+		})
+	},
+}
+
+// NewA256KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A256KW".
+func NewA256KW() keymanage.Algorithm {
+	return a256kw
+}
+
 func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A128KW, NewA128KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A192KW, NewA192KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A256KW, NewA256KW)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)
 
-type Algorithm struct{}
+type Algorithm struct {
+	size int
+	f    func([]byte) keymanage.KeyWrapper
+}
 
 type Options struct {
 	PrivateKey any
@@ -51,9 +109,14 @@ func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("ecdhes: invalid option type: %T", opts))
 	}
+	size := alg.size
+	if size == 0 {
+		size = key.EncryptionAlgorithm.New().CEKSize()
+	}
 	return &KeyWrapper{
 		alg:  []byte(key.EncryptionAlgorithm.String()),
-		size: key.EncryptionAlgorithm.New().CEKSize(),
+		size: size,
+		f:    alg.f,
 		opts: *key,
 	}
 }
@@ -63,6 +126,7 @@ var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 type KeyWrapper struct {
 	alg  []byte
 	size int
+	f    func([]byte) keymanage.KeyWrapper
 	opts Options
 }
 
@@ -71,7 +135,7 @@ func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
-	return deriveECDHES(
+	key, err := deriveECDHES(
 		w.alg,
 		w.opts.AgreementPartyUInfo,
 		w.opts.AgreementPartyVInfo,
@@ -79,6 +143,10 @@ func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
 		w.opts.EphemeralPublicKey,
 		w.size,
 	)
+	if err != nil {
+		return nil, err
+	}
+	return w.f(key).UnwrapKey(data)
 }
 
 func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, error) {
