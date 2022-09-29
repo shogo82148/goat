@@ -164,7 +164,9 @@ func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, err
 
 	r := newKDF(crypto.SHA256, z, alg, apu, apv, pubinfo[:], []byte{})
 	key := make([]byte, keySize)
-	io.ReadFull(r, key)
+	if _, err := io.ReadFull(r, key); err != nil {
+		return nil, err
+	}
 	return key, nil
 }
 
