@@ -63,6 +63,15 @@ type Header struct {
 	// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
 	Critical []string
 
+	// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
+	EphemeralPublicKey *jwk.Key
+
+	// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
+	AgreementPartyUInfo []byte
+
+	// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
+	AgreementPartyVInfo []byte
+
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
@@ -120,7 +129,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	dec := json.NewDecoder(base64.NewDecoder(b64, bytes.NewReader(header)))
 	dec.UseNumber()
 	if err := dec.Decode(&raw); err != nil {
-		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
+		return nil, fmt.Errorf("jwe: failed to parse JOSE header: %w", err)
 	}
 	h, err := parseHeader(raw)
 	if err != nil {
@@ -219,11 +228,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		for i, s := range x5c {
 			der, err := base64.StdEncoding.DecodeString(s)
 			if err != nil {
-				d.SaveError(fmt.Errorf("jwk: failed to parse the parameter x5c[%d]: %w", i, err))
+				d.SaveError(fmt.Errorf("jwe: failed to parse the parameter x5c[%d]: %w", i, err))
 			}
 			cert, err := x509.ParseCertificate(der)
 			if err != nil {
-				d.SaveError(fmt.Errorf("jwk: failed to parse certificate: %w", err))
+				d.SaveError(fmt.Errorf("jwe: failed to parse certificate: %w", err))
 			}
 			if cert0 == nil {
 				cert0 = der
@@ -238,7 +247,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
-				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwe: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
@@ -248,7 +257,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwe: sha-1 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
@@ -257,6 +266,22 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	h.Type, _ = d.GetString("typ")
 	h.ContentType, _ = d.GetString("cty")
 	h.Critical, _ = d.GetStringArray("crit")
+
+	// Header Parameters Used for ECDH Key Agreement
+	if epk, ok := d.GetObject("epk"); ok {
+		key, err := jwk.ParseMap(epk)
+		if err != nil {
+			d.SaveError(fmt.Errorf("jwe: failed to parse epk: %w", err))
+		} else {
+			h.EphemeralPublicKey = key
+		}
+	}
+	if apu, ok := d.GetBytes("apu"); ok {
+		h.AgreementPartyUInfo = append([]byte(nil), apu...)
+	}
+	if apv, ok := d.GetBytes("apv"); ok {
+		h.AgreementPartyVInfo = append([]byte(nil), apv...)
+	}
 
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -377,6 +402,17 @@ func encodeHeader(h *Header) ([]byte, error) {
 
 	if crit := h.Critical; len(crit) > 0 {
 		e.Set("crit", crit)
+	}
+
+	// Header Parameters Used for ECDH Key Agreement
+	if epk := h.EphemeralPublicKey; epk != nil {
+		e.Set("epk", h.EphemeralPublicKey)
+	}
+	if apu := h.AgreementPartyUInfo; apu != nil {
+		e.SetBytes("apu", apu)
+	}
+	if apv := h.AgreementPartyUInfo; apv != nil {
+		e.SetBytes("apv", apv)
 	}
 
 	if err := e.Err(); err != nil {
