@@ -1,8 +1,9 @@
-package rsapkcs1
+package rsapkcs1v15
 
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/keymanage"
@@ -22,19 +23,31 @@ var _ keymanage.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct{}
 
+type Options struct {
+	// PrivateKey is used for UnwrapKey.
+	PrivateKey *rsa.PrivateKey
+
+	// PublicKey is used for WrapKey.
+	PublicKey *rsa.PublicKey
+}
+
+// NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
+// opts must be a pointer to [Options].
 func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	switch opts := opts.(type) {
-	case *rsa.PrivateKey:
+	key, ok := opts.(*Options)
+	if !ok {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsapkcs1v15: invalid option type: %T", opts))
+	}
+	if key.PrivateKey != nil {
 		return &KeyWrapper{
-			priv: opts,
-			pub:  &opts.PublicKey,
-		}
-	case *rsa.PublicKey:
-		return &KeyWrapper{
-			pub: opts,
+			priv: key.PrivateKey,
+			pub:  &key.PrivateKey.PublicKey,
 		}
 	}
-	return &KeyWrapper{}
+	return &KeyWrapper{
+		priv: key.PrivateKey,
+		pub:  key.PublicKey,
+	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)

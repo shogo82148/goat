@@ -45,13 +45,17 @@ type Algorithm struct {
 	keySize int
 }
 
+type Options struct {
+	Key []byte
+}
+
 func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.([]byte)
+	key, ok := opts.(*Options)
 	if !ok {
-		return nil
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid option type: %T", opts))
 	}
 	return &KeyWrapper{
-		key: key,
+		key: key.Key,
 	}
 }
 

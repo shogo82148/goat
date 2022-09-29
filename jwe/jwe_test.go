@@ -2,14 +2,15 @@ package jwe
 
 import (
 	"context"
+	"crypto/rsa"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/acbc"        // for AES-CBC-HMAC-SHA2
-	_ "github.com/shogo82148/goat/jwa/agcm"        // for AES-GCM
-	_ "github.com/shogo82148/goat/jwa/akw"         // for AES128KW
-	_ "github.com/shogo82148/goat/jwa/rsaoaep"     // for RSAES-OAEP
-	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15" // for RSA1_5
+	_ "github.com/shogo82148/goat/jwa/acbc" // for AES-CBC-HMAC-SHA2
+	_ "github.com/shogo82148/goat/jwa/agcm" // for AES-GCM
+	"github.com/shogo82148/goat/jwa/akw"
+	"github.com/shogo82148/goat/jwa/rsaoaep"
+	"github.com/shogo82148/goat/jwa/rsapkcs1v15"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -63,7 +64,9 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&rsaoaep.Options{
+				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -123,7 +126,9 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&rsapkcs1v15.Options{
+				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -151,7 +156,9 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&akw.Options{
+				Key: k.PrivateKey.([]byte),
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -206,7 +213,9 @@ func TestEncrypt(t *testing.T) {
 			Encryption: jwa.A256GCM,
 		}
 		alg := header.Algorithm.New()
-		key := alg.NewKeyWrapper(k.PrivateKey)
+		key := alg.NewKeyWrapper(&rsaoaep.Options{
+			PublicKey: k.PublicKey.(*rsa.PublicKey),
+		})
 
 		plaintext := "The true sign of intelligence is not knowledge but imagination."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
@@ -214,7 +223,9 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&rsaoaep.Options{
+				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -261,7 +272,9 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.RSA1_5.New()
-		key := alg.NewKeyWrapper(k.PublicKey)
+		key := alg.NewKeyWrapper(&rsapkcs1v15.Options{
+			PublicKey: k.PublicKey.(*rsa.PublicKey),
+		})
 
 		header := &Header{
 			Algorithm:  jwa.RSA1_5,
@@ -274,7 +287,9 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&rsapkcs1v15.Options{
+				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -294,7 +309,7 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.A128KW.New()
-		key := alg.NewKeyWrapper(k.PrivateKey)
+		key := alg.NewKeyWrapper(&akw.Options{Key: k.PrivateKey.([]byte)})
 
 		header := &Header{
 			Algorithm:  jwa.A128KW,
@@ -307,7 +322,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.PrivateKey), nil
+			return alg.NewKeyWrapper(&akw.Options{Key: k.PrivateKey.([]byte)}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)

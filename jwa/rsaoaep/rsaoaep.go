@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/keymanage"
@@ -36,21 +37,32 @@ type Algorithm struct {
 	hash crypto.Hash
 }
 
+type Options struct {
+	// PrivateKey is used for UnwrapKey.
+	PrivateKey *rsa.PrivateKey
+
+	// PublicKey is used for WrapKey.
+	PublicKey *rsa.PublicKey
+}
+
 func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	switch opts := opts.(type) {
-	case *rsa.PrivateKey:
+	key, ok := opts.(*Options)
+	if !ok {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid option type: %T", opts))
+	}
+
+	if priv := key.PrivateKey; priv != nil {
 		return &KeyWrapper{
 			alg:  alg,
-			priv: opts,
-			pub:  &opts.PublicKey,
-		}
-	case *rsa.PublicKey:
-		return &KeyWrapper{
-			alg: alg,
-			pub: opts,
+			priv: priv,
+			pub:  &priv.PublicKey,
 		}
 	}
-	return &KeyWrapper{}
+
+	return &KeyWrapper{
+		alg: alg,
+		pub: key.PublicKey,
+	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
