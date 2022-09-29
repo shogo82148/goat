@@ -152,18 +152,23 @@ const (
 	A256KW KeyManagementAlgorithm = "A256KW"
 
 	// Direct is direct use of a shared symmetric key as the CEK.
+	// import github.com/shogo82148/goat/jwa/dir
 	Direct KeyManagementAlgorithm = "dir"
 
 	// ECDH_ES is Elliptic Curve Diffie-Hellman Ephemeral Static key agreement using Concat KDF.
+	// import github.com/shogo82148/goat/jwa/ecdhes
 	ECDH_ES KeyManagementAlgorithm = "ECDH-ES"
 
-	// ECDH_ES_A128KW is ECDH-ES using Concat KDF and CEK wrapped with "A128K".
+	// ECDH_ES_A128KW is ECDH-ES using Concat KDF and CEK wrapped with "A128KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
 	ECDH_ES_A128KW KeyManagementAlgorithm = "ECDH-ES+A128KW"
 
-	// ECDH_ES_A192KW is ECDH-ES using Concat KDF and CEK wrapped with "A192K".
+	// ECDH_ES_A192KW is ECDH-ES using Concat KDF and CEK wrapped with "A192KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
 	ECDH_ES_A192KW KeyManagementAlgorithm = "ECDH-ES+A192KW"
 
-	// ECDH_ES_A256KW is ECDH-ES using Concat KDF and CEK wrapped with "A256K".
+	// ECDH_ES_A256KW is ECDH-ES using Concat KDF and CEK wrapped with "A256KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
 	ECDH_ES_A256KW KeyManagementAlgorithm = "ECDH-ES+A256KW"
 
 	// A128GCMKW is Key wrapping with AES GCM using 128-bit key.

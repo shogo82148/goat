@@ -1,8 +1,7 @@
-package rsapkcs1v15
+// Package dir implements direct use of a shared symmetric key as the CEK.
+package dir
 
 import (
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
@@ -16,7 +15,7 @@ func New() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.RSA1_5, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.Direct, New)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)
@@ -24,11 +23,7 @@ var _ keymanage.Algorithm = (*Algorithm)(nil)
 type Algorithm struct{}
 
 type Options struct {
-	// PrivateKey is used for UnwrapKey.
-	PrivateKey *rsa.PrivateKey
-
-	// PublicKey is used for WrapKey.
-	PublicKey *rsa.PublicKey
+	Key []byte
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
@@ -36,31 +31,23 @@ type Options struct {
 func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
 	key, ok := opts.(*Options)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsapkcs1v15: invalid option type: %T", opts))
-	}
-	if key.PrivateKey != nil {
-		return &KeyWrapper{
-			priv: key.PrivateKey,
-			pub:  &key.PrivateKey.PublicKey,
-		}
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid option type: %T", opts))
 	}
 	return &KeyWrapper{
-		priv: key.PrivateKey,
-		pub:  key.PublicKey,
+		cek: key.Key,
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	priv *rsa.PrivateKey
-	pub  *rsa.PublicKey
+	cek []byte
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
-	return rsa.EncryptPKCS1v15(rand.Reader, w.pub, cek)
+	return []byte{}, nil
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
-	return rsa.DecryptPKCS1v15(rand.Reader, w.priv, data)
+	return w.cek, nil
 }

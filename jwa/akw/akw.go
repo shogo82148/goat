@@ -37,6 +37,8 @@ func New256() keymanage.Algorithm {
 
 func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.A128KW, New128)
+	jwa.RegisterKeyManagementAlgorithm(jwa.A192KW, New192)
+	jwa.RegisterKeyManagementAlgorithm(jwa.A256KW, New256)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)
@@ -45,13 +47,20 @@ type Algorithm struct {
 	keySize int
 }
 
+type Options struct {
+	Key []byte
+}
+
 func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.([]byte)
+	key, ok := opts.(*Options)
 	if !ok {
-		return nil
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid option type: %T", opts))
+	}
+	if len(key.Key) != alg.keySize {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(key.Key)))
 	}
 	return &KeyWrapper{
-		key: key,
+		key: key.Key,
 	}
 }
 
