@@ -155,6 +155,7 @@ const (
 	Direct KeyManagementAlgorithm = "dir"
 
 	// ECDH_ES is Elliptic Curve Diffie-Hellman Ephemeral Static key agreement using Concat KDF.
+	// import github.com/shogo82148/goat/jwa/ecdhes
 	ECDH_ES KeyManagementAlgorithm = "ECDH-ES"
 
 	// ECDH_ES_A128KW is ECDH-ES using Concat KDF and CEK wrapped with "A128K".
