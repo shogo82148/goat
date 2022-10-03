@@ -398,3 +398,33 @@ const (
 func (zip CompressionAlgorithm) String() string {
 	return string(zip)
 }
+
+// JSON Web Signature and Encryption Header Parameters
+// https://www.iana.org/assignments/jose/jose.xhtml
+const (
+	AlgorithmKey                    = "alg"
+	JWKSetURLKey                    = "jku"
+	JSONWebKey                      = "jwk"
+	KeyIDKey                        = "kid"
+	X509URLKey                      = "x5u"
+	X509CertificateChainKey         = "x5c"
+	X509CertificateSHA1Thumbprint   = "x5t"
+	X509CertificateSHA256Thumbprint = "x5t#S256"
+	TypeKey                         = "typ"
+	ContentTypeKey                  = "cty"
+	Critical                        = "crit"
+	EphemeralPublicKeyKey           = "epk"
+	AgreementPartyUInfoKey          = "apu"
+	AgreementPartyVInfoKey          = "apv"
+	InitializationVectorKey         = "iv"
+	AuthenticationTagKey            = "tag"
+	PBES2SaltInput                  = "p2s"
+	PBES2Count                      = "p2c"
+	IssuerKey                       = "iss"
+	SubjectKey                      = "sub"
+	AudienceKey                     = "aud"
+	Base64URLEncodePayloadKey       = "b64"
+	PASSporTExtensionIdentifierKey  = "ppt"
+	URLKey                          = "url"
+	NonceKey                        = "nonce"
+)
