@@ -72,6 +72,13 @@ type Header struct {
 	// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
 	AgreementPartyVInfo []byte
 
+	// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
+	// It is the 96-bit IV value used for the key encryption operation.
+	InitializationVector []byte
+
+	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
+	AuthenticationTag []byte
+
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
@@ -283,6 +290,14 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.AgreementPartyVInfo = append([]byte(nil), apv...)
 	}
 
+	// Header Parameter used for Key wrapping with AES GCM.
+	if iv, ok := d.GetBytes("iv"); ok {
+		h.InitializationVector = append([]byte(nil), iv...)
+	}
+	if tag, ok := d.GetBytes("tag"); ok {
+		h.AuthenticationTag = append([]byte(nil), tag...)
+	}
+
 	if err := d.Err(); err != nil {
 		return nil, err
 	}
@@ -299,6 +314,10 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 		return nil, err
 	}
 	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+	encryptedKey, err := keyWrapper.WrapKey(cek)
+	if err != nil {
+		return nil, err
+	}
 
 	rawHeader, err := encodeHeader(header)
 	if err != nil {
@@ -306,10 +325,6 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 	}
 	encodedHeader := b64Encode(rawHeader)
 	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
-	if err != nil {
-		return nil, err
-	}
-	encryptedKey, err := keyWrapper.WrapKey(cek)
 	if err != nil {
 		return nil, err
 	}
@@ -413,6 +428,14 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 	if apv := h.AgreementPartyUInfo; apv != nil {
 		e.SetBytes("apv", apv)
+	}
+
+	// Header Parameter used for Key wrapping with AES GCM.
+	if iv := h.InitializationVector; iv != nil {
+		e.SetBytes("iv", iv)
+	}
+	if tag := h.AuthenticationTag; tag != nil {
+		e.SetBytes("tag", tag)
 	}
 
 	if err := e.Err(); err != nil {

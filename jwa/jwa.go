@@ -172,12 +172,15 @@ const (
 	ECDH_ES_A256KW KeyManagementAlgorithm = "ECDH-ES+A256KW"
 
 	// A128GCMKW is Key wrapping with AES GCM using 128-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
 	A128GCMKW KeyManagementAlgorithm = "A128GCMKW"
 
 	// A196GCMKW is Key wrapping with AES GCM using 196-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
 	A192GCMKW KeyManagementAlgorithm = "A192GCMKW"
 
 	// A256GCMKW is Key wrapping with AES GCM using 256-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
 	A256GCMKW KeyManagementAlgorithm = "A256GCMKW"
 
 	// PBES2_HS256_A128KW is PBES2 with HMAC SHA-256 and "A128KW" wrapping.
