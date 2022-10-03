@@ -10,6 +10,7 @@ import (
 	_ "github.com/shogo82148/goat/jwa/agcm" // for AES-GCM
 	"github.com/shogo82148/goat/jwa/agcmkw"
 	"github.com/shogo82148/goat/jwa/akw"
+	"github.com/shogo82148/goat/jwa/pbes2"
 	"github.com/shogo82148/goat/jwa/rsaoaep"
 	"github.com/shogo82148/goat/jwa/rsapkcs1v15"
 	"github.com/shogo82148/goat/jwk"
@@ -175,7 +176,7 @@ func TestParse(t *testing.T) {
 	// $ echo 'Hello JWE!' > input.txt
 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
 	// $ jwx jwe encrypt --key oct.json --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
-	t.Run("jwx", func(t *testing.T) {
+	t.Run("jwx A128GCMKW", func(t *testing.T) {
 		raw := `eyJhbGciOiJBMTI4R0NNS1ciLCJlbmMiOiJBMTI4R0NNIiwiaXYiOiJnODc1b1pydUo1eWotUXFhIiwidGFnIjoieEtCdnR1cF81Szd1MWVFZzhXMjc4USJ9.` +
 			`5V4E9fbfCuHzmHbwitHKeg.` +
 			`JIFlyUcJ3cdSMABW.` +
@@ -206,6 +207,43 @@ func TestParse(t *testing.T) {
 			t.Errorf("want %s, got %s", want, got.Plaintext)
 		}
 	})
+
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello World!' > payload.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --key-encryption PBES2-HS256+A128KW --content-encryption A128GCM payload.txt
+	t.Run("jwx PBES2-HS256+A128KW", func(t *testing.T) {
+		raw := `eyJhbGciOiJQQkVTMi1IUzI1NitBMTI4S1ciLCJlbmMiOiJBMTI4R0NNIiwicDJjIjoxMDAwMCwicDJzIjoiT0RVTU5YOFR2cER0T3h5Q09GdThpZyJ9.` +
+			`YxL8zZTWrXF9Wtw6yqCRWgtsajIR4Mf9.` +
+			`16XfRbDsy7WLjmYD.` +
+			`zY9HEtQPiMb5vyvJRA.` +
+			`N9prznFZGKxHzjVzHzS2AQ`
+
+		got, err := Parse(context.TODO(), []byte(raw), FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			rawKey := `{` +
+				`"k": "uOnJO3TwtrVnA6QIKw3xXg",` +
+				`"kty": "oct"` +
+				`}`
+			k, err := jwk.ParseKey([]byte(rawKey))
+			if err != nil {
+				return nil, err
+			}
+			alg := header.Algorithm.New()
+			return alg.NewKeyWrapper(&pbes2.Options{
+				PrivateKey:     k.PrivateKey.([]byte),
+				PBES2SaltInput: header.PBES2SaltInput,
+				PBES2Count:     header.PBES2Count,
+			}), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "Hello World!\n"
+		if string(got.Plaintext) != want {
+			t.Errorf("want %s, got %s", want, got.Plaintext)
+		}
+	})
+
 }
 
 func TestEncrypt(t *testing.T) {

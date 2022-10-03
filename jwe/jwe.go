@@ -79,6 +79,12 @@ type Header struct {
 	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
 	AuthenticationTag []byte
 
+	// PBES2SaltInput is RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
+	PBES2SaltInput []byte
+
+	// PBES2Count is RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
+	PBES2Count int
+
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
@@ -298,6 +304,14 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.AuthenticationTag = append([]byte(nil), tag...)
 	}
 
+	// Header Parameters Used for PBES2 Key Encryption
+	if p2s, ok := d.GetBytes("p2s"); ok {
+		h.PBES2SaltInput = append([]byte(nil), p2s...)
+	}
+	if p2c, ok := d.GetInt64("p2c"); ok {
+		h.PBES2Count = int(p2c)
+	}
+
 	if err := d.Err(); err != nil {
 		return nil, err
 	}
@@ -436,6 +450,14 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 	if tag := h.AuthenticationTag; tag != nil {
 		e.SetBytes("tag", tag)
+	}
+
+	// Header Parameters Used for PBES2 Key Encryption
+	if p2s := h.PBES2SaltInput; p2s != nil {
+		e.SetBytes("p2s", p2s)
+	}
+	if p2c := h.PBES2Count; p2c != 0 {
+		e.Set("p2c", p2c)
 	}
 
 	if err := e.Err(); err != nil {
