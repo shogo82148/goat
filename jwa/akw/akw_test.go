@@ -21,8 +21,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.1 Wrap 128 bits of Key Data with a 128-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
-		w := New128().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -38,8 +38,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.2 Wrap 128 bits of Key Data with a 192-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F1011121314151617")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
-		w := New192().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,8 +55,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.3 Wrap 128 bits of Key Data with a 256-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -72,8 +72,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.4 Wrap 192 bits of Key Data with a 192-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F1011121314151617")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
-		w := New192().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -90,8 +90,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.5 Wrap 192 bits of Key Data with a 256-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,8 +108,8 @@ func TestWrap(t *testing.T) {
 	t.Run("RFC 3394 Section 4.6 Wrap 256 bits of Key Data with a 256-bit KEK", func(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F")
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.WrapKey(cek)
+		w := NewKeyWrapper(key)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -132,14 +132,14 @@ func TestWrap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		w := New128().NewKeyWrapper(&Options{Key: key.PrivateKey.([]byte)})
+		w := NewKeyWrapper(key.PrivateKey.([]byte))
 
 		cek := []byte{
 			4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106,
 			206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
 			44, 207,
 		}
-		got, err := w.WrapKey(cek)
+		_, got, err := w.WrapKey(cek)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -163,8 +163,8 @@ func TestUnwrap(t *testing.T) {
 			"9D3E862371D2CFE5")
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
-		w := New128().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,8 +180,8 @@ func TestUnwrap(t *testing.T) {
 			"468AB8A17AD84E5D")
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
-		w := New192().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -197,8 +197,8 @@ func TestUnwrap(t *testing.T) {
 			"93C8191E7D6E8AE7")
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -215,8 +215,8 @@ func TestUnwrap(t *testing.T) {
 			"6BA814915C6762D2")
 		want := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 
-		w := New192().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -233,8 +233,8 @@ func TestUnwrap(t *testing.T) {
 			"8CD5D17D6B254DA1")
 		want := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -252,8 +252,8 @@ func TestUnwrap(t *testing.T) {
 			"FB988B9B7A02DD21")
 		want := mustHex("00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F")
 
-		w := New256().NewKeyWrapper(&Options{Key: key})
-		got, err := w.UnwrapKey(data)
+		w := NewKeyWrapper(key)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -270,7 +270,7 @@ func TestUnwrap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		w := New128().NewKeyWrapper(&Options{Key: key.PrivateKey.([]byte)})
+		w := NewKeyWrapper(key.PrivateKey.([]byte))
 
 		data := []byte{
 			232, 160, 123, 211, 183, 76, 245, 132, 200, 128, 123, 75, 190, 216,
@@ -282,7 +282,7 @@ func TestUnwrap(t *testing.T) {
 			206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
 			44, 207,
 		}
-		got, err := w.UnwrapKey(data)
+		got, err := w.UnwrapKey(nil, data)
 		if err != nil {
 			t.Fatal(err)
 		}

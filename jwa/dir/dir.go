@@ -28,13 +28,13 @@ type Options struct {
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
 // opts must be a pointer to [Options].
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+	key, ok := privateKey.([]byte)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid option type: %T", opts))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid option type: %T", privateKey))
 	}
 	return &KeyWrapper{
-		cek: key.Key,
+		cek: key,
 	}
 }
 
@@ -44,10 +44,10 @@ type KeyWrapper struct {
 	cek []byte
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
-	return []byte{}, nil
+func (w *KeyWrapper) WrapKey(cek []byte) (map[string]any, []byte, error) {
+	return nil, []byte{}, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(header map[string]any, data []byte) ([]byte, error) {
 	return w.cek, nil
 }

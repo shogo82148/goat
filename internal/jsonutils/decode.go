@@ -337,6 +337,20 @@ func (d *Decoder) GetInt64(name string) (int64, bool) {
 	return 0, false
 }
 
+func (d *Decoder) MustInt64(name string) int64 {
+	n, ok := d.GetInt64(name)
+	if !ok {
+		if d.err == nil {
+			d.err = &missingError{
+				pkg:  d.pkg,
+				name: name,
+			}
+		}
+		return 0
+	}
+	return n
+}
+
 // SaveError asserts the operation must not fail.
 // If err is nil, SaveError does nothing.
 // Otherwise, SaveError records the first error.
