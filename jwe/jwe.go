@@ -72,6 +72,13 @@ type Header struct {
 	// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
 	AgreementPartyVInfo []byte
 
+	// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
+	// It is the 96-bit IV value used for the key encryption operation.
+	InitializationVector []byte
+
+	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
+	AuthenticationTag []byte
+
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
