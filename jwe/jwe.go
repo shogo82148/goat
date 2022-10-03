@@ -290,6 +290,14 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.AgreementPartyVInfo = append([]byte(nil), apv...)
 	}
 
+	// Header Parameter used for Key wrapping with AES GCM.
+	if iv, ok := d.GetBytes("iv"); ok {
+		h.InitializationVector = append([]byte(nil), iv...)
+	}
+	if tag, ok := d.GetBytes("tag"); ok {
+		h.AuthenticationTag = append([]byte(nil), tag...)
+	}
+
 	if err := d.Err(); err != nil {
 		return nil, err
 	}
@@ -420,6 +428,14 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 	if apv := h.AgreementPartyUInfo; apv != nil {
 		e.SetBytes("apv", apv)
+	}
+
+	// Header Parameter used for Key wrapping with AES GCM.
+	if iv := h.InitializationVector; iv != nil {
+		e.SetBytes("iv", iv)
+	}
+	if tag := h.AuthenticationTag; tag != nil {
+		e.SetBytes("tag", tag)
 	}
 
 	if err := e.Err(); err != nil {

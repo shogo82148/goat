@@ -3,11 +3,13 @@ package jwe
 import (
 	"context"
 	"crypto/rsa"
+	"log"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/acbc" // for AES-CBC-HMAC-SHA2
 	_ "github.com/shogo82148/goat/jwa/agcm" // for AES-GCM
+	"github.com/shogo82148/goat/jwa/agcmkw"
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwa/rsaoaep"
 	"github.com/shogo82148/goat/jwa/rsapkcs1v15"
@@ -169,6 +171,43 @@ func TestParse(t *testing.T) {
 			t.Errorf("want %s, got %s", want, got.Plaintext)
 		}
 	})
+
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx", func(t *testing.T) {
+		raw := `eyJhbGciOiJBMTI4R0NNS1ciLCJlbmMiOiJBMTI4R0NNIiwiaXYiOiJnODc1b1pydUo1eWotUXFhIiwidGFnIjoieEtCdnR1cF81Szd1MWVFZzhXMjc4USJ9.` +
+			`5V4E9fbfCuHzmHbwitHKeg.` +
+			`JIFlyUcJ3cdSMABW.` +
+			`p6YrKQpF8YA9nj4.` +
+			`zaroAba3C8OJkX4l3DOjwg`
+
+		got, err := Parse(context.TODO(), []byte(raw), FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			rawKey := `{` +
+				`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+				`"kty": "oct"` +
+				`}`
+			k, err := jwk.ParseKey([]byte(rawKey))
+			if err != nil {
+				return nil, err
+			}
+			alg := header.Algorithm.New()
+			log.Println(header.InitializationVector)
+			return alg.NewKeyWrapper(&agcmkw.Options{
+				PrivateKey:           k.PrivateKey.([]byte),
+				InitializationVector: header.InitializationVector,
+				AuthenticationTag:    header.AuthenticationTag,
+			}), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "Hello JWE!\n"
+		if string(got.Plaintext) != want {
+			t.Errorf("want %s, got %s", want, got.Plaintext)
+		}
+	})
 }
 
 func TestEncrypt(t *testing.T) {
@@ -323,6 +362,50 @@ func TestEncrypt(t *testing.T) {
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
 			return alg.NewKeyWrapper(&akw.Options{Key: k.PrivateKey.([]byte)}), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got.Plaintext) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
+		}
+	})
+
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx", func(t *testing.T) {
+		rawKey := `{` +
+			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		header := &Header{
+			Algorithm:  jwa.A128GCMKW,
+			Encryption: jwa.A128GCM,
+		}
+		alg := header.Algorithm.New()
+		opts := &agcmkw.Options{
+			PrivateKey: k.PrivateKey.([]byte),
+			InitializationVector: []byte{
+				131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
+			},
+			AuthenticationTag: make([]byte, 16),
+		}
+		key := alg.NewKeyWrapper(opts)
+		plaintext := "Hello JWE!\n"
+		ciphertext, err := Encrypt(header, []byte(plaintext), key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(opts), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
