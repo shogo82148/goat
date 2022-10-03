@@ -314,6 +314,10 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 		return nil, err
 	}
 	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+	encryptedKey, err := keyWrapper.WrapKey(cek)
+	if err != nil {
+		return nil, err
+	}
 
 	rawHeader, err := encodeHeader(header)
 	if err != nil {
@@ -321,10 +325,6 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 	}
 	encodedHeader := b64Encode(rawHeader)
 	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
-	if err != nil {
-		return nil, err
-	}
-	encryptedKey, err := keyWrapper.WrapKey(cek)
 	if err != nil {
 		return nil, err
 	}

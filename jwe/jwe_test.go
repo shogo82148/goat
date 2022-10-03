@@ -3,7 +3,6 @@ package jwe
 import (
 	"context"
 	"crypto/rsa"
-	"log"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -193,7 +192,6 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm.New()
-			log.Println(header.InitializationVector)
 			return alg.NewKeyWrapper(&agcmkw.Options{
 				PrivateKey:           k.PrivateKey.([]byte),
 				InitializationVector: header.InitializationVector,
@@ -385,17 +383,21 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		iv := []byte{
+			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
+		}
+		tag := make([]byte, 16)
 		header := &Header{
-			Algorithm:  jwa.A128GCMKW,
-			Encryption: jwa.A128GCM,
+			Algorithm:            jwa.A128GCMKW,
+			Encryption:           jwa.A128GCM,
+			InitializationVector: iv,
+			AuthenticationTag:    tag,
 		}
 		alg := header.Algorithm.New()
 		opts := &agcmkw.Options{
-			PrivateKey: k.PrivateKey.([]byte),
-			InitializationVector: []byte{
-				131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
-			},
-			AuthenticationTag: make([]byte, 16),
+			PrivateKey:           k.PrivateKey.([]byte),
+			InitializationVector: iv,
+			AuthenticationTag:    tag,
 		}
 		key := alg.NewKeyWrapper(opts)
 		plaintext := "Hello JWE!\n"
@@ -405,7 +407,11 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(opts), nil
+			return alg.NewKeyWrapper(&agcmkw.Options{
+				PrivateKey:           k.PrivateKey.([]byte),
+				InitializationVector: header.InitializationVector,
+				AuthenticationTag:    header.AuthenticationTag,
+			}), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
