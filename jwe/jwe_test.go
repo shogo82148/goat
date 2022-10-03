@@ -459,4 +459,55 @@ func TestEncrypt(t *testing.T) {
 			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
 		}
 	})
+
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello World!' > payload.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --key-encryption PBES2-HS256+A128KW --content-encryption A128GCM payload.txt
+	t.Run("jwx", func(t *testing.T) {
+		rawKey := `{` +
+			`"k": "uOnJO3TwtrVnA6QIKw3xXg",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		salt := []byte{
+			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
+		}
+		header := &Header{
+			Algorithm:      jwa.PBES2_HS256_A128KW,
+			Encryption:     jwa.A128GCM,
+			PBES2SaltInput: salt,
+			PBES2Count:     10000,
+		}
+		alg := header.Algorithm.New()
+		opts := &pbes2.Options{
+			PrivateKey:     k.PrivateKey.([]byte),
+			PBES2SaltInput: salt,
+			PBES2Count:     10000,
+		}
+		key := alg.NewKeyWrapper(opts)
+		plaintext := "Hello World!\n"
+		ciphertext, err := Encrypt(header, []byte(plaintext), key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(&pbes2.Options{
+				PrivateKey:     k.PrivateKey.([]byte),
+				PBES2SaltInput: header.PBES2SaltInput,
+				PBES2Count:     header.PBES2Count,
+			}), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got.Plaintext) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
+		}
+	})
 }

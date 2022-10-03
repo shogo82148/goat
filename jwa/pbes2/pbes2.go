@@ -2,7 +2,6 @@ package pbes2
 
 import (
 	"crypto"
-	"errors"
 	"fmt"
 	"hash"
 
@@ -15,7 +14,7 @@ import (
 var a128kw = &Algorithm{
 	name: string(jwa.PBES2_HS256_A128KW),
 	hash: crypto.SHA256.New,
-	enc:  akw.New128,
+	alg:  akw.New128,
 	size: 16,
 }
 
@@ -26,7 +25,7 @@ func NewHS256A128KW() keymanage.Algorithm {
 var a192kw = &Algorithm{
 	name: string(jwa.PBES2_HS384_A192KW),
 	hash: crypto.SHA384.New,
-	enc:  akw.New192,
+	alg:  akw.New192,
 	size: 24,
 }
 
@@ -37,7 +36,7 @@ func NewHS384A192KW() keymanage.Algorithm {
 var a256kw = &Algorithm{
 	name: string(jwa.PBES2_HS512_A256KW),
 	hash: crypto.SHA512.New,
-	enc:  akw.New256,
+	alg:  akw.New256,
 	size: 32,
 }
 
@@ -56,7 +55,7 @@ var _ keymanage.Algorithm = (*Algorithm)(nil)
 type Algorithm struct {
 	name string
 	hash func() hash.Hash
-	enc  func() keymanage.Algorithm
+	alg  func() keymanage.Algorithm
 	size int
 }
 
@@ -77,35 +76,42 @@ func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("pbes2: invalid option type: %T", opts))
 	}
+	salt := make([]byte, 0, len(alg.name)+len(key.PBES2SaltInput))
+	salt = append(salt, []byte(alg.name)...)
+	salt = append(salt, '\x00')
+	salt = append(salt, key.PBES2SaltInput...)
+	dk := pbkdf2.Key(key.PrivateKey, salt, key.PBES2Count, alg.size, alg.hash)
 	return &KeyWrapper{
-		alg: alg,
-		key: key.PrivateKey,
-		p2s: key.PBES2SaltInput,
-		p2c: key.PBES2Count,
+		alg: alg.alg,
+		key: dk,
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	alg *Algorithm
+	alg func() keymanage.Algorithm
 	key []byte
-	p2s []byte
-	p2c int
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
-	return nil, errors.New("pbes2: TODO implement me")
+	kw := w.alg().NewKeyWrapper(&akw.Options{
+		Key: w.key,
+	})
+	data, err := kw.WrapKey(cek)
+	if err != nil {
+		return nil, fmt.Errorf("pbse2: failed to wrap key: %w", err)
+	}
+	return data, nil
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
-	salt := make([]byte, 0, len(w.p2s)+1+len(w.alg.name))
-	salt = append(salt, []byte(w.alg.name)...)
-	salt = append(salt, '\x00')
-	salt = append(salt, w.p2s...)
-	dk := pbkdf2.Key(w.key, salt, w.p2c, w.alg.size, w.alg.hash)
-	kw := akw.New128().NewKeyWrapper(&akw.Options{
-		Key: dk,
+	kw := w.alg().NewKeyWrapper(&akw.Options{
+		Key: w.key,
 	})
-	return kw.UnwrapKey(data)
+	cek, err := kw.UnwrapKey(data)
+	if err != nil {
+		return nil, fmt.Errorf("pbse2: failed to unwrap key: %w", err)
+	}
+	return cek, nil
 }
