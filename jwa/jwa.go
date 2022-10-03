@@ -184,12 +184,15 @@ const (
 	A256GCMKW KeyManagementAlgorithm = "A256GCMKW"
 
 	// PBES2_HS256_A128KW is PBES2 with HMAC SHA-256 and "A128KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
 	PBES2_HS256_A128KW KeyManagementAlgorithm = "PBES2-HS256+A128KW"
 
 	// PBES2_HS384_A192KW is PBES2 with HMAC SHA-384 and "A192KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
 	PBES2_HS384_A192KW KeyManagementAlgorithm = "PBES2-HS384+A192KW"
 
 	// PBES2_HS512_A256KW is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
 	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
 

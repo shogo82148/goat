@@ -301,6 +301,42 @@ func (d *Decoder) GetTime(name string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+func (d *Decoder) GetInt64(name string) (int64, bool) {
+	v, ok := d.raw[name]
+	if !ok {
+		return 0, false
+	}
+	switch v := v.(type) {
+	case json.Number:
+		i, err := v.Int64()
+		if err != nil {
+			if d.err == nil {
+				d.err = fmt.Errorf("%s: failed to parse integer value: %w", d.pkg, err)
+			}
+			return 0, false
+		}
+		return i, true
+	case float64:
+		i, f := math.Modf(v)
+		if f != 0 {
+			if d.err == nil {
+				d.err = fmt.Errorf("%s: failed to parse integer value", d.pkg)
+			}
+			return 0, false
+		}
+		return int64(i), true
+	}
+	if d.err == nil {
+		d.err = &typeError{
+			pkg:  d.pkg,
+			name: name,
+			want: "number",
+			got:  reflect.TypeOf(v),
+		}
+	}
+	return 0, false
+}
+
 // SaveError asserts the operation must not fail.
 // If err is nil, SaveError does nothing.
 // Otherwise, SaveError records the first error.
