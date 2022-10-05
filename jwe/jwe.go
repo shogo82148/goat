@@ -86,8 +86,31 @@ func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
 }
 
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
+func (h *Header) EphemeralPublicKey() *jwk.Key {
+	return h.epk
+}
+
+func (h *Header) SetEphemeralPublicKey(epk *jwk.Key) {
+	h.epk = epk
+}
+
 // AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
+func (h *Header) AgreementPartyUInfo() []byte {
+	return h.apu
+}
+
+func (h *Header) SetAgreementPartyUInfo(apu []byte) {
+	h.apu = apu
+}
+
 // AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
+func (h *Header) AgreementPartyVInfo() []byte {
+	return h.apv
+}
+
+func (h *Header) SetAgreementPartyVInfo(apv []byte) {
+	h.apv = apv
+}
 
 // Encryption return the encryption algorithm
 // defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
