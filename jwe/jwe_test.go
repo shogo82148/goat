@@ -386,7 +386,7 @@ func TestEncrypt(t *testing.T) {
 	// $ echo 'Hello JWE!' > input.txt
 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
 	// $ jwx jwe encrypt --key oct.json --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
-	t.Run("jwx", func(t *testing.T) {
+	t.Run("jwx A128GCMKW", func(t *testing.T) {
 		rawKey := `{` +
 			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
 			`"kty": "oct"` +
@@ -426,7 +426,7 @@ func TestEncrypt(t *testing.T) {
 	// $ echo 'Hello World!' > payload.txt
 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
 	// $ jwx jwe encrypt --key oct.json --key-encryption PBES2-HS256+A128KW --content-encryption A128GCM payload.txt
-	t.Run("jwx", func(t *testing.T) {
+	t.Run("jwx PBES2-HS256+A128KW", func(t *testing.T) {
 		rawKey := `{` +
 			`"k": "uOnJO3TwtrVnA6QIKw3xXg",` +
 			`"kty": "oct"` +
