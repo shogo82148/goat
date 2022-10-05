@@ -35,23 +35,16 @@ type Header struct {
 	x5c     []*x509.Certificate
 	x5t     []byte
 	x5tS256 []byte
-
-	// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
-	Type string
-
-	// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
-	ContentType string
-
-	// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
-	Critical []string
-
-	epk *jwk.Key
-	apu []byte
-	apv []byte
-	iv  []byte
-	tag []byte
-	p2s []byte
-	p2c int
+	typ     string
+	cty     string
+	crit    []string
+	epk     *jwk.Key
+	apu     []byte
+	apv     []byte
+	iv      []byte
+	tag     []byte
+	p2s     []byte
+	p2c     int
 
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
@@ -148,6 +141,33 @@ func (h *Header) X509CertificateSHA256() []byte {
 
 func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 	h.x5tS256 = x5tS256
+}
+
+// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
+func (h *Header) Type() string {
+	return h.typ
+}
+
+func (h *Header) SetType(typ string) {
+	h.typ = typ
+}
+
+// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
+func (h *Header) ContentType() string {
+	return h.cty
+}
+
+func (h *Header) SetContentType(cty string) {
+	h.cty = cty
+}
+
+// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
+func (h *Header) Critical() []string {
+	return h.crit
+}
+
+func (h *Header) SetCritical(crit []string) {
+	h.crit = crit
 }
 
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
@@ -405,9 +425,9 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	h.kid, _ = d.GetString("kid")
-	h.Type, _ = d.GetString("typ")
-	h.ContentType, _ = d.GetString("cty")
-	h.Critical, _ = d.GetStringArray("crit")
+	h.typ, _ = d.GetString("typ")
+	h.cty, _ = d.GetString("cty")
+	h.crit, _ = d.GetStringArray("crit")
 
 	// Header Parameters Used for ECDH Key Agreement
 	if epk, ok := d.GetObject(jwa.EphemeralPublicKeyKey); ok {
@@ -553,15 +573,15 @@ func encodeHeader(h *Header) ([]byte, error) {
 		e.SetBytes("x5t#S256", sum[:])
 	}
 
-	if typ := h.Type; typ != "" {
+	if typ := h.typ; typ != "" {
 		e.Set("typ", typ)
 	}
 
-	if cty := h.ContentType; cty != "" {
+	if cty := h.cty; cty != "" {
 		e.Set("cty", cty)
 	}
 
-	if crit := h.Critical; len(crit) > 0 {
+	if crit := h.crit; len(crit) > 0 {
 		e.Set("crit", crit)
 	}
 
