@@ -81,10 +81,10 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
+		if !privateKey.Equal(key.PrivateKey()) {
 			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
-		if !publicKey.Equal(key.PublicKey) {
+		if !publicKey.Equal(key.PublicKey()) {
 			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
@@ -120,7 +120,7 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !publicKey.Equal(key.PublicKey) {
+		if !publicKey.Equal(key.PublicKey()) {
 			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
@@ -201,10 +201,10 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
+		if !privateKey.Equal(key.PrivateKey()) {
 			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
-		if !publicKey.Equal(key.PublicKey) {
+		if !publicKey.Equal(key.PublicKey()) {
 			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
@@ -376,12 +376,12 @@ func TestMarshalKey_RSA(t *testing.T) {
 			"4956581554819", 10)
 		key := &Key{
 			alg: jwa.RS256.KeyAlgorithm(),
-			priv: &rsa.PublicKey{
-				N: n,
-				E: 65537,
-			},
 			kid: "2011-04-29",
 		}
+		key.SetPublicKey(&rsa.PublicKey{
+			N: n,
+			E: 65537,
+		})
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)

@@ -275,7 +275,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
+		k := jwa.HS256.New().NewKey(key.KeyPair())
 		h := NewHeader(jwa.HS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
@@ -333,7 +333,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.RS256.New().NewKey(key.PrivateKey, key.PublicKey)
+		k := jwa.RS256.New().NewKey(key.KeyPair())
 		h := NewHeader(jwa.RS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +

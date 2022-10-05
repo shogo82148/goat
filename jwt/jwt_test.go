@@ -46,7 +46,7 @@ func TestParse(t *testing.T) {
 		}
 		token, err := Parse(context.TODO(), raw, jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
+			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -143,9 +143,6 @@ func TestParse_Claims(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-	defer mockTime(func() time.Time {
-		return time.Unix(1300819379, 0)
-	})()
 
 	t.Run("RFC7519 Section 3.1. Example JWT", func(t *testing.T) {
 		rawKey := `{"kty":"oct",` +
@@ -156,7 +153,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sigKey := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
+		sigKey := jwa.HS256.New().NewKey(key.KeyPair())
 
 		header := jws.NewHeader(jwa.HS256)
 		header.SetType("JWT")

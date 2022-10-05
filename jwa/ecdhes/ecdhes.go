@@ -88,7 +88,7 @@ type agreementPartyVInfoGetter interface {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	return &KeyWrapper{
 		priv: privateKey,
 		alg:  alg,
@@ -132,7 +132,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 		apu.AgreementPartyUInfo(),
 		apv.AgreementPartyVInfo(),
 		w.priv,
-		epk.EphemeralPublicKey().PublicKey,
+		epk.EphemeralPublicKey().PublicKey(),
 		size,
 	)
 	if err != nil {

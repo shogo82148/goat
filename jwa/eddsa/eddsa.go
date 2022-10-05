@@ -1,6 +1,7 @@
 package eddsa
 
 import (
+	"crypto"
 	"crypto/ed25519"
 
 	"github.com/shogo82148/goat/jwa"
@@ -17,7 +18,7 @@ func init() {
 
 type Algorithm struct{}
 
-func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
+func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
 	var key Key
 	if priv, ok := privateKey.(ed25519.PrivateKey); ok {
 		key.priv = priv

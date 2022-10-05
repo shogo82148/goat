@@ -256,12 +256,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 
 	switch priv := key.priv.(type) {
 	case *ecdsa.PrivateKey:
-		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for ecdsa")
 		}
 		encodeEcdsaKey(e, priv, &priv.PublicKey)
 	case *rsa.PrivateKey:
-		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for rsa")
 		}
 		encodeRSAKey(e, priv, &priv.PublicKey)
@@ -270,7 +270,7 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, newUnknownKeyTypeError(key)
 		}
 		pub := ed25519.PublicKey(priv[ed25519.SeedSize:])
-		if k := key.PublicKey; k != nil && !pub.Equal(k) {
+		if k := key.pub; k != nil && !pub.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for ed25519")
 		}
 		encodeEd25519Key(e, priv, pub)
@@ -281,7 +281,7 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		encodeSymmetricKey(e, priv)
 	case nil:
 		// the key has only public key.
-		switch pub := key.priv.(type) {
+		switch pub := key.pub.(type) {
 		case *ecdsa.PublicKey:
 			encodeEcdsaKey(e, nil, pub)
 		case *rsa.PublicKey:
@@ -301,14 +301,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Data())
 }
 
-// Thumbprint computes the thumbprint of the key defined in [RFC 7638].
-//
-// [RFC 7638]: https://www.rfc-editor.org/rfc/rfc7638
+// Thumbprint computes the thumbprint of the key defined in RFC 7638.
 func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	// remove optional parameters
 	thumbKey := &Key{
-		kty:  key.kty,
-		priv: key.priv,
+		kty: key.kty,
+		pub: key.pub,
 	}
 	data, err := thumbKey.MarshalJSON()
 	if err != nil {
@@ -452,8 +450,8 @@ type unknownKeyTypeError struct {
 
 func newUnknownKeyTypeError(key *Key) *unknownKeyTypeError {
 	return &unknownKeyTypeError{
-		pub:  reflect.TypeOf(key.PublicKey),
-		priv: reflect.TypeOf(key.PrivateKey),
+		pub:  reflect.TypeOf(key.PublicKey()),
+		priv: reflect.TypeOf(key.PrivateKey()),
 	}
 }
 

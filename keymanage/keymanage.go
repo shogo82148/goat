@@ -1,8 +1,10 @@
 // Package keymanage defines the interface of Key Management Algorithms.
 package keymanage
 
+import "crypto"
+
 type Algorithm interface {
-	NewKeyWrapper(privateKey, publicKey any) KeyWrapper
+	NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) KeyWrapper
 }
 
 type KeyWrapper interface {

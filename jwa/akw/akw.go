@@ -2,6 +2,7 @@
 package akw
 
 import (
+	"crypto"
 	"crypto/aes"
 	"crypto/subtle"
 	"errors"
@@ -61,7 +62,7 @@ type Options struct {
 	Key []byte
 }
 
-func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	key, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid private key type: []byte is required but got %T", privateKey))

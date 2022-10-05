@@ -1,6 +1,7 @@
 package rsapkcs1v15
 
 import (
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"fmt"
@@ -32,7 +33,7 @@ type Options struct {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	priv, ok := privateKey.(*rsa.PrivateKey)
 	if !ok && privateKey != nil {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))

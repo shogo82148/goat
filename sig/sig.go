@@ -2,6 +2,7 @@
 package sig
 
 import (
+	"crypto"
 	"errors"
 	"reflect"
 )
@@ -10,7 +11,7 @@ import (
 type Algorithm interface {
 	// NewKey returns a new key for privateKey and publicKey.
 	// If Algorithm uses symmetric keys, publicKey is nil.
-	NewKey(privateKey, publicKey any) Key
+	NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) Key
 }
 
 // Key is a key for signature.
