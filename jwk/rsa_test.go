@@ -437,16 +437,11 @@ func TestMarshalKey_RSA(t *testing.T) {
 			Primes: []*big.Int{p, q},
 		}
 		privateKey.Precompute()
-		publicKey := &rsa.PublicKey{
-			N: n,
-			E: 65537,
-		}
 		key := &Key{
-			alg:  jwa.RS256.KeyAlgorithm(),
-			kid:  "2011-04-29",
-			priv: privateKey,
-			pub:  publicKey,
+			alg: jwa.RS256.KeyAlgorithm(),
+			kid: "2011-04-29",
 		}
+		key.SetPrivateKey(privateKey)
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)

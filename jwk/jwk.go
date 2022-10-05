@@ -3,6 +3,7 @@ package jwk
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -33,8 +34,8 @@ type Key struct {
 	x5c     []*x509.Certificate
 	x5t     []byte
 	x5tS256 []byte
-	priv    any
-	pub     any
+	priv    crypto.PrivateKey
+	pub     crypto.PublicKey
 
 	// Raw is the raw data of JSON-decoded JWK.
 	// JSON numbers are decoded as json.Number to avoid data loss.
@@ -320,20 +321,37 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 }
 
 // KeyPair returns a pair of private key and public key.
-func (key *Key) KeyPair() (privateKey, publicKey any) {
+func (key *Key) KeyPair() (crypto.PrivateKey, crypto.PublicKey) {
 	return key.priv, key.pub
 }
 
 // PrivateKey returns the private key.
 // If the key doesn't contain any private key, it returns nil.
-func (key *Key) PrivateKey() any {
+func (key *Key) PrivateKey() crypto.PrivateKey {
 	return key.priv
+}
+
+// SetPrivateKey sets the private key.
+// If priv has Public() method, it sets the public key as well.
+func (key *Key) SetPrivateKey(priv crypto.PrivateKey) {
+	key.priv = priv
+	if pub, ok := priv.(interface{ Public() crypto.PublicKey }); ok {
+		key.pub = pub.Public()
+	} else {
+		key.pub = nil
+	}
 }
 
 // PublicKey returns the public key.
 // If the key doesn't contain any public key, it returns nil.
-func (key *Key) PublicKey() any {
+func (key *Key) PublicKey() crypto.PublicKey {
 	return key.pub
+}
+
+// SetPublicKey sets the public key, and removes the private key.
+func (key *Key) SetPublicKey(pub crypto.PublicKey) {
+	key.priv = nil
+	key.pub = pub
 }
 
 // ParseMap parses a JWK that is decoded by the json package.
