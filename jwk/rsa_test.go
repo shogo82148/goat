@@ -508,17 +508,17 @@ func TestParseKey_RSA_Invalid(t *testing.T) {
 				`"alg":"RS256"}`,
 		},
 		{
-			name: "missing requied paramer n and e",
+			name: "missing required parameter n and e",
 			data: `{"kty":"RSA", "alg":"RS256"}`,
 		},
 		{
-			name: "missing requied parameter n",
+			name: "missing required parameter n",
 			data: `{"kty":"RSA",` +
 				`"e":"AQAB",` +
 				`"alg":"RS256"}`,
 		},
 		{
-			name: "missing requied parameter e",
+			name: "missing required parameter e",
 			data: `{"kty":"RSA",` +
 				`"n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx` +
 				`4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs` +
