@@ -113,7 +113,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 		}
 		p2s = make([]byte, 32)
 		if _, err := rand.Read(p2s); err != nil {
-			return nil, fmt.Errorf("pkse2: failed initialize p2s: %w", err)
+			return nil, fmt.Errorf("pbse2: failed initialize p2s: %w", err)
 		}
 		setter.SetPBES2SaltInput(p2s)
 	}
