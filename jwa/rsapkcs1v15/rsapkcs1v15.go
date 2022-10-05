@@ -1,3 +1,4 @@
+// Package rsaoaep implements a Key Encryption Algorithm RSAES-PKCS1-v1_5.
 package rsapkcs1v15
 
 import (
@@ -23,14 +24,6 @@ func init() {
 var _ keymanage.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct{}
-
-type Options struct {
-	// PrivateKey is used for UnwrapKey.
-	PrivateKey *rsa.PrivateKey
-
-	// PublicKey is used for WrapKey.
-	PublicKey *rsa.PublicKey
-}
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
 func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {

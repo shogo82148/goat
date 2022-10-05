@@ -1,3 +1,4 @@
+// package agcmkw implements a Key Encryption algorithm AES GCM
 package agcmkw
 
 import (

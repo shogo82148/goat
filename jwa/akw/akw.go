@@ -1,4 +1,4 @@
-// Package akw implements AES Key Wrap key management algorithm.
+// Package akw implements a Key Encryption Algorithm AES.
 package akw
 
 import (
