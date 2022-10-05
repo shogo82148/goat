@@ -48,8 +48,8 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if key.kty != jwa.Oct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
-		if key.Algorithm != "A128KW" {
-			t.Errorf("unexpected algorithm: want %s, got %s", "A128KW", key.Algorithm)
+		if key.alg != "A128KW" {
+			t.Errorf("unexpected algorithm: want %s, got %s", "A128KW", key.alg)
 		}
 		got, ok := key.PrivateKey.([]byte)
 		if !ok {
@@ -140,7 +140,7 @@ func TestParseKey_Symmetric_Invalid(t *testing.T) {
 func TestMarshalKey_symmetric(t *testing.T) {
 	t.Run("RFC 7517 A.3. Example Symmetric Keys (A128KW)", func(t *testing.T) {
 		key := &Key{
-			Algorithm: jwa.A128KW.KeyAlgorithm(),
+			alg: jwa.A128KW.KeyAlgorithm(),
 			PrivateKey: []byte{
 				0x19, 0xac, 0x20, 0x82, 0xe1, 0x72, 0x1a, 0xb5,
 				0x8a, 0x6a, 0xfe, 0xc0, 0x5f, 0x85, 0x4a, 0x52,

@@ -106,7 +106,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		if want, got := key.Algorithm, jwa.RS256.KeyAlgorithm(); want != got {
+		if want, got := key.alg, jwa.RS256.KeyAlgorithm(); want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		n := newBigInt("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632" +
@@ -164,7 +164,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		if want, got := jwa.RS256.KeyAlgorithm(), key.Algorithm; want != got {
+		if want, got := jwa.RS256.KeyAlgorithm(), key.alg; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		n := newBigInt("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632" +
@@ -375,7 +375,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 			"06204439131004744574928756316166854835432256022350994699082769165462796818216782639701536883643596535"+
 			"4956581554819", 10)
 		key := &Key{
-			Algorithm: jwa.RS256.KeyAlgorithm(),
+			alg: jwa.RS256.KeyAlgorithm(),
 			PublicKey: &rsa.PublicKey{
 				N: n,
 				E: 65537,
@@ -442,7 +442,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 			E: 65537,
 		}
 		key := &Key{
-			Algorithm:  jwa.RS256.KeyAlgorithm(),
+			alg:        jwa.RS256.KeyAlgorithm(),
 			KeyID:      "2011-04-29",
 			PrivateKey: privateKey,
 			PublicKey:  publicKey,

@@ -27,9 +27,7 @@ type Key struct {
 	kty    jwa.KeyType
 	use    string
 	keyOps []string
-
-	// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
-	Algorithm jwa.KeyAlgorithm
+	alg    jwa.KeyAlgorithm
 
 	// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
 	KeyID string
@@ -60,26 +58,35 @@ type Key struct {
 }
 
 // KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
-func (k *Key) KeyType() jwa.KeyType {
-	return k.kty
+func (key *Key) KeyType() jwa.KeyType {
+	return key.kty
 }
 
 // PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
-func (k *Key) PublicKeyUse() string {
-	return k.use
+func (key *Key) PublicKeyUse() string {
+	return key.use
 }
 
-func (k *Key) SetPublicKeyUse(use string) {
-	k.use = use
+func (key *Key) SetPublicKeyUse(use string) {
+	key.use = use
 }
 
 // KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
-func (k *Key) KeyOperations() []string {
-	return k.keyOps
+func (key *Key) KeyOperations() []string {
+	return key.keyOps
 }
 
-func (k *Key) SetKeyOperation(keyOps []string) {
-	k.keyOps = keyOps
+func (key *Key) SetKeyOperation(keyOps []string) {
+	key.keyOps = keyOps
+}
+
+// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
+func (key *Key) Algorithm() jwa.KeyAlgorithm {
+	return key.alg
+}
+
+func (key *Key) SetAlgorithm(alg jwa.KeyAlgorithm) {
+	key.alg = alg
 }
 
 // decode common parameters such as certificate and thumbprints, etc.
@@ -91,7 +98,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		key.keyOps = ops
 	}
 	if alg, ok := d.GetString("alg"); ok {
-		key.Algorithm = jwa.KeyAlgorithm(alg)
+		key.alg = jwa.KeyAlgorithm(alg)
 	}
 
 	// decode the certificates
@@ -151,7 +158,7 @@ func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
 	if v := key.keyOps; v != nil {
 		e.Set("key_ops", v)
 	}
-	if v := key.Algorithm; v != "" {
+	if v := key.alg; v != "" {
 		e.Set("alg", v)
 	}
 	if x5u := key.X509URL; x5u != nil {
