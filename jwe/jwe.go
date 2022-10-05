@@ -29,12 +29,8 @@ type Header struct {
 	enc jwa.EncryptionAlgorithm
 	zip jwa.CompressionAlgorithm
 	jku *url.URL
-
-	// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
-	JWK *jwk.Key
-
-	// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
-	KeyID string
+	jwk *jwk.Key
+	kid string
 
 	// X509URL is RFC7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
 	X509URL *url.URL
@@ -106,6 +102,24 @@ func (h *Header) JWKSetURL() *url.URL {
 
 func (h *Header) SetJWKSetURL(jku *url.URL) {
 	h.jku = jku
+}
+
+// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
+func (h *Header) JWK() *jwk.Key {
+	return h.jwk
+}
+
+func (h *Header) SetJWK(jwk *jwk.Key) {
+	h.jwk = jwk
+}
+
+// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
+func (h *Header) KeyID() string {
+	return h.kid
+}
+
+func (h *Header) SetKeyID(kid string) {
+	h.kid = kid
 }
 
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
@@ -315,7 +329,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if err != nil {
 			d.SaveError(err)
 		}
-		h.JWK = key
+		h.jwk = key
 	}
 
 	if x5u, ok := d.GetURL("x5u"); ok {
@@ -362,7 +376,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 
-	h.KeyID, _ = d.GetString("kid")
+	h.kid, _ = d.GetString("kid")
 	h.Type, _ = d.GetString("typ")
 	h.ContentType, _ = d.GetString("cty")
 	h.Critical, _ = d.GetStringArray("crit")
@@ -472,7 +486,7 @@ func encodeHeader(h *Header) ([]byte, error) {
 		e.Set("jku", u.String())
 	}
 
-	if key := h.JWK; key != nil {
+	if key := h.jwk; key != nil {
 		data, err := key.MarshalJSON()
 		if err != nil {
 			e.SaveError(err)
@@ -481,7 +495,7 @@ func encodeHeader(h *Header) ([]byte, error) {
 		}
 	}
 
-	if kid := h.KeyID; kid != "" {
+	if kid := h.kid; kid != "" {
 		e.Set("kid", kid)
 	}
 
