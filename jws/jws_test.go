@@ -364,7 +364,7 @@ func TestSign(t *testing.T) {
 	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		k := jwa.None.New().NewKey(nil, nil)
 		h := NewHeader(jwa.None)
-		h.SetContentType("JWT")
+		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
