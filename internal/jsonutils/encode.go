@@ -1,7 +1,6 @@
 package jsonutils
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"math/big"
 	"time"
@@ -30,7 +29,7 @@ func (e *Encoder) Data() map[string]any {
 }
 
 func (e *Encoder) grow(n int) {
-	m := base64.RawURLEncoding.EncodedLen(n)
+	m := b64.EncodedLen(n)
 	if cap(e.dst) >= m {
 		return
 	}
@@ -63,8 +62,8 @@ func (e *Encoder) SetTime(name string, t time.Time) {
 
 func (e *Encoder) Encode(s []byte) string {
 	e.grow(len(s))
-	dst := e.dst[:base64.RawURLEncoding.EncodedLen(len(s))]
-	base64.RawURLEncoding.Encode(dst, s)
+	dst := e.dst[:b64.EncodedLen(len(s))]
+	b64.Encode(dst, s)
 	return string(dst)
 }
 
