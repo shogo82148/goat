@@ -107,7 +107,7 @@ func FuzzJWT(f *testing.F) {
 		if err != nil {
 			return
 		}
-		if k.PrivateKey == nil {
+		if k.PrivateKey() == nil {
 			return // the key doesn't support signing, we skip it.
 		}
 
