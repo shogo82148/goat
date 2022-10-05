@@ -28,9 +28,7 @@ type Header struct {
 	alg jwa.KeyManagementAlgorithm
 	enc jwa.EncryptionAlgorithm
 	zip jwa.CompressionAlgorithm
-
-	// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
-	JWKSetURL *url.URL
+	jku *url.URL
 
 	// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
 	JWK *jwk.Key
@@ -99,6 +97,15 @@ func (h *Header) Compression() jwa.CompressionAlgorithm {
 
 func (h *Header) SetCompression(zip jwa.CompressionAlgorithm) {
 	h.zip = zip
+}
+
+// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
+func (h *Header) JWKSetURL() *url.URL {
+	return h.jku
+}
+
+func (h *Header) SetJWKSetURL(jku *url.URL) {
+	h.jku = jku
 }
 
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
@@ -300,7 +307,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if jku, ok := d.GetURL("jku"); ok {
-		h.JWKSetURL = jku
+		h.jku = jku
 	}
 
 	if v, ok := d.GetObject("jwk"); ok {
@@ -461,7 +468,7 @@ func encodeHeader(h *Header) ([]byte, error) {
 		e.Set("zip", zip.String())
 	}
 
-	if u := h.JWKSetURL; u != nil {
+	if u := h.jku; u != nil {
 		e.Set("jku", u.String())
 	}
 
