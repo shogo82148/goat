@@ -414,7 +414,7 @@ const (
 	X509CertificateSHA256Thumbprint = "x5t#S256"
 	TypeKey                         = "typ"
 	ContentTypeKey                  = "cty"
-	Critical                        = "crit"
+	CriticalKey                     = "crit"
 	EphemeralPublicKeyKey           = "epk"
 	AgreementPartyUInfoKey          = "apu"
 	AgreementPartyVInfoKey          = "apv"

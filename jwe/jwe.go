@@ -63,20 +63,20 @@ func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
 
 // Encryption return the encryption algorithm
 // defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
-func (h *Header) Encryption() jwa.EncryptionAlgorithm {
+func (h *Header) EncryptionAlgorithm() jwa.EncryptionAlgorithm {
 	return h.enc
 }
 
-func (h *Header) SetEncryption(enc jwa.EncryptionAlgorithm) {
+func (h *Header) SetEncryptionAlgorithm(enc jwa.EncryptionAlgorithm) {
 	h.enc = enc
 }
 
 // Compression is RFC7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
-func (h *Header) Compression() jwa.CompressionAlgorithm {
+func (h *Header) CompressionAlgorithm() jwa.CompressionAlgorithm {
 	return h.zip
 }
 
-func (h *Header) SetCompression(zip jwa.CompressionAlgorithm) {
+func (h *Header) SetCompressionAlgorithm(zip jwa.CompressionAlgorithm) {
 	h.zip = zip
 }
 
@@ -326,7 +326,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	}
 
 	// Decrypt the content
-	enc := h.Encryption()
+	enc := h.EncryptionAlgorithm()
 	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
 	}
@@ -360,19 +360,19 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.alg = jwa.KeyManagementAlgorithm(alg)
 	}
 
-	if enc, ok := d.GetString("enc"); ok {
+	if enc, ok := d.GetString(jwa.EncryptionAlgorithmKey); ok {
 		h.enc = jwa.EncryptionAlgorithm(enc)
 	}
 
-	if zip, ok := d.GetString("zip"); ok {
+	if zip, ok := d.GetString(jwa.CompressionAlgorithmKey); ok {
 		h.zip = jwa.CompressionAlgorithm(zip)
 	}
 
-	if jku, ok := d.GetURL("jku"); ok {
+	if jku, ok := d.GetURL(jwa.JWKSetURLKey); ok {
 		h.jku = jku
 	}
 
-	if v, ok := d.GetObject("jwk"); ok {
+	if v, ok := d.GetObject(jwa.JSONWebKey); ok {
 		key, err := jwk.ParseMap(v)
 		if err != nil {
 			d.SaveError(err)
@@ -380,12 +380,12 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.jwk = key
 	}
 
-	if x5u, ok := d.GetURL("x5u"); ok {
+	if x5u, ok := d.GetURL(jwa.X509URLKey); ok {
 		h.x5u = x5u
 	}
 
 	var cert0 []byte
-	if x5c, ok := d.GetStringArray("x5c"); ok {
+	if x5c, ok := d.GetStringArray(jwa.X509CertificateChainKey); ok {
 		var certs []*x509.Certificate
 		for i, s := range x5c {
 			der, err := base64.StdEncoding.DecodeString(s)
@@ -404,7 +404,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.x5c = certs
 	}
 
-	if x5t, ok := d.GetBytes("x5t"); ok {
+	if x5t, ok := d.GetBytes(jwa.X509CertificateSHA1Thumbprint); ok {
 		h.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
@@ -414,20 +414,20 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 
-	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
+	if x5t256, ok := d.GetBytes(jwa.X509CertificateSHA256Thumbprint); ok {
 		h.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.SaveError(errors.New("jwe: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwe: sha-256 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
 
-	h.kid, _ = d.GetString("kid")
-	h.typ, _ = d.GetString("typ")
-	h.cty, _ = d.GetString("cty")
-	h.crit, _ = d.GetStringArray("crit")
+	h.kid, _ = d.GetString(jwa.KeyIDKey)
+	h.typ, _ = d.GetString(jwa.TypeKey)
+	h.cty, _ = d.GetString(jwa.ContentTypeKey)
+	h.crit, _ = d.GetStringArray(jwa.CriticalKey)
 
 	// Header Parameters Used for ECDH Key Agreement
 	if epk, ok := d.GetObject(jwa.EphemeralPublicKeyKey); ok {
@@ -471,10 +471,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	if !header.Encryption().Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + header.Encryption().String() + " is not available")
+	henc := header.EncryptionAlgorithm()
+	if !henc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + string(henc) + " is not available")
 	}
-	enc := header.Encryption().New()
+	enc := henc.New()
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
 		return nil, err

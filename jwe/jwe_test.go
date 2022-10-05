@@ -270,7 +270,7 @@ func TestEncrypt(t *testing.T) {
 
 		header := &Header{}
 		header.SetAlgorithm(jwa.RSA_OAEP)
-		header.SetEncryption(jwa.A256GCM)
+		header.SetEncryptionAlgorithm(jwa.A256GCM)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k.KeyPair())
 
@@ -331,7 +331,7 @@ func TestEncrypt(t *testing.T) {
 
 		header := &Header{}
 		header.SetAlgorithm(jwa.RSA1_5)
-		header.SetEncryption(jwa.A128CBC_HS256)
+		header.SetEncryptionAlgorithm(jwa.A128CBC_HS256)
 		plaintext := "Live long and prosper."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -363,7 +363,7 @@ func TestEncrypt(t *testing.T) {
 
 		header := &Header{}
 		header.SetAlgorithm(jwa.A128KW)
-		header.SetEncryption(jwa.A128CBC_HS256)
+		header.SetEncryptionAlgorithm(jwa.A128CBC_HS256)
 		plaintext := "Live long and prosper."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -400,7 +400,7 @@ func TestEncrypt(t *testing.T) {
 		}
 		header := &Header{}
 		header.SetAlgorithm(jwa.A128GCMKW)
-		header.SetEncryption(jwa.A128GCM)
+		header.SetEncryptionAlgorithm(jwa.A128GCM)
 		header.SetInitializationVector(iv)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k.KeyPair())
@@ -440,7 +440,7 @@ func TestEncrypt(t *testing.T) {
 		}
 		header := &Header{}
 		header.SetAlgorithm(jwa.PBES2_HS256_A128KW)
-		header.SetEncryption(jwa.A128GCM)
+		header.SetEncryptionAlgorithm(jwa.A128GCM)
 		header.SetPBES2SaltInput(salt)
 		header.SetPBES2Count(10000)
 		alg := header.Algorithm().New()
