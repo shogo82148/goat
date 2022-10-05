@@ -28,9 +28,7 @@ type Key struct {
 	use    string
 	keyOps []string
 	alg    jwa.KeyAlgorithm
-
-	// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
-	KeyID string
+	kid    string
 
 	// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
 	X509URL *url.URL
@@ -89,10 +87,19 @@ func (key *Key) SetAlgorithm(alg jwa.KeyAlgorithm) {
 	key.alg = alg
 }
 
+// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
+func (key *Key) KeyID() string {
+	return key.kid
+}
+
+func (key *Key) SetKeyID(kid string) {
+	key.kid = kid
+}
+
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
-	key.KeyID, _ = d.GetString("kid")
+	key.kid, _ = d.GetString("kid")
 	key.use, _ = d.GetString("use")
 	if ops, ok := d.GetStringArray("key_ops"); ok {
 		key.keyOps = ops
@@ -149,7 +156,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 
 func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
 	e.Set("kty", key.kty.String())
-	if v := key.KeyID; v != "" {
+	if v := key.kid; v != "" {
 		e.Set("kid", v)
 	}
 	if v := key.use; v != "" {
@@ -360,7 +367,7 @@ func ParseSet(data []byte) (*Set, error) {
 // Find finds the key that has kid.
 func (set *Set) Find(kid string) (key *Key, found bool) {
 	for _, k := range set.Keys {
-		if k.KeyID == kid {
+		if k.kid == kid {
 			return k, true
 		}
 	}

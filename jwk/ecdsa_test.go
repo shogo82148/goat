@@ -278,9 +278,9 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
 		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
 		key := &Key{
-			kty:   jwa.EC,
-			KeyID: "1",
-			use:   "enc",
+			kty: jwa.EC,
+			kid: "1",
+			use: "enc",
 			PublicKey: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 				X:     x,
@@ -321,8 +321,8 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 				X:     x,
 				Y:     y,
 			},
-			use:   "enc",
-			KeyID: "1",
+			use: "enc",
+			kid: "1",
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {

@@ -158,7 +158,7 @@ func TestMarshalKey_symmetric(t *testing.T) {
 
 	t.Run("RFC 7517 A.3. Example Symmetric Keys (HMAC)", func(t *testing.T) {
 		key := &Key{
-			KeyID: "HMAC key used in JWS spec Appendix A.1 example",
+			kid: "HMAC key used in JWS spec Appendix A.1 example",
 			PrivateKey: []byte{
 				0x03, 0x23, 0x35, 0x4b, 0x2b, 0x0f, 0xa5, 0xbc,
 				0x83, 0x7e, 0x06, 0x65, 0x77, 0x7b, 0xa6, 0x8f,

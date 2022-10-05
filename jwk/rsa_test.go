@@ -380,7 +380,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 				N: n,
 				E: 65537,
 			},
-			KeyID: "2011-04-29",
+			kid: "2011-04-29",
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {
@@ -443,7 +443,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 		}
 		key := &Key{
 			alg:        jwa.RS256.KeyAlgorithm(),
-			KeyID:      "2011-04-29",
+			kid:        "2011-04-29",
 			PrivateKey: privateKey,
 			PublicKey:  publicKey,
 		}
