@@ -49,17 +49,6 @@ type Algorithm struct {
 	keySize int
 }
 
-type Options struct {
-	PrivateKey []byte
-
-	// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
-	// It is the 96-bit IV value used for the key encryption operation.
-	InitializationVector []byte
-
-	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
-	AuthenticationTag []byte
-}
-
 type initializationVectorGetter interface {
 	InitializationVector() []byte
 }
