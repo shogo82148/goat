@@ -1,3 +1,5 @@
+// package pbes2 implements a Key Management algorithm
+// that is PBES2 with HMAC SHA-2 and AES Key wrapping.
 package pbes2
 
 import (
@@ -19,6 +21,8 @@ var a128kw = &Algorithm{
 	size: 16,
 }
 
+// NewHS256A128KW returns a new algorithm
+// that is PBES2 with HMAC SHA-256 and "A128KW" wrapping.
 func NewHS256A128KW() keymanage.Algorithm {
 	return a128kw
 }
@@ -29,6 +33,8 @@ var a192kw = &Algorithm{
 	size: 24,
 }
 
+// NewHS384A192KW returns a new algorithm
+// that is PBES2 with HMAC SHA-384 and "A192KW" wrapping.
 func NewHS384A192KW() keymanage.Algorithm {
 	return a192kw
 }
@@ -39,6 +45,8 @@ var a256kw = &Algorithm{
 	size: 32,
 }
 
+// NewHS512A256KW returns a new algorithm
+// that is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
 func NewHS512A256KW() keymanage.Algorithm {
 	return a256kw
 }

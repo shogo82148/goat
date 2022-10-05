@@ -55,7 +55,7 @@ func TestWrap(t *testing.T) {
 	}
 }
 
-func TestUnrap(t *testing.T) {
+func TestUnwrap(t *testing.T) {
 	// https://github.com/lestrrat-go/jwx
 	// $ echo 'Hello World!' > payload.txt
 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
