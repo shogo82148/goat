@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -24,70 +25,218 @@ var b64 = base64.RawURLEncoding
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
-	// Algorithm is RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
-	Algorithm jwa.KeyManagementAlgorithm
-
-	// Encryption is RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
-	Encryption jwa.EncryptionAlgorithm
-
-	// Compression is RFC7516 Section 4.1.3. "zip" (Compression Algorithm) Header Parameter.
-	Compression jwa.CompressionAlgorithm
-
-	// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
-	JWKSetURL *url.URL
-
-	// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
-	JWK *jwk.Key
-
-	// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
-	KeyID string
-
-	// X509URL is RFC7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
-	X509URL *url.URL
-
-	// X509CertificateChain is RFC7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
-	X509CertificateChain []*x509.Certificate
-
-	// X509CertificateSHA1 is RFC7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
-	X509CertificateSHA1 []byte
-
-	// X509CertificateSHA256 is RFC7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
-	X509CertificateSHA256 []byte
-
-	// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
-	Type string
-
-	// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
-	ContentType string
-
-	// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
-	Critical []string
-
-	// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
-	EphemeralPublicKey *jwk.Key
-
-	// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
-	AgreementPartyUInfo []byte
-
-	// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
-	AgreementPartyVInfo []byte
-
-	// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
-	// It is the 96-bit IV value used for the key encryption operation.
-	InitializationVector []byte
-
-	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
-	AuthenticationTag []byte
-
-	// PBES2SaltInput is RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
-	PBES2SaltInput []byte
-
-	// PBES2Count is RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
-	PBES2Count int
+	alg     jwa.KeyManagementAlgorithm
+	enc     jwa.EncryptionAlgorithm
+	zip     jwa.CompressionAlgorithm
+	jku     *url.URL
+	jwk     *jwk.Key
+	kid     string
+	x5u     *url.URL
+	x5c     []*x509.Certificate
+	x5t     []byte
+	x5tS256 []byte
+	typ     string
+	cty     string
+	crit    []string
+	epk     *jwk.Key
+	apu     []byte
+	apv     []byte
+	iv      []byte
+	tag     []byte
+	p2s     []byte
+	p2c     int
 
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+// Algorithm returns the key management algorithm
+// defined in RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+func (h *Header) Algorithm() jwa.KeyManagementAlgorithm {
+	return h.alg
+}
+
+func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
+	h.alg = alg
+}
+
+// Encryption return the encryption algorithm
+// defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
+func (h *Header) EncryptionAlgorithm() jwa.EncryptionAlgorithm {
+	return h.enc
+}
+
+func (h *Header) SetEncryptionAlgorithm(enc jwa.EncryptionAlgorithm) {
+	h.enc = enc
+}
+
+// Compression is RFC7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
+func (h *Header) CompressionAlgorithm() jwa.CompressionAlgorithm {
+	return h.zip
+}
+
+func (h *Header) SetCompressionAlgorithm(zip jwa.CompressionAlgorithm) {
+	h.zip = zip
+}
+
+// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
+func (h *Header) JWKSetURL() *url.URL {
+	return h.jku
+}
+
+func (h *Header) SetJWKSetURL(jku *url.URL) {
+	h.jku = jku
+}
+
+// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
+func (h *Header) JWK() *jwk.Key {
+	return h.jwk
+}
+
+func (h *Header) SetJWK(jwk *jwk.Key) {
+	h.jwk = jwk
+}
+
+// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
+func (h *Header) KeyID() string {
+	return h.kid
+}
+
+func (h *Header) SetKeyID(kid string) {
+	h.kid = kid
+}
+
+// X509URL is RFC7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
+func (h *Header) X509URL() *url.URL {
+	return h.x5u
+}
+
+func (h *Header) SetX509URL(x5u *url.URL) {
+	h.x5u = x5u
+}
+
+// X509CertificateChain is RFC7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
+func (h *Header) X509CertificateChain() []*x509.Certificate {
+	return h.x5c
+}
+
+func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
+	h.x5c = x5c
+}
+
+// X509CertificateSHA1 is RFC7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
+func (h *Header) X509CertificateSHA1() []byte {
+	return h.x5t
+}
+
+func (h *Header) SetX509CertificateSHA1(x5t []byte) {
+	h.x5t = x5t
+}
+
+// X509CertificateSHA256 is RFC7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
+func (h *Header) X509CertificateSHA256() []byte {
+	return h.x5tS256
+}
+
+func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
+	h.x5tS256 = x5tS256
+}
+
+// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
+func (h *Header) Type() string {
+	return h.typ
+}
+
+func (h *Header) SetType(typ string) {
+	h.typ = typ
+}
+
+// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
+func (h *Header) ContentType() string {
+	return h.cty
+}
+
+func (h *Header) SetContentType(cty string) {
+	h.cty = cty
+}
+
+// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
+func (h *Header) Critical() []string {
+	return h.crit
+}
+
+func (h *Header) SetCritical(crit []string) {
+	h.crit = crit
+}
+
+// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
+func (h *Header) EphemeralPublicKey() *jwk.Key {
+	return h.epk
+}
+
+func (h *Header) SetEphemeralPublicKey(epk *jwk.Key) {
+	h.epk = epk
+}
+
+// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
+func (h *Header) AgreementPartyUInfo() []byte {
+	return h.apu
+}
+
+func (h *Header) SetAgreementPartyUInfo(apu []byte) {
+	h.apu = apu
+}
+
+// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
+func (h *Header) AgreementPartyVInfo() []byte {
+	return h.apv
+}
+
+func (h *Header) SetAgreementPartyVInfo(apv []byte) {
+	h.apv = apv
+}
+
+// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
+// It is the 96-bit IV value used for the key encryption operation.
+func (h *Header) InitializationVector() []byte {
+	return h.iv
+}
+
+func (h *Header) SetInitializationVector(iv []byte) {
+	h.iv = iv
+}
+
+// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
+func (h *Header) AuthenticationTag() []byte {
+	return h.tag
+}
+
+func (h *Header) SetAuthenticationTag(tag []byte) {
+	h.tag = tag
+}
+
+// PBES2SaltInput is the PBES2 salt input
+// defined in RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
+func (h *Header) PBES2SaltInput() []byte {
+	return h.p2s
+}
+
+func (h *Header) SetPBES2SaltInput(p2s []byte) {
+	h.p2s = p2s
+}
+
+// PBES2Count is the PBES2 Count
+// defined in RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
+func (h *Header) PBES2Count() int {
+	return h.p2c
+}
+
+func (h *Header) SetPBES2Count(p2c int) {
+	if p2c < 0 {
+		panic("jwe: p2c is out of range")
+	}
+	h.p2c = p2c
 }
 
 // Message is a decoded JWS.
@@ -158,7 +307,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if err != nil {
 		return nil, err
 	}
-	cek, err := wrapper.UnwrapKey(encryptedRawKey)
+	cek, err := wrapper.UnwrapKey(encryptedRawKey, h)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +326,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	}
 
 	// Decrypt the content
-	enc := h.Encryption
+	enc := h.EncryptionAlgorithm()
 	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
 	}
@@ -207,36 +356,36 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		Raw: raw,
 	}
 
-	if alg, ok := d.GetString("alg"); ok {
-		h.Algorithm = jwa.KeyManagementAlgorithm(alg)
+	if alg, ok := d.GetString(jwa.AlgorithmKey); ok {
+		h.alg = jwa.KeyManagementAlgorithm(alg)
 	}
 
-	if enc, ok := d.GetString("enc"); ok {
-		h.Encryption = jwa.EncryptionAlgorithm(enc)
+	if enc, ok := d.GetString(jwa.EncryptionAlgorithmKey); ok {
+		h.enc = jwa.EncryptionAlgorithm(enc)
 	}
 
-	if zip, ok := d.GetString("zip"); ok {
-		h.Compression = jwa.CompressionAlgorithm(zip)
+	if zip, ok := d.GetString(jwa.CompressionAlgorithmKey); ok {
+		h.zip = jwa.CompressionAlgorithm(zip)
 	}
 
-	if jku, ok := d.GetURL("jku"); ok {
-		h.JWKSetURL = jku
+	if jku, ok := d.GetURL(jwa.JWKSetURLKey); ok {
+		h.jku = jku
 	}
 
-	if v, ok := d.GetObject("jwk"); ok {
+	if v, ok := d.GetObject(jwa.JSONWebKey); ok {
 		key, err := jwk.ParseMap(v)
 		if err != nil {
 			d.SaveError(err)
 		}
-		h.JWK = key
+		h.jwk = key
 	}
 
-	if x5u, ok := d.GetURL("x5u"); ok {
-		h.X509URL = x5u
+	if x5u, ok := d.GetURL(jwa.X509URLKey); ok {
+		h.x5u = x5u
 	}
 
 	var cert0 []byte
-	if x5c, ok := d.GetStringArray("x5c"); ok {
+	if x5c, ok := d.GetStringArray(jwa.X509CertificateChainKey); ok {
 		var certs []*x509.Certificate
 		for i, s := range x5c {
 			der, err := base64.StdEncoding.DecodeString(s)
@@ -252,11 +401,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 			}
 			certs = append(certs, cert)
 		}
-		h.X509CertificateChain = certs
+		h.x5c = certs
 	}
 
-	if x5t, ok := d.GetBytes("x5t"); ok {
-		h.X509CertificateSHA1 = x5t
+	if x5t, ok := d.GetBytes(jwa.X509CertificateSHA1Thumbprint); ok {
+		h.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
@@ -265,51 +414,54 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 
-	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
-		h.X509CertificateSHA256 = x5t256
+	if x5t256, ok := d.GetBytes(jwa.X509CertificateSHA256Thumbprint); ok {
+		h.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.SaveError(errors.New("jwe: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwe: sha-256 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
 
-	h.KeyID, _ = d.GetString("kid")
-	h.Type, _ = d.GetString("typ")
-	h.ContentType, _ = d.GetString("cty")
-	h.Critical, _ = d.GetStringArray("crit")
+	h.kid, _ = d.GetString(jwa.KeyIDKey)
+	h.typ, _ = d.GetString(jwa.TypeKey)
+	h.cty, _ = d.GetString(jwa.ContentTypeKey)
+	h.crit, _ = d.GetStringArray(jwa.CriticalKey)
 
 	// Header Parameters Used for ECDH Key Agreement
-	if epk, ok := d.GetObject("epk"); ok {
+	if epk, ok := d.GetObject(jwa.EphemeralPublicKeyKey); ok {
 		key, err := jwk.ParseMap(epk)
-		if err != nil {
-			d.SaveError(fmt.Errorf("jwe: failed to parse epk: %w", err))
+		if err == nil {
+			h.epk = key
 		} else {
-			h.EphemeralPublicKey = key
+			d.SaveError(fmt.Errorf("jwe: failed to parse epk: %w", err))
 		}
 	}
-	if apu, ok := d.GetBytes("apu"); ok {
-		h.AgreementPartyUInfo = append([]byte(nil), apu...)
+	if apu, ok := d.GetBytes(jwa.AgreementPartyUInfoKey); ok {
+		h.apu = append([]byte(nil), apu...)
 	}
-	if apv, ok := d.GetBytes("apv"); ok {
-		h.AgreementPartyVInfo = append([]byte(nil), apv...)
+	if apv, ok := d.GetBytes(jwa.AgreementPartyVInfoKey); ok {
+		h.apv = append([]byte(nil), apv...)
 	}
 
 	// Header Parameter used for Key wrapping with AES GCM.
-	if iv, ok := d.GetBytes("iv"); ok {
-		h.InitializationVector = append([]byte(nil), iv...)
+	if iv, ok := d.GetBytes(jwa.InitializationVectorKey); ok {
+		h.iv = append([]byte(nil), iv...)
 	}
-	if tag, ok := d.GetBytes("tag"); ok {
-		h.AuthenticationTag = append([]byte(nil), tag...)
+	if tag, ok := d.GetBytes(jwa.AuthenticationTagKey); ok {
+		h.tag = append([]byte(nil), tag...)
 	}
 
 	// Header Parameters Used for PBES2 Key Encryption
-	if p2s, ok := d.GetBytes("p2s"); ok {
-		h.PBES2SaltInput = append([]byte(nil), p2s...)
+	if p2s, ok := d.GetBytes(jwa.PBES2SaltInputKey); ok {
+		h.p2s = append([]byte(nil), p2s...)
 	}
-	if p2c, ok := d.GetInt64("p2c"); ok {
-		h.PBES2Count = int(p2c)
+	if p2c, ok := d.GetInt64(jwa.PBES2CountKey); ok {
+		if p2c < 0 || p2c > math.MaxInt {
+			d.SaveError(errors.New("jwe: p2c is out of range"))
+		}
+		h.p2c = int(p2c)
 	}
 
 	if err := d.Err(); err != nil {
@@ -319,16 +471,17 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	if !header.Encryption.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + header.Encryption.String() + " is not available")
+	henc := header.EncryptionAlgorithm()
+	if !henc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + string(henc) + " is not available")
 	}
-	enc := header.Encryption.New()
+	enc := henc.New()
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
 		return nil, err
 	}
 	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
-	encryptedKey, err := keyWrapper.WrapKey(cek)
+	encryptedKey, err := keyWrapper.WrapKey(cek, header)
 	if err != nil {
 		return nil, err
 	}
@@ -366,23 +519,23 @@ func encodeHeader(h *Header) ([]byte, error) {
 		raw[k] = v
 	}
 	e := jsonutils.NewEncoder(raw)
-	if v := h.Algorithm; v != "" {
-		e.Set("alg", v.String())
+	if v := h.alg; v != "" {
+		e.Set("alg", string(v))
 	}
 
-	if enc := h.Encryption; enc != "" {
-		e.Set("enc", enc.String())
+	if enc := h.enc; enc != "" {
+		e.Set("enc", string(enc))
 	}
 
-	if zip := h.Compression; zip != "" {
+	if zip := h.zip; zip != "" {
 		e.Set("zip", zip.String())
 	}
 
-	if u := h.JWKSetURL; u != nil {
+	if u := h.jku; u != nil {
 		e.Set("jku", u.String())
 	}
 
-	if key := h.JWK; key != nil {
+	if key := h.jwk; key != nil {
 		data, err := key.MarshalJSON()
 		if err != nil {
 			e.SaveError(err)
@@ -391,73 +544,73 @@ func encodeHeader(h *Header) ([]byte, error) {
 		}
 	}
 
-	if kid := h.KeyID; kid != "" {
+	if kid := h.kid; kid != "" {
 		e.Set("kid", kid)
 	}
 
-	if x5u := h.X509URL; x5u != nil {
+	if x5u := h.x5u; x5u != nil {
 		e.Set("x5u", x5u.String())
 	}
 
-	if x5c := h.X509CertificateChain; x5c != nil {
+	if x5c := h.x5c; x5c != nil {
 		chain := make([][]byte, 0, len(x5c))
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
 		e.Set("x5c", chain)
 	}
-	if x5t := h.X509CertificateSHA1; x5t != nil {
+	if x5t := h.x5t; x5t != nil {
 		e.SetBytes("x5t", x5t)
-	} else if len(h.X509CertificateChain) > 0 {
-		cert := h.X509CertificateChain[0]
+	} else if len(h.x5c) > 0 {
+		cert := h.x5c[0]
 		sum := sha1.Sum(cert.Raw)
 		e.SetBytes("x5t", sum[:])
 	}
-	if x5t256 := h.X509CertificateSHA256; x5t256 != nil {
+	if x5t256 := h.x5tS256; x5t256 != nil {
 		e.SetBytes("x5t#S256", x5t256)
-	} else if len(h.X509CertificateChain) > 0 {
-		cert := h.X509CertificateChain[0]
+	} else if len(h.x5c) > 0 {
+		cert := h.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
 		e.SetBytes("x5t#S256", sum[:])
 	}
 
-	if typ := h.Type; typ != "" {
+	if typ := h.typ; typ != "" {
 		e.Set("typ", typ)
 	}
 
-	if cty := h.ContentType; cty != "" {
+	if cty := h.cty; cty != "" {
 		e.Set("cty", cty)
 	}
 
-	if crit := h.Critical; len(crit) > 0 {
+	if crit := h.crit; len(crit) > 0 {
 		e.Set("crit", crit)
 	}
 
 	// Header Parameters Used for ECDH Key Agreement
-	if epk := h.EphemeralPublicKey; epk != nil {
-		e.Set("epk", h.EphemeralPublicKey)
+	if epk := h.epk; epk != nil {
+		e.Set(jwa.EphemeralPublicKeyKey, h.epk)
 	}
-	if apu := h.AgreementPartyUInfo; apu != nil {
-		e.SetBytes("apu", apu)
+	if apu := h.apu; apu != nil {
+		e.SetBytes(jwa.AgreementPartyUInfoKey, apu)
 	}
-	if apv := h.AgreementPartyUInfo; apv != nil {
-		e.SetBytes("apv", apv)
+	if apv := h.apu; apv != nil {
+		e.SetBytes(jwa.AgreementPartyVInfoKey, apv)
 	}
 
 	// Header Parameter used for Key wrapping with AES GCM.
-	if iv := h.InitializationVector; iv != nil {
-		e.SetBytes("iv", iv)
+	if iv := h.iv; iv != nil {
+		e.SetBytes(jwa.InitializationVectorKey, iv)
 	}
-	if tag := h.AuthenticationTag; tag != nil {
-		e.SetBytes("tag", tag)
+	if tag := h.tag; tag != nil {
+		e.SetBytes(jwa.AuthenticationTagKey, tag)
 	}
 
 	// Header Parameters Used for PBES2 Key Encryption
-	if p2s := h.PBES2SaltInput; p2s != nil {
-		e.SetBytes("p2s", p2s)
+	if p2s := h.p2s; p2s != nil {
+		e.SetBytes(jwa.PBES2SaltInputKey, p2s)
 	}
-	if p2c := h.PBES2Count; p2c != 0 {
-		e.Set("p2c", p2c)
+	if p2c := h.p2c; p2c != 0 {
+		e.Set(jwa.PBES2CountKey, p2c)
 	}
 
 	if err := e.Err(); err != nil {

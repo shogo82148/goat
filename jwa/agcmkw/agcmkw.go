@@ -3,6 +3,8 @@ package agcmkw
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"errors"
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
@@ -56,17 +58,33 @@ type Options struct {
 	AuthenticationTag []byte
 }
 
+type initializationVectorGetter interface {
+	InitializationVector() []byte
+}
+
+type initializationVectorSetter interface {
+	SetInitializationVector(iv []byte)
+}
+
+type authenticationTagGetter interface {
+	AuthenticationTag() []byte
+}
+
+type authenticationTagSetter interface {
+	SetAuthenticationTag(tag []byte)
+}
+
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
 // opts must be a pointer to [Options].
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+	priv, ok := privateKey.([]byte)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid option type: %T", opts))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid private key type: %T", privateKey))
 	}
-	if len(key.PrivateKey) != alg.keySize {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid key size: %d-bit key is required, but it is %d-bit", alg.keySize*8, len(key.PrivateKey)*8))
+	if len(priv) != alg.keySize {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid key size: %d-bit key is required, but it is %d-bit", alg.keySize*8, len(priv)*8))
 	}
-	block, err := aes.NewCipher(key.PrivateKey)
+	block, err := aes.NewCipher(priv)
 	if err != nil {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: failed to initialize cipher: %w", err))
 	}
@@ -74,13 +92,8 @@ func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
 	if err != nil {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: failed to initialize gcm: %w", err))
 	}
-
-	if len(key.InitializationVector) != aead.NonceSize() {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid iv size: %d-bit key is required, but it is %d-bit", aead.NonceSize()*8, len(key.InitializationVector)*8))
-	}
 	return &KeyWrapper{
 		aead: aead,
-		opts: key,
 	}
 }
 
@@ -88,24 +101,53 @@ var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
 	aead cipher.AEAD
-	opts *Options
 }
 
 // WrapKey encrypts CEK.
 // It writes the Authentication Tag into opts.AuthenticationTag of NewKeyWrapper.
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+	var iv []byte
+	if getter, ok := opts.(initializationVectorGetter); ok {
+		iv = getter.InitializationVector()
+	}
+	if iv == nil {
+		setter, ok := opts.(initializationVectorSetter)
+		if !ok {
+			return nil, errors.New("agcmkw: neither InitializationVector nor SetInitializationVector found")
+		}
+		iv := make([]byte, w.aead.NonceSize())
+		if _, err := rand.Read(iv); err != nil {
+			return nil, fmt.Errorf("agcmkw: failed to initialize iv: %w", err)
+		}
+		setter.SetInitializationVector(iv)
+	}
+	tag, ok := opts.(authenticationTagSetter)
+	if !ok {
+		return nil, errors.New("agcmkw: SetAuthenticationTag not found")
+	}
+
 	buf := make([]byte, len(cek)+w.aead.Overhead())
-	data := w.aead.Seal(buf[:0], w.opts.InitializationVector, cek, []byte{})
-	w.opts.AuthenticationTag = append(w.opts.AuthenticationTag[:0], data[len(cek):]...)
+	data := w.aead.Seal(buf[:0], iv, cek, []byte{})
+	tag.SetAuthenticationTag(data[len(cek):])
 	return data[:len(cek)], nil
 }
 
 // UnwrapKey decrypts encrypted CEK.
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
-	buf := make([]byte, len(data)+len(w.opts.AuthenticationTag))
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	iv, ok := opts.(initializationVectorGetter)
+	if !ok {
+		return nil, errors.New("agcmkw: InitializationVector not found")
+	}
+	tag, ok := opts.(authenticationTagGetter)
+	if !ok {
+		return nil, errors.New("agcmkw: AuthenticationTag not found")
+	}
+
+	tagBytes := tag.AuthenticationTag()
+	buf := make([]byte, len(data)+len(tagBytes))
 	copy(buf, data)
-	copy(buf[len(data):], w.opts.AuthenticationTag)
-	cek, err := w.aead.Open(buf[:0], w.opts.InitializationVector, buf, []byte{})
+	copy(buf[len(data):], tagBytes)
+	cek, err := w.aead.Open(buf[:0], iv.InitializationVector(), buf, []byte{})
 	if err != nil {
 		return nil, err
 	}

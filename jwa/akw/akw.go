@@ -41,6 +41,16 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.A256KW, New256)
 }
 
+func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {
+	switch len(privateKey) {
+	case 16, 24, 32:
+		return &KeyWrapper{
+			key: privateKey,
+		}
+	}
+	return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(privateKey)))
+}
+
 var _ keymanage.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct {
@@ -51,16 +61,16 @@ type Options struct {
 	Key []byte
 }
 
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+	key, ok := privateKey.([]byte)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid option type: %T", opts))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid private key type: []byte is required but got %T", privateKey))
 	}
-	if len(key.Key) != alg.keySize {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(key.Key)))
+	if len(key) != alg.keySize {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d is required but got %d", alg.keySize, len(key)))
 	}
 	return &KeyWrapper{
-		key: key.Key,
+		key: key,
 	}
 }
 
@@ -79,7 +89,7 @@ const chunkLen = 8
 // defined in [RFC 3394].
 //
 // [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
 	}
@@ -127,7 +137,7 @@ func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
 // defined in [RFC 3394].
 //
 // [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
 	}

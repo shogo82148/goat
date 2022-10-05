@@ -2,17 +2,16 @@ package jwe
 
 import (
 	"context"
-	"crypto/rsa"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/acbc" // for AES-CBC-HMAC-SHA2
 	_ "github.com/shogo82148/goat/jwa/agcm" // for AES-GCM
-	"github.com/shogo82148/goat/jwa/agcmkw"
-	"github.com/shogo82148/goat/jwa/akw"
-	"github.com/shogo82148/goat/jwa/pbes2"
-	"github.com/shogo82148/goat/jwa/rsaoaep"
-	"github.com/shogo82148/goat/jwa/rsapkcs1v15"
+	_ "github.com/shogo82148/goat/jwa/agcmkw"
+	_ "github.com/shogo82148/goat/jwa/akw"
+	_ "github.com/shogo82148/goat/jwa/pbes2"
+	_ "github.com/shogo82148/goat/jwa/rsaoaep"
+	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -65,10 +64,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(&rsaoaep.Options{
-				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
-			}), nil
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -127,10 +124,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(&rsapkcs1v15.Options{
-				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
-			}), nil
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -157,10 +152,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(&akw.Options{
-				Key: k.PrivateKey.([]byte),
-			}), nil
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -192,12 +185,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(&agcmkw.Options{
-				PrivateKey:           k.PrivateKey.([]byte),
-				InitializationVector: header.InitializationVector,
-				AuthenticationTag:    header.AuthenticationTag,
-			}), nil
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -228,12 +217,8 @@ func TestParse(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			alg := header.Algorithm.New()
-			return alg.NewKeyWrapper(&pbes2.Options{
-				PrivateKey:     k.PrivateKey.([]byte),
-				PBES2SaltInput: header.PBES2SaltInput,
-				PBES2Count:     header.PBES2Count,
-			}), nil
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -283,14 +268,11 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		header := &Header{
-			Algorithm:  jwa.RSA_OAEP,
-			Encryption: jwa.A256GCM,
-		}
-		alg := header.Algorithm.New()
-		key := alg.NewKeyWrapper(&rsaoaep.Options{
-			PublicKey: k.PublicKey.(*rsa.PublicKey),
-		})
+		header := &Header{}
+		header.SetAlgorithm(jwa.RSA_OAEP)
+		header.SetEncryptionAlgorithm(jwa.A256GCM)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k.KeyPair())
 
 		plaintext := "The true sign of intelligence is not knowledge but imagination."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
@@ -298,9 +280,7 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(&rsaoaep.Options{
-				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
-			}), nil
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -347,14 +327,11 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.RSA1_5.New()
-		key := alg.NewKeyWrapper(&rsapkcs1v15.Options{
-			PublicKey: k.PublicKey.(*rsa.PublicKey),
-		})
+		key := alg.NewKeyWrapper(k.KeyPair())
 
-		header := &Header{
-			Algorithm:  jwa.RSA1_5,
-			Encryption: jwa.A128CBC_HS256,
-		}
+		header := &Header{}
+		header.SetAlgorithm(jwa.RSA1_5)
+		header.SetEncryptionAlgorithm(jwa.A128CBC_HS256)
 		plaintext := "Live long and prosper."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -362,9 +339,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(&rsapkcs1v15.Options{
-				PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
-			}), nil
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -384,12 +359,11 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.A128KW.New()
-		key := alg.NewKeyWrapper(&akw.Options{Key: k.PrivateKey.([]byte)})
+		key := alg.NewKeyWrapper(k.KeyPair())
 
-		header := &Header{
-			Algorithm:  jwa.A128KW,
-			Encryption: jwa.A128CBC_HS256,
-		}
+		header := &Header{}
+		header.SetAlgorithm(jwa.A128KW)
+		header.SetEncryptionAlgorithm(jwa.A128CBC_HS256)
 		plaintext := "Live long and prosper."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -397,7 +371,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(&akw.Options{Key: k.PrivateKey.([]byte)}), nil
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -424,20 +398,12 @@ func TestEncrypt(t *testing.T) {
 		iv := []byte{
 			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
 		}
-		tag := make([]byte, 16)
-		header := &Header{
-			Algorithm:            jwa.A128GCMKW,
-			Encryption:           jwa.A128GCM,
-			InitializationVector: iv,
-			AuthenticationTag:    tag,
-		}
-		alg := header.Algorithm.New()
-		opts := &agcmkw.Options{
-			PrivateKey:           k.PrivateKey.([]byte),
-			InitializationVector: iv,
-			AuthenticationTag:    tag,
-		}
-		key := alg.NewKeyWrapper(opts)
+		header := &Header{}
+		header.SetAlgorithm(jwa.A128GCMKW)
+		header.SetEncryptionAlgorithm(jwa.A128GCM)
+		header.SetInitializationVector(iv)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k.KeyPair())
 		plaintext := "Hello JWE!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -445,11 +411,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(&agcmkw.Options{
-				PrivateKey:           k.PrivateKey.([]byte),
-				InitializationVector: header.InitializationVector,
-				AuthenticationTag:    header.AuthenticationTag,
-			}), nil
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -476,19 +438,13 @@ func TestEncrypt(t *testing.T) {
 		salt := []byte{
 			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
 		}
-		header := &Header{
-			Algorithm:      jwa.PBES2_HS256_A128KW,
-			Encryption:     jwa.A128GCM,
-			PBES2SaltInput: salt,
-			PBES2Count:     10000,
-		}
-		alg := header.Algorithm.New()
-		opts := &pbes2.Options{
-			PrivateKey:     k.PrivateKey.([]byte),
-			PBES2SaltInput: salt,
-			PBES2Count:     10000,
-		}
-		key := alg.NewKeyWrapper(opts)
+		header := &Header{}
+		header.SetAlgorithm(jwa.PBES2_HS256_A128KW)
+		header.SetEncryptionAlgorithm(jwa.A128GCM)
+		header.SetPBES2SaltInput(salt)
+		header.SetPBES2Count(10000)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k.KeyPair())
 		plaintext := "Hello World!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -496,11 +452,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(&pbes2.Options{
-				PrivateKey:     k.PrivateKey.([]byte),
-				PBES2SaltInput: header.PBES2SaltInput,
-				PBES2Count:     header.PBES2Count,
-			}), nil
+			return alg.NewKeyWrapper(k.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)

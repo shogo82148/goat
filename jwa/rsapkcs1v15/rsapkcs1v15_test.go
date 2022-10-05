@@ -2,7 +2,6 @@ package rsapkcs1v15
 
 import (
 	"bytes"
-	"crypto/rsa"
 	"testing"
 
 	"github.com/shogo82148/goat/jwk"
@@ -45,9 +44,7 @@ func TestUnwrap(t *testing.T) {
 	}
 
 	alg := &Algorithm{}
-	wrapper := alg.NewKeyWrapper(&Options{
-		PrivateKey: key.PrivateKey.(*rsa.PrivateKey),
-	})
+	wrapper := alg.NewKeyWrapper(key.KeyPair())
 	encryptedKey := []byte{
 		80, 104, 72, 58, 11, 130, 236, 139, 132, 189, 255, 205, 61, 86, 151,
 		176, 99, 40, 44, 233, 176, 189, 205, 70, 202, 169, 72, 40, 226, 181,
@@ -69,7 +66,7 @@ func TestUnwrap(t *testing.T) {
 		146, 114, 165, 204, 71, 136, 41, 252,
 	}
 
-	got, err := wrapper.UnwrapKey(encryptedKey)
+	got, err := wrapper.UnwrapKey(encryptedKey, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
