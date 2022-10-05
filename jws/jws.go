@@ -22,42 +22,126 @@ import (
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
-	// Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
-	Algorithm jwa.SignatureAlgorithm
-
-	// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
-	JWKSetURL *url.URL
-
-	// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
-	JWK *jwk.Key
-
-	// KeyID is RFC7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
-	KeyID string
-
-	// X509URL is RFC7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
-	X509URL *url.URL
-
-	// X509CertificateChain is RFC7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
-	X509CertificateChain []*x509.Certificate
-
-	// X509CertificateSHA1 is RFC7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
-	X509CertificateSHA1 []byte
-
-	// X509CertificateSHA256 is RFC7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
-	X509CertificateSHA256 []byte
-
-	// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
-	Type string
-
-	// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
-	ContentType string
-
-	// Critical is 4.1.11. "crit" (Critical) Header Parameter.
-	Critical []string
+	alg     jwa.SignatureAlgorithm
+	jku     *url.URL
+	jwk     *jwk.Key
+	kid     string
+	x5u     *url.URL
+	x5c     []*x509.Certificate
+	x5t     []byte
+	x5tS256 []byte
+	typ     string
+	cty     string
+	crit    []string
 
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+func NewHeader(alg jwa.SignatureAlgorithm) *Header {
+	return &Header{
+		alg: alg,
+	}
+}
+
+// Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+func (h *Header) Algorithm() jwa.SignatureAlgorithm {
+	return h.alg
+}
+
+func (h *Header) SetAlgorithm(alg jwa.SignatureAlgorithm) {
+	h.alg = alg
+}
+
+// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
+func (h *Header) JWKSetURL() *url.URL {
+	return h.jku
+}
+
+func (h *Header) SetJWKSetURL(jku *url.URL) {
+	h.jku = jku
+}
+
+// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
+func (h *Header) JWK() *jwk.Key {
+	return h.jwk
+}
+
+func (h *Header) SetJWK(jwk *jwk.Key) {
+	h.jwk = jwk
+}
+
+// KeyID is RFC7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
+func (h *Header) KeyID() string {
+	return h.kid
+}
+
+func (h *Header) SetKeyID(kid string) {
+	h.kid = kid
+}
+
+// X509URL is RFC7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
+func (h *Header) X509URL() *url.URL {
+	return h.x5u
+}
+
+func (h *Header) SetX509URL(x5u *url.URL) {
+	h.x5u = x5u
+}
+
+// X509CertificateChain is RFC7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
+func (h *Header) X509CertificateChain() []*x509.Certificate {
+	return h.x5c
+}
+
+func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
+	h.x5c = x5c
+}
+
+// X509CertificateSHA1 is RFC7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
+func (h *Header) X509CertificateSHA1() []byte {
+	return h.x5t
+}
+
+func (h *Header) SetX509CertificateSHA1(x5t []byte) {
+	h.x5t = x5t
+}
+
+// X509CertificateSHA256 is RFC7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
+func (h *Header) X509CertificateSHA256() []byte {
+	return h.x5tS256
+}
+
+func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
+	h.x5tS256 = x5tS256
+}
+
+// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
+func (h *Header) Type() string {
+	return h.typ
+}
+
+func (h *Header) SetType(typ string) {
+	h.typ = typ
+}
+
+// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
+func (h *Header) ContentType() string {
+	return h.cty
+}
+
+func (h *Header) SetContentType(cty string) {
+	h.cty = cty
+}
+
+// Critical is 4.1.11. "crit" (Critical) Header Parameter.
+func (h *Header) Critical() []string {
+	return h.crit
+}
+
+func (h *Header) SetCritical(crit []string) {
+	h.crit = crit
 }
 
 // Message is a decoded JWS.
@@ -149,11 +233,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if alg, ok := d.GetString("alg"); ok {
-		h.Algorithm = jwa.SignatureAlgorithm(alg)
+		h.alg = jwa.SignatureAlgorithm(alg)
 	}
 
 	if jku, ok := d.GetURL("jku"); ok {
-		h.JWKSetURL = jku
+		h.jku = jku
 	}
 
 	if v, ok := d.GetObject("jwk"); ok {
@@ -161,11 +245,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		if err != nil {
 			d.SaveError(err)
 		}
-		h.JWK = key
+		h.jwk = key
 	}
 
 	if x5u, ok := d.GetURL("x5u"); ok {
-		h.X509URL = x5u
+		h.x5u = x5u
 	}
 
 	var cert0 []byte
@@ -185,11 +269,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 			}
 			certs = append(certs, cert)
 		}
-		h.X509CertificateChain = certs
+		h.x5c = certs
 	}
 
 	if x5t, ok := d.GetBytes("x5t"); ok {
-		h.X509CertificateSHA1 = x5t
+		h.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
@@ -199,7 +283,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
-		h.X509CertificateSHA256 = x5t256
+		h.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
@@ -208,10 +292,10 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 
-	h.KeyID, _ = d.GetString("kid")
-	h.Type, _ = d.GetString("typ")
-	h.ContentType, _ = d.GetString("cty")
-	h.Critical, _ = d.GetStringArray("crit")
+	h.kid, _ = d.GetString("kid")
+	h.typ, _ = d.GetString("typ")
+	h.cty, _ = d.GetString("cty")
+	h.crit, _ = d.GetStringArray("crit")
 
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -261,15 +345,15 @@ func encodeHeader(h *Header) ([]byte, error) {
 		raw[k] = v
 	}
 	e := jsonutils.NewEncoder(raw)
-	if v := h.Algorithm; v != "" {
-		e.Set("alg", v.String())
+	if v := h.alg; v != "" {
+		e.Set(jwa.AlgorithmKey, string(v))
 	}
 
-	if u := h.JWKSetURL; u != nil {
-		e.Set("jku", u.String())
+	if u := h.jku; u != nil {
+		e.Set(jwa.JWKSetURLKey, u.String())
 	}
 
-	if key := h.JWK; key != nil {
+	if key := h.jwk; key != nil {
 		data, err := key.MarshalJSON()
 		if err != nil {
 			e.SaveError(err)
@@ -278,45 +362,45 @@ func encodeHeader(h *Header) ([]byte, error) {
 		}
 	}
 
-	if kid := h.KeyID; kid != "" {
+	if kid := h.kid; kid != "" {
 		e.Set("kid", kid)
 	}
 
-	if x5u := h.X509URL; x5u != nil {
+	if x5u := h.x5u; x5u != nil {
 		e.Set("x5u", x5u.String())
 	}
 
-	if x5c := h.X509CertificateChain; x5c != nil {
+	if x5c := h.x5c; x5c != nil {
 		chain := make([][]byte, 0, len(x5c))
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
 		e.Set("x5c", chain)
 	}
-	if x5t := h.X509CertificateSHA1; x5t != nil {
+	if x5t := h.x5t; x5t != nil {
 		e.SetBytes("x5t", x5t)
-	} else if len(h.X509CertificateChain) > 0 {
-		cert := h.X509CertificateChain[0]
+	} else if len(h.x5c) > 0 {
+		cert := h.x5c[0]
 		sum := sha1.Sum(cert.Raw)
 		e.SetBytes("x5t", sum[:])
 	}
-	if x5t256 := h.X509CertificateSHA256; x5t256 != nil {
+	if x5t256 := h.x5tS256; x5t256 != nil {
 		e.SetBytes("x5t#S256", x5t256)
-	} else if len(h.X509CertificateChain) > 0 {
-		cert := h.X509CertificateChain[0]
+	} else if len(h.x5c) > 0 {
+		cert := h.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
 		e.SetBytes("x5t#S256", sum[:])
 	}
 
-	if typ := h.Type; typ != "" {
+	if typ := h.typ; typ != "" {
 		e.Set("typ", typ)
 	}
 
-	if cty := h.ContentType; cty != "" {
+	if cty := h.cty; cty != "" {
 		e.Set("cty", cty)
 	}
 
-	if crit := h.Critical; len(crit) > 0 {
+	if crit := h.crit; len(crit) > 0 {
 		e.Set("crit", crit)
 	}
 
