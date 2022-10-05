@@ -317,7 +317,7 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	cert := key.x5c[0]
 	certPublicKey := cert.PublicKey.(*rsa.PublicKey)
 	if !keyPublicKey.Equal(certPublicKey) {
-		t.Error("public keys are missmatch")
+		t.Error("public keys are mismatch")
 	}
 	issuer := "CN=Brian Campbell,O=Ping Identity Corp.,L=Denver,ST=CO,C=US"
 	if cert.Issuer.String() != issuer {
@@ -508,17 +508,17 @@ func TestParseKey_RSA_Invalid(t *testing.T) {
 				`"alg":"RS256"}`,
 		},
 		{
-			name: "missing requied paramer n and e",
+			name: "missing required parameter n and e",
 			data: `{"kty":"RSA", "alg":"RS256"}`,
 		},
 		{
-			name: "missing requied parameter n",
+			name: "missing required parameter n",
 			data: `{"kty":"RSA",` +
 				`"e":"AQAB",` +
 				`"alg":"RS256"}`,
 		},
 		{
-			name: "missing requied parameter e",
+			name: "missing required parameter e",
 			data: `{"kty":"RSA",` +
 				`"n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx` +
 				`4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs` +
@@ -654,7 +654,7 @@ func TestParseKey_RSA_Invalid(t *testing.T) {
 				`"qi":"!!invalid base64 value!!!"}`,
 		},
 		{
-			name: "missing requied parameter p",
+			name: "missing required parameter p",
 			data: `{"alg":"RS256",` +
 				`"d":"X4cTteJY_gn4FYPsXB8rdXix5vwsg1FLN5E3EaG6RJoVH-HLLKD9` +
 				`M7dx5oo7GURknchnrRweUkC7hT5fJLM0WbFAKNLWY2vv7B6NqXSzUvxT0_YSfqij` +
@@ -685,7 +685,7 @@ func TestParseKey_RSA_Invalid(t *testing.T) {
 				`yR8O55XLSe3SPmRfKwZI6yU24ZxvQKFYItdldUKGzO6Ia6zTKhAVRU"}`,
 		},
 		{
-			name: "missing requied parameter q",
+			name: "missing required parameter q",
 			data: `{"alg":"RS256",` +
 				`"d":"X4cTteJY_gn4FYPsXB8rdXix5vwsg1FLN5E3EaG6RJoVH-HLLKD9` +
 				`M7dx5oo7GURknchnrRweUkC7hT5fJLM0WbFAKNLWY2vv7B6NqXSzUvxT0_YSfqij` +
