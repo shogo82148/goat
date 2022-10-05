@@ -32,7 +32,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			Y:     y,
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 
 		d := newBigInt("64502400493437371358766275827725703314178640739253280897215993954599262549170")
@@ -41,7 +41,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			D:         d,
 		}
 		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 
@@ -70,7 +70,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			Y:     y,
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 
 		d := newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490")
@@ -79,7 +79,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			D:         d,
 		}
 		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 
@@ -105,7 +105,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			Y:     y,
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 
@@ -132,7 +132,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			Y:     y,
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 
 		d := newBigInt("110246039328358150430804407946042381407500908316371398015658902487828646033409")
@@ -141,7 +141,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 			D:         d,
 		}
 		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 }
@@ -281,7 +281,7 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 			kty: jwa.EC,
 			kid: "1",
 			use: "enc",
-			PublicKey: &ecdsa.PublicKey{
+			pub: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 				X:     x,
 				Y:     y,
@@ -308,7 +308,7 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 		y, _ := new(big.Int).SetString("101451294974385619524093058399734017814808930032421185206609461750712400090915", 10)
 		d, _ := new(big.Int).SetString("110246039328358150430804407946042381407500908316371398015658902487828646033409", 10)
 		key := &Key{
-			PrivateKey: &ecdsa.PrivateKey{
+			priv: &ecdsa.PrivateKey{
 				PublicKey: ecdsa.PublicKey{
 					Curve: elliptic.P256(),
 					X:     x,
@@ -316,7 +316,7 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 				},
 				D: d,
 			},
-			PublicKey: &ecdsa.PublicKey{
+			pub: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 				X:     x,
 				Y:     y,

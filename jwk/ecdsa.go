@@ -37,7 +37,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		X:     x,
 		Y:     y,
 	}
-	key.PublicKey = &pub
+	key.pub = &pub
 	if !curve.IsOnCurve(x, y) {
 		d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s public key", crv))
 	}
@@ -48,7 +48,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 			PublicKey: pub,
 			D:         dd,
 		}
-		key.PrivateKey = &priv
+		key.priv = &priv
 
 		// sanity check of private key
 		xx, yy := priv.ScalarBaseMult(dd.Bytes())

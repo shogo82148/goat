@@ -82,10 +82,10 @@ func TestParseKey_RSA(t *testing.T) {
 			E: 65537,
 		}
 		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 	t.Run("RFC 7517 A.1. Example Public Keys (RSA)", func(t *testing.T) {
@@ -121,7 +121,7 @@ func TestParseKey_RSA(t *testing.T) {
 			E: 65537,
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 
@@ -202,10 +202,10 @@ func TestParseKey_RSA(t *testing.T) {
 			E: 65537,
 		}
 		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 }
@@ -313,7 +313,7 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.x5c))
 	}
 
-	keyPublicKey := key.PublicKey.(*rsa.PublicKey)
+	keyPublicKey := key.PublicKey().(*rsa.PublicKey)
 	cert := key.x5c[0]
 	certPublicKey := cert.PublicKey.(*rsa.PublicKey)
 	if !keyPublicKey.Equal(certPublicKey) {
@@ -376,7 +376,7 @@ func TestMarshalKey_RSA(t *testing.T) {
 			"4956581554819", 10)
 		key := &Key{
 			alg: jwa.RS256.KeyAlgorithm(),
-			PublicKey: &rsa.PublicKey{
+			priv: &rsa.PublicKey{
 				N: n,
 				E: 65537,
 			},
@@ -442,10 +442,10 @@ func TestMarshalKey_RSA(t *testing.T) {
 			E: 65537,
 		}
 		key := &Key{
-			alg:        jwa.RS256.KeyAlgorithm(),
-			kid:        "2011-04-29",
-			PrivateKey: privateKey,
-			PublicKey:  publicKey,
+			alg:  jwa.RS256.KeyAlgorithm(),
+			kid:  "2011-04-29",
+			priv: privateKey,
+			pub:  publicKey,
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {

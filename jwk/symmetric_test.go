@@ -20,7 +20,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if key.kty != jwa.Oct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
-		got, ok := key.PrivateKey.([]byte)
+		got, ok := key.PrivateKey().([]byte)
 		if !ok {
 			t.Errorf("unexpected key type: want []byte, got %T", key.PublicKey)
 		}
@@ -51,7 +51,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if key.alg != "A128KW" {
 			t.Errorf("unexpected algorithm: want %s, got %s", "A128KW", key.alg)
 		}
-		got, ok := key.PrivateKey.([]byte)
+		got, ok := key.PrivateKey().([]byte)
 		if !ok {
 			t.Errorf("unexpected key type: want []byte, got %T", key.PublicKey)
 		}
@@ -73,7 +73,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if key.kty != jwa.Oct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
-		got, ok := key.PrivateKey.([]byte)
+		got, ok := key.PrivateKey().([]byte)
 		if !ok {
 			t.Errorf("unexpected key type: want []byte, got %T", key.PublicKey)
 		}
@@ -141,7 +141,7 @@ func TestMarshalKey_symmetric(t *testing.T) {
 	t.Run("RFC 7517 A.3. Example Symmetric Keys (A128KW)", func(t *testing.T) {
 		key := &Key{
 			alg: jwa.A128KW.KeyAlgorithm(),
-			PrivateKey: []byte{
+			priv: []byte{
 				0x19, 0xac, 0x20, 0x82, 0xe1, 0x72, 0x1a, 0xb5,
 				0x8a, 0x6a, 0xfe, 0xc0, 0x5f, 0x85, 0x4a, 0x52,
 			},
@@ -159,7 +159,7 @@ func TestMarshalKey_symmetric(t *testing.T) {
 	t.Run("RFC 7517 A.3. Example Symmetric Keys (HMAC)", func(t *testing.T) {
 		key := &Key{
 			kid: "HMAC key used in JWS spec Appendix A.1 example",
-			PrivateKey: []byte{
+			priv: []byte{
 				0x03, 0x23, 0x35, 0x4b, 0x2b, 0x0f, 0xa5, 0xbc,
 				0x83, 0x7e, 0x06, 0x65, 0x77, 0x7b, 0xa6, 0x8f,
 				0x5a, 0xb3, 0x28, 0xe6, 0xf0, 0x54, 0xc9, 0x28,

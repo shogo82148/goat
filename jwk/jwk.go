@@ -33,14 +33,8 @@ type Key struct {
 	x5c     []*x509.Certificate
 	x5t     []byte
 	x5tS256 []byte
-
-	// PrivateKey is the private key.
-	// If the key doesn't contain any private key, it returns nil.
-	PrivateKey any
-
-	// PublicKey is the public key.
-	// If the key doesn't contain any public key, it returns nil.
-	PublicKey any
+	priv    any
+	pub     any
 
 	// Raw is the raw data of JSON-decoded JWK.
 	// JSON numbers are decoded as json.Number to avoid data loss.
@@ -259,7 +253,7 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	switch priv := key.PrivateKey.(type) {
+	switch priv := key.priv.(type) {
 	case *ecdsa.PrivateKey:
 		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for ecdsa")
@@ -280,13 +274,13 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		}
 		encodeEd25519Key(e, priv, pub)
 	case []byte:
-		if key.PublicKey != nil {
+		if key.pub != nil {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
 		}
 		encodeSymmetricKey(e, priv)
 	case nil:
 		// the key has only public key.
-		switch pub := key.PublicKey.(type) {
+		switch pub := key.priv.(type) {
 		case *ecdsa.PublicKey:
 			encodeEcdsaKey(e, nil, pub)
 		case *rsa.PublicKey:
@@ -312,8 +306,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	// remove optional parameters
 	thumbKey := &Key{
-		kty:       key.kty,
-		PublicKey: key.PublicKey,
+		kty:  key.kty,
+		priv: key.priv,
 	}
 	data, err := thumbKey.MarshalJSON()
 	if err != nil {
@@ -327,7 +321,19 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 
 // KeyPair returns a pair of private key and public key.
 func (key *Key) KeyPair() (privateKey, publicKey any) {
-	return key.PrivateKey, key.PublicKey
+	return key.priv, key.pub
+}
+
+// PrivateKey returns the private key.
+// If the key doesn't contain any private key, it returns nil.
+func (key *Key) PrivateKey() any {
+	return key.priv
+}
+
+// PublicKey returns the public key.
+// If the key doesn't contain any public key, it returns nil.
+func (key *Key) PublicKey() any {
+	return key.pub
 }
 
 // ParseMap parses a JWK that is decoded by the json package.

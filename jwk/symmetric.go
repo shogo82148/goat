@@ -7,7 +7,7 @@ import (
 
 func parseSymmetricKey(d *jsonutils.Decoder, key *Key) {
 	privateKey := d.MustBytes("k")
-	key.PrivateKey = privateKey
+	key.priv = privateKey
 }
 
 func encodeSymmetricKey(e *jsonutils.Encoder, priv []byte) {
