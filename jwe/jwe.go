@@ -26,11 +26,8 @@ var b64 = base64.RawURLEncoding
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
 	alg jwa.KeyManagementAlgorithm
-
 	enc jwa.EncryptionAlgorithm
-
-	// Compression is RFC7516 Section 4.1.3. "zip" (Compression Algorithm) Header Parameter.
-	Compression jwa.CompressionAlgorithm
+	zip jwa.CompressionAlgorithm
 
 	// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
 	JWKSetURL *url.URL
@@ -85,6 +82,25 @@ func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
 	h.alg = alg
 }
 
+// Encryption return the encryption algorithm
+// defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
+func (h *Header) Encryption() jwa.EncryptionAlgorithm {
+	return h.enc
+}
+
+func (h *Header) SetEncryption(enc jwa.EncryptionAlgorithm) {
+	h.enc = enc
+}
+
+// Compression is RFC7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
+func (h *Header) Compression() jwa.CompressionAlgorithm {
+	return h.zip
+}
+
+func (h *Header) SetCompression(zip jwa.CompressionAlgorithm) {
+	h.zip = zip
+}
+
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
 func (h *Header) EphemeralPublicKey() *jwk.Key {
 	return h.epk
@@ -110,16 +126,6 @@ func (h *Header) AgreementPartyVInfo() []byte {
 
 func (h *Header) SetAgreementPartyVInfo(apv []byte) {
 	h.apv = apv
-}
-
-// Encryption return the encryption algorithm
-// defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
-func (h *Header) Encryption() jwa.EncryptionAlgorithm {
-	return h.enc
-}
-
-func (h *Header) SetEncryption(enc jwa.EncryptionAlgorithm) {
-	h.enc = enc
 }
 
 // InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
@@ -290,7 +296,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if zip, ok := d.GetString("zip"); ok {
-		h.Compression = jwa.CompressionAlgorithm(zip)
+		h.zip = jwa.CompressionAlgorithm(zip)
 	}
 
 	if jku, ok := d.GetURL("jku"); ok {
@@ -451,7 +457,7 @@ func encodeHeader(h *Header) ([]byte, error) {
 		e.Set("enc", string(enc))
 	}
 
-	if zip := h.Compression; zip != "" {
+	if zip := h.zip; zip != "" {
 		e.Set("zip", zip.String())
 	}
 
