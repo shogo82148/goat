@@ -30,19 +30,19 @@ type Header struct {
 	x5c     []*x509.Certificate
 	x5t     []byte
 	x5tS256 []byte
-
-	// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
-	Type string
-
-	// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
-	ContentType string
-
-	// Critical is 4.1.11. "crit" (Critical) Header Parameter.
-	Critical []string
+	typ     string
+	cty     string
+	crit    []string
 
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+func NewHeader(alg jwa.SignatureAlgorithm) *Header {
+	return &Header{
+		alg: alg,
+	}
 }
 
 // Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
@@ -115,6 +115,33 @@ func (h *Header) X509CertificateSHA256() []byte {
 
 func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 	h.x5tS256 = x5tS256
+}
+
+// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
+func (h *Header) Type() string {
+	return h.typ
+}
+
+func (h *Header) SetType(typ string) {
+	h.typ = typ
+}
+
+// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
+func (h *Header) ContentType() string {
+	return h.cty
+}
+
+func (h *Header) SetContentType(cty string) {
+	h.cty = cty
+}
+
+// Critical is 4.1.11. "crit" (Critical) Header Parameter.
+func (h *Header) Critical() []string {
+	return h.crit
+}
+
+func (h *Header) SetCritical(crit []string) {
+	h.crit = crit
 }
 
 // Message is a decoded JWS.
@@ -266,9 +293,9 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	h.kid, _ = d.GetString("kid")
-	h.Type, _ = d.GetString("typ")
-	h.ContentType, _ = d.GetString("cty")
-	h.Critical, _ = d.GetStringArray("crit")
+	h.typ, _ = d.GetString("typ")
+	h.cty, _ = d.GetString("cty")
+	h.crit, _ = d.GetStringArray("crit")
 
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -365,15 +392,15 @@ func encodeHeader(h *Header) ([]byte, error) {
 		e.SetBytes("x5t#S256", sum[:])
 	}
 
-	if typ := h.Type; typ != "" {
+	if typ := h.typ; typ != "" {
 		e.Set("typ", typ)
 	}
 
-	if cty := h.ContentType; cty != "" {
+	if cty := h.cty; cty != "" {
 		e.Set("cty", cty)
 	}
 
-	if crit := h.Critical; len(crit) > 0 {
+	if crit := h.crit; len(crit) > 0 {
 		e.Set("crit", crit)
 	}
 

@@ -158,10 +158,8 @@ func TestSign(t *testing.T) {
 		}
 		sigKey := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
 
-		header := &jws.Header{
-			Type: "JWT",
-		}
-		header.SetAlgorithm(jwa.HS256)
+		header := jws.NewHeader(jwa.HS256)
+		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",
 			ExpirationTime: time.Unix(1300819380, 0),
@@ -189,10 +187,8 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
 		sigKey := jwa.None.New().NewKey(nil, nil)
-		header := &jws.Header{
-			Type: "JWT",
-		}
-		header.SetAlgorithm(jwa.None)
+		header := jws.NewHeader(jwa.None)
+		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",
 			ExpirationTime: time.Unix(1300819380, 0),

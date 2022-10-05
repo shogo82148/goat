@@ -44,7 +44,7 @@ func TestParse(t *testing.T) {
 		if want, got := msg.Header.Algorithm(), jwa.HS256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
-		if want, got := "JWT", msg.Header.Type; want != got {
+		if want, got := "JWT", msg.Header.Type(); want != got {
 			t.Errorf("unexpected type: want %s, got %s", want, got)
 		}
 
@@ -276,7 +276,8 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
-		h := &Header{alg: jwa.HS256, Type: "JWT"}
+		h := NewHeader(jwa.HS256)
+		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
@@ -333,7 +334,8 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.RS256.New().NewKey(key.PrivateKey, key.PublicKey)
-		h := &Header{alg: jwa.RS256, Type: "JWT"}
+		h := NewHeader(jwa.RS256)
+		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
@@ -361,7 +363,8 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		k := jwa.None.New().NewKey(nil, nil)
-		h := &Header{alg: jwa.None, Type: "JWT"}
+		h := NewHeader(jwa.None)
+		h.SetContentType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
