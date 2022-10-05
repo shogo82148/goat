@@ -1,4 +1,4 @@
-// Package jwa implements RFC7518.
+// Package jwa implements RFC 7518.
 package jwa
 
 import (
