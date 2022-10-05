@@ -44,7 +44,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		n := newBigInt("2044670291674465456259634338875880586006520963996017350503745333127027051873224508977372301204320323" +
@@ -81,11 +81,11 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+		if !privateKey.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		if !publicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 	t.Run("RFC 7517 A.1. Example Public Keys (RSA)", func(t *testing.T) {
@@ -103,10 +103,10 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		if want, got := key.Algorithm, jwa.RS256.KeyAlgorithm(); want != got {
+		if want, got := key.alg, jwa.RS256.KeyAlgorithm(); want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		n := newBigInt("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632" +
@@ -120,8 +120,8 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		if !publicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 
@@ -161,10 +161,10 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		if want, got := jwa.RS256.KeyAlgorithm(), key.Algorithm; want != got {
+		if want, got := jwa.RS256.KeyAlgorithm(), key.alg; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		n := newBigInt("2663454760017700891236544146403688261110463413643058169610263946307526643621694631605384564230016632" +
@@ -201,11 +201,11 @@ func TestParseKey_RSA(t *testing.T) {
 			N: n,
 			E: 65537,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+		if !privateKey.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		if !publicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 	})
 }
@@ -306,15 +306,15 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if key.KeyType != "RSA" {
-		t.Errorf("unexpected key type: want %s, got %s", "RSA", key.KeyType)
+	if key.kty != "RSA" {
+		t.Errorf("unexpected key type: want %s, got %s", "RSA", key.kty)
 	}
-	if len(key.X509CertificateChain) != 1 {
-		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.X509CertificateChain))
+	if len(key.x5c) != 1 {
+		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.x5c))
 	}
 
-	keyPublicKey := key.PublicKey.(*rsa.PublicKey)
-	cert := key.X509CertificateChain[0]
+	keyPublicKey := key.PublicKey().(*rsa.PublicKey)
+	cert := key.x5c[0]
 	certPublicKey := cert.PublicKey.(*rsa.PublicKey)
 	if !keyPublicKey.Equal(certPublicKey) {
 		t.Error("public keys are missmatch")
@@ -375,13 +375,13 @@ func TestMarshalKey_RSA(t *testing.T) {
 			"06204439131004744574928756316166854835432256022350994699082769165462796818216782639701536883643596535"+
 			"4956581554819", 10)
 		key := &Key{
-			Algorithm: jwa.RS256.KeyAlgorithm(),
-			PublicKey: &rsa.PublicKey{
-				N: n,
-				E: 65537,
-			},
-			KeyID: "2011-04-29",
+			alg: jwa.RS256.KeyAlgorithm(),
+			kid: "2011-04-29",
 		}
+		key.SetPublicKey(&rsa.PublicKey{
+			N: n,
+			E: 65537,
+		})
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)
@@ -437,16 +437,11 @@ func TestMarshalKey_RSA(t *testing.T) {
 			Primes: []*big.Int{p, q},
 		}
 		privateKey.Precompute()
-		publicKey := &rsa.PublicKey{
-			N: n,
-			E: 65537,
-		}
 		key := &Key{
-			Algorithm:  jwa.RS256.KeyAlgorithm(),
-			KeyID:      "2011-04-29",
-			PrivateKey: privateKey,
-			PublicKey:  publicKey,
+			alg: jwa.RS256.KeyAlgorithm(),
+			kid: "2011-04-29",
 		}
+		key.SetPrivateKey(privateKey)
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)

@@ -3,6 +3,7 @@ package jwk
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
@@ -24,61 +25,115 @@ import (
 
 // Key is a JSON Web Key.
 type Key struct {
-	// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
-	KeyType jwa.KeyType
-
-	// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
-	PublicKeyUse string
-
-	// KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
-	KeyOperations []string
-
-	// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
-	Algorithm jwa.KeyAlgorithm
-
-	// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
-	KeyID string
-
-	// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
-	X509URL *url.URL
-
-	// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
-	X509CertificateChain []*x509.Certificate
-
-	// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
-	X509CertificateSHA1 []byte
-
-	// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
-	X509CertificateSHA256 []byte
-
-	// PrivateKey is the private key.
-	// If the key doesn't contain any private key, it returns nil.
-	PrivateKey any
-
-	// PublicKey is the public key.
-	// If the key doesn't contain any public key, it returns nil.
-	PublicKey any
+	kty     jwa.KeyType
+	use     string
+	keyOps  []string
+	alg     jwa.KeyAlgorithm
+	kid     string
+	x5u     *url.URL
+	x5c     []*x509.Certificate
+	x5t     []byte
+	x5tS256 []byte
+	priv    crypto.PrivateKey
+	pub     crypto.PublicKey
 
 	// Raw is the raw data of JSON-decoded JWK.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
 }
 
+// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
+func (key *Key) KeyType() jwa.KeyType {
+	return key.kty
+}
+
+// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
+func (key *Key) PublicKeyUse() string {
+	return key.use
+}
+
+func (key *Key) SetPublicKeyUse(use string) {
+	key.use = use
+}
+
+// KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
+func (key *Key) KeyOperations() []string {
+	return key.keyOps
+}
+
+func (key *Key) SetKeyOperation(keyOps []string) {
+	key.keyOps = keyOps
+}
+
+// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
+func (key *Key) Algorithm() jwa.KeyAlgorithm {
+	return key.alg
+}
+
+func (key *Key) SetAlgorithm(alg jwa.KeyAlgorithm) {
+	key.alg = alg
+}
+
+// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
+func (key *Key) KeyID() string {
+	return key.kid
+}
+
+func (key *Key) SetKeyID(kid string) {
+	key.kid = kid
+}
+
+// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
+func (key *Key) X509URL() *url.URL {
+	return key.x5u
+}
+
+func (key *Key) SetX509URL(x5u *url.URL) {
+	key.x5u = x5u
+}
+
+// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
+func (key *Key) X509CertificateChain() []*x509.Certificate {
+	return key.x5c
+}
+
+func (key *Key) SetX509CertificateChain(x5c []*x509.Certificate) {
+	key.x5c = x5c
+}
+
+// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
+func (key *Key) X509CertificateSHA1() []byte {
+	return key.x5t
+}
+
+func (key *Key) SetX509CertificateSHA1(x5t []byte) {
+	key.x5t = x5t
+}
+
+// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
+func (key *Key) X509CertificateSHA256() []byte {
+	return key.x5tS256
+}
+
+func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
+	key.x5tS256 = x5tS256
+}
+
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
-	key.KeyType = jwa.KeyType(d.MustString("kty"))
-	key.KeyID, _ = d.GetString("kid")
-	key.PublicKeyUse, _ = d.GetString("use")
+	key.kty = jwa.KeyType(d.MustString("kty"))
+	key.kid, _ = d.GetString("kid")
+	key.use, _ = d.GetString("use")
 	if ops, ok := d.GetStringArray("key_ops"); ok {
-		key.KeyOperations = ops
+		key.keyOps = ops
 	}
 	if alg, ok := d.GetString("alg"); ok {
-		key.Algorithm = jwa.KeyAlgorithm(alg)
+		key.alg = jwa.KeyAlgorithm(alg)
 	}
 
 	// decode the certificates
 	if x5u, ok := d.GetURL("x5u"); ok {
-		key.X509URL = x5u
+		key.x5u = x5u
 	}
 	var cert0 []byte
 	if x5c, ok := d.GetStringArray("x5c"); ok {
@@ -98,12 +153,12 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 			}
 			certs = append(certs, cert)
 		}
-		key.X509CertificateChain = certs
+		key.x5c = certs
 	}
 
 	// check thumbprints
 	if x5t, ok := d.GetBytes("x5t"); ok {
-		key.X509CertificateSHA1 = x5t
+		key.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
@@ -112,7 +167,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		}
 	}
 	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
-		key.X509CertificateSHA256 = x5t256
+		key.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
@@ -123,40 +178,40 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 }
 
 func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
-	e.Set("kty", key.KeyType.String())
-	if v := key.KeyID; v != "" {
+	e.Set("kty", key.kty.String())
+	if v := key.kid; v != "" {
 		e.Set("kid", v)
 	}
-	if v := key.PublicKeyUse; v != "" {
+	if v := key.use; v != "" {
 		e.Set("use", v)
 	}
-	if v := key.KeyOperations; v != nil {
+	if v := key.keyOps; v != nil {
 		e.Set("key_ops", v)
 	}
-	if v := key.Algorithm; v != "" {
+	if v := key.alg; v != "" {
 		e.Set("alg", v)
 	}
-	if x5u := key.X509URL; x5u != nil {
+	if x5u := key.x5u; x5u != nil {
 		e.Set("x5u", x5u.String())
 	}
-	if x5c := key.X509CertificateChain; x5c != nil {
+	if x5c := key.x5c; x5c != nil {
 		chain := make([][]byte, 0, len(x5c))
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
 		e.Set("x5c", chain)
 	}
-	if x5t := key.X509CertificateSHA1; x5t != nil {
+	if x5t := key.x5t; x5t != nil {
 		e.SetBytes("x5t", x5t)
-	} else if len(key.X509CertificateChain) > 0 {
-		cert := key.X509CertificateChain[0]
+	} else if len(key.x5c) > 0 {
+		cert := key.x5c[0]
 		sum := sha1.Sum(cert.Raw)
 		e.SetBytes("x5t", sum[:])
 	}
-	if x5t256 := key.X509CertificateSHA256; x5t256 != nil {
+	if x5t256 := key.x5tS256; x5t256 != nil {
 		e.SetBytes("x5t#S256", x5t256)
-	} else if len(key.X509CertificateChain) > 0 {
-		cert := key.X509CertificateChain[0]
+	} else if len(key.x5c) > 0 {
+		cert := key.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
 		e.SetBytes("x5t#S256", sum[:])
 	}
@@ -199,14 +254,14 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	switch priv := key.PrivateKey.(type) {
+	switch priv := key.priv.(type) {
 	case *ecdsa.PrivateKey:
-		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for ecdsa")
 		}
 		encodeEcdsaKey(e, priv, &priv.PublicKey)
 	case *rsa.PrivateKey:
-		if k := key.PublicKey; k != nil && !priv.PublicKey.Equal(k) {
+		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for rsa")
 		}
 		encodeRSAKey(e, priv, &priv.PublicKey)
@@ -215,18 +270,18 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, newUnknownKeyTypeError(key)
 		}
 		pub := ed25519.PublicKey(priv[ed25519.SeedSize:])
-		if k := key.PublicKey; k != nil && !pub.Equal(k) {
+		if k := key.pub; k != nil && !pub.Equal(k) {
 			return nil, errors.New("jwk: public key is mismatch for ed25519")
 		}
 		encodeEd25519Key(e, priv, pub)
 	case []byte:
-		if key.PublicKey != nil {
+		if key.pub != nil {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
 		}
 		encodeSymmetricKey(e, priv)
 	case nil:
 		// the key has only public key.
-		switch pub := key.PublicKey.(type) {
+		switch pub := key.pub.(type) {
 		case *ecdsa.PublicKey:
 			encodeEcdsaKey(e, nil, pub)
 		case *rsa.PublicKey:
@@ -246,14 +301,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Data())
 }
 
-// Thumbprint computes the thumbprint of the key defined in [RFC 7638].
-//
-// [RFC 7638]: https://www.rfc-editor.org/rfc/rfc7638
+// Thumbprint computes the thumbprint of the key defined in RFC 7638.
 func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	// remove optional parameters
 	thumbKey := &Key{
-		KeyType:   key.KeyType,
-		PublicKey: key.PublicKey,
+		kty: key.kty,
+		pub: key.pub,
 	}
 	data, err := thumbKey.MarshalJSON()
 	if err != nil {
@@ -266,8 +319,37 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 }
 
 // KeyPair returns a pair of private key and public key.
-func (key *Key) KeyPair() (privateKey, publicKey any) {
-	return key.PrivateKey, key.PublicKey
+func (key *Key) KeyPair() (crypto.PrivateKey, crypto.PublicKey) {
+	return key.priv, key.pub
+}
+
+// PrivateKey returns the private key.
+// If the key doesn't contain any private key, it returns nil.
+func (key *Key) PrivateKey() crypto.PrivateKey {
+	return key.priv
+}
+
+// SetPrivateKey sets the private key.
+// If priv has Public() method, it sets the public key as well.
+func (key *Key) SetPrivateKey(priv crypto.PrivateKey) {
+	key.priv = priv
+	if pub, ok := priv.(interface{ Public() crypto.PublicKey }); ok {
+		key.pub = pub.Public()
+	} else {
+		key.pub = nil
+	}
+}
+
+// PublicKey returns the public key.
+// If the key doesn't contain any public key, it returns nil.
+func (key *Key) PublicKey() crypto.PublicKey {
+	return key.pub
+}
+
+// SetPublicKey sets the public key, and removes the private key.
+func (key *Key) SetPublicKey(pub crypto.PublicKey) {
+	key.priv = nil
+	key.pub = pub
 }
 
 // ParseMap parses a JWK that is decoded by the json package.
@@ -281,7 +363,7 @@ func ParseMap(raw map[string]any) (*Key, error) {
 		return nil, err
 	}
 
-	switch key.KeyType {
+	switch key.kty {
 	case jwa.EC:
 		parseEcdsaKey(d, key)
 	case jwa.RSA:
@@ -291,7 +373,7 @@ func ParseMap(raw map[string]any) (*Key, error) {
 	case jwa.Oct:
 		parseSymmetricKey(d, key)
 	default:
-		return nil, fmt.Errorf("jwk: unknown key type: %q", key.KeyType)
+		return nil, fmt.Errorf("jwk: unknown key type: %q", key.kty)
 	}
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -335,7 +417,7 @@ func ParseSet(data []byte) (*Set, error) {
 // Find finds the key that has kid.
 func (set *Set) Find(kid string) (key *Key, found bool) {
 	for _, k := range set.Keys {
-		if k.KeyID == kid {
+		if k.kid == kid {
 			return k, true
 		}
 	}
@@ -368,8 +450,8 @@ type unknownKeyTypeError struct {
 
 func newUnknownKeyTypeError(key *Key) *unknownKeyTypeError {
 	return &unknownKeyTypeError{
-		pub:  reflect.TypeOf(key.PublicKey),
-		priv: reflect.TypeOf(key.PrivateKey),
+		pub:  reflect.TypeOf(key.PublicKey()),
+		priv: reflect.TypeOf(key.PrivateKey()),
 	}
 }
 

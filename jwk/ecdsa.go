@@ -37,7 +37,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		X:     x,
 		Y:     y,
 	}
-	key.PublicKey = &pub
+	key.pub = &pub
 	if !curve.IsOnCurve(x, y) {
 		d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s public key", crv))
 	}
@@ -48,7 +48,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 			PublicKey: pub,
 			D:         dd,
 		}
-		key.PrivateKey = &priv
+		key.priv = &priv
 
 		// sanity check of private key
 		xx, yy := priv.ScalarBaseMult(dd.Bytes())
@@ -58,7 +58,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	}
 
 	// sanity check of the certificate
-	if certs := key.X509CertificateChain; len(certs) > 0 {
+	if certs := key.x5c; len(certs) > 0 {
 		cert := certs[0]
 		if !pub.Equal(cert.PublicKey) {
 			d.SaveError(errors.New("jwk: public keys are mismatch"))

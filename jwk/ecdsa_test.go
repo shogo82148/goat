@@ -21,27 +21,28 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.KeyType, jwa.EC; want != got {
+		if want, got := key.kty, jwa.EC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("57807358241436249728379122087876380298924820027722995515715270765240753673285")
 		y := newBigInt("90436541859143682268950424386863654389577770182238183823381687388274600502701")
-		publicKey := &ecdsa.PublicKey{
+		want := &ecdsa.PublicKey{
 			Curve: elliptic.P256(),
 			X:     x,
 			Y:     y,
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		got := key.PublicKey()
+		if !want.Equal(got) {
+			t.Errorf("unexpected public key: want %v, got %v", want, got)
 		}
 
 		d := newBigInt("64502400493437371358766275827725703314178640739253280897215993954599262549170")
 		privateKey := &ecdsa.PrivateKey{
-			PublicKey: *publicKey,
+			PublicKey: *want,
 			D:         d,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+		if !privateKey.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 
@@ -59,7 +60,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.KeyType, jwa.EC; want != got {
+		if want, got := key.kty, jwa.EC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132")
@@ -69,8 +70,8 @@ func TestParseKey_ecdsa(t *testing.T) {
 			X:     x,
 			Y:     y,
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		if !publicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
 		}
 
 		d := newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490")
@@ -78,8 +79,8 @@ func TestParseKey_ecdsa(t *testing.T) {
 			PublicKey: *publicKey,
 			D:         d,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+		if !privateKey.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 
@@ -94,18 +95,19 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.KeyType, jwa.EC; want != got {
+		if want, got := key.kty, jwa.EC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
 		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
-		publicKey := &ecdsa.PublicKey{
+		want := &ecdsa.PublicKey{
 			Curve: elliptic.P256(),
 			X:     x,
 			Y:     y,
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		got := key.PublicKey()
+		if !want.Equal(got) {
+			t.Errorf("unexpected public key: want %v, got %v", want, got)
 		}
 	})
 
@@ -121,27 +123,28 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.KeyType, jwa.EC; want != got {
+		if want, got := key.kty, jwa.EC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
 		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
-		publicKey := &ecdsa.PublicKey{
+		want := &ecdsa.PublicKey{
 			Curve: elliptic.P256(),
 			X:     x,
 			Y:     y,
 		}
-		if !publicKey.Equal(key.PublicKey) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey)
+		got := key.PublicKey()
+		if !want.Equal(got) {
+			t.Errorf("unexpected public key: want %v, got %v", want, got)
 		}
 
 		d := newBigInt("110246039328358150430804407946042381407500908316371398015658902487828646033409")
 		privateKey := &ecdsa.PrivateKey{
-			PublicKey: *publicKey,
+			PublicKey: *want,
 			D:         d,
 		}
-		if !privateKey.Equal(key.PrivateKey) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey)
+		if !privateKey.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
 		}
 	})
 }
@@ -278,10 +281,10 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
 		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
 		key := &Key{
-			KeyType:      jwa.EC,
-			KeyID:        "1",
-			PublicKeyUse: "enc",
-			PublicKey: &ecdsa.PublicKey{
+			kty: jwa.EC,
+			kid: "1",
+			use: "enc",
+			pub: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 				X:     x,
 				Y:     y,
@@ -308,7 +311,7 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 		y, _ := new(big.Int).SetString("101451294974385619524093058399734017814808930032421185206609461750712400090915", 10)
 		d, _ := new(big.Int).SetString("110246039328358150430804407946042381407500908316371398015658902487828646033409", 10)
 		key := &Key{
-			PrivateKey: &ecdsa.PrivateKey{
+			priv: &ecdsa.PrivateKey{
 				PublicKey: ecdsa.PublicKey{
 					Curve: elliptic.P256(),
 					X:     x,
@@ -316,13 +319,13 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 				},
 				D: d,
 			},
-			PublicKey: &ecdsa.PublicKey{
+			pub: &ecdsa.PublicKey{
 				Curve: elliptic.P256(),
 				X:     x,
 				Y:     y,
 			},
-			PublicKeyUse: "enc",
-			KeyID:        "1",
+			use: "enc",
+			kid: "1",
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {

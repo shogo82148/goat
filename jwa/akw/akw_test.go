@@ -132,7 +132,7 @@ func TestWrap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		w := NewKeyWrapper(key.PrivateKey.([]byte))
+		w := NewKeyWrapper(key.PrivateKey().([]byte))
 
 		cek := []byte{
 			4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106,
@@ -270,7 +270,7 @@ func TestUnwrap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		w := NewKeyWrapper(key.PrivateKey.([]byte))
+		w := NewKeyWrapper(key.PrivateKey().([]byte))
 
 		data := []byte{
 			232, 160, 123, 211, 183, 76, 245, 132, 200, 128, 123, 75, 190, 216,

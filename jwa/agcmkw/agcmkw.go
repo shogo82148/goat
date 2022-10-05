@@ -1,6 +1,7 @@
 package agcmkw
 
 import (
+	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -75,8 +76,7 @@ type authenticationTagSetter interface {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-// opts must be a pointer to [Options].
-func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	priv, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid private key type: %T", privateKey))

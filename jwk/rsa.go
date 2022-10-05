@@ -29,7 +29,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		E: int(e.Int64()),
 		N: n,
 	}
-	key.PublicKey = &pub
+	key.pub = &pub
 	if err := d.Err(); err != nil {
 		return
 	}
@@ -81,11 +81,11 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 			return
 		}
 		priv.Precompute()
-		key.PrivateKey = &priv
+		key.priv = &priv
 	}
 
 	// sanity check of the certificate
-	if certs := key.X509CertificateChain; len(certs) > 0 {
+	if certs := key.x5c; len(certs) > 0 {
 		cert := certs[0]
 		if !pub.Equal(cert.PublicKey) {
 			d.SaveError(errors.New("jwk: public keys are mismatch"))

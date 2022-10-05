@@ -2,6 +2,8 @@
 package none
 
 import (
+	"crypto"
+
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/sig"
 )
@@ -28,7 +30,7 @@ var _ sig.Key = (*Key)(nil)
 type Key struct{}
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
+func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
 	if privateKey != nil || publicKey != nil {
 		return sig.NewInvalidKey("none", privateKey, publicKey)
 	}

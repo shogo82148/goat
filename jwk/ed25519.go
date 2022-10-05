@@ -17,7 +17,7 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 	}
 	pub := make(ed25519.PublicKey, ed25519.PublicKeySize)
 	copy(pub, x)
-	key.PublicKey = pub
+	key.pub = pub
 
 	if param, ok := d.GetBytes("d"); ok {
 		if len(param) != ed25519.SeedSize {
@@ -29,11 +29,11 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 			d.SaveError(errors.New("jwk: invalid key pair"))
 			return
 		}
-		key.PrivateKey = priv
+		key.priv = priv
 	}
 
 	// sanity check of the certificate
-	if certs := key.X509CertificateChain; len(certs) > 0 {
+	if certs := key.x5c; len(certs) > 0 {
 		cert := certs[0]
 		publicKey := cert.PublicKey
 		if !pub.Equal(publicKey) {

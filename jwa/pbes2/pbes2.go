@@ -58,7 +58,7 @@ type Algorithm struct {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	key, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("pbes2: invalid option type: %T", privateKey))

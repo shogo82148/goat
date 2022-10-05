@@ -65,7 +65,7 @@ type Key struct {
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey, publicKey any) sig.Key {
+func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
 	key := &Key{
 		hash: alg.hash,
 	}
