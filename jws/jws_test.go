@@ -34,14 +34,14 @@ func TestParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.HS256; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.HS256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		if want, got := "JWT", msg.Header.Type; want != got {
@@ -105,14 +105,14 @@ func TestParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.RS256; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.RS256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -145,14 +145,14 @@ func TestParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.ES256; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.ES256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -188,14 +188,14 @@ func TestParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.ES512; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.ES512; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -214,14 +214,14 @@ func TestParse(t *testing.T) {
 				".",
 		)
 		msg, err := Parse(context.TODO(), raw, FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(nil, nil), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.None; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.None; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -247,14 +247,14 @@ func TestParse(t *testing.T) {
 			"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
 			"9g7sVvpAr_MuM0KAg"
 		msg, err := Parse(context.TODO(), []byte(raw), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if want, got := msg.Header.Algorithm, jwa.EdDSA; want != got {
+		if want, got := msg.Header.Algorithm(), jwa.EdDSA; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -276,7 +276,7 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
-		h := &Header{Algorithm: jwa.HS256, Type: "JWT"}
+		h := &Header{alg: jwa.HS256, Type: "JWT"}
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
@@ -333,7 +333,7 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.RS256.New().NewKey(key.PrivateKey, key.PublicKey)
-		h := &Header{Algorithm: jwa.RS256, Type: "JWT"}
+		h := &Header{alg: jwa.RS256, Type: "JWT"}
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
@@ -361,7 +361,7 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		k := jwa.None.New().NewKey(nil, nil)
-		h := &Header{Algorithm: jwa.None, Type: "JWT"}
+		h := &Header{alg: jwa.None, Type: "JWT"}
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)

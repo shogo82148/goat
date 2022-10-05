@@ -97,7 +97,7 @@ func FuzzJWT(f *testing.F) {
 		}
 		var sigKey sig.Key
 		token1, err := Parse(context.TODO(), []byte(data), jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
-			alg := header.Algorithm
+			alg := header.Algorithm()
 			if !alg.Available() {
 				return nil, errors.New("unknown algorithm")
 			}

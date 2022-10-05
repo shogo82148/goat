@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 			t.Fatal(err)
 		}
 		token, err := Parse(context.TODO(), raw, jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(key.PrivateKey, key.PublicKey), nil
 		}))
 		if err != nil {
@@ -73,7 +73,7 @@ func TestParse(t *testing.T) {
 				".",
 		)
 		token, err := Parse(context.TODO(), raw, jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
-			alg := header.Algorithm.New()
+			alg := header.Algorithm().New()
 			return alg.NewKey(nil, nil), nil
 		}))
 		if err != nil {
@@ -159,9 +159,9 @@ func TestSign(t *testing.T) {
 		sigKey := jwa.HS256.New().NewKey(key.PrivateKey, key.PublicKey)
 
 		header := &jws.Header{
-			Algorithm: jwa.HS256,
-			Type:      "JWT",
+			Type: "JWT",
 		}
+		header.SetAlgorithm(jwa.HS256)
 		claims := &Claims{
 			Issuer:         "joe",
 			ExpirationTime: time.Unix(1300819380, 0),
@@ -190,9 +190,9 @@ func TestSign(t *testing.T) {
 	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
 		sigKey := jwa.None.New().NewKey(nil, nil)
 		header := &jws.Header{
-			Algorithm: jwa.None,
-			Type:      "JWT",
+			Type: "JWT",
 		}
+		header.SetAlgorithm(jwa.None)
 		claims := &Claims{
 			Issuer:         "joe",
 			ExpirationTime: time.Unix(1300819380, 0),

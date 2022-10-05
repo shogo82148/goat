@@ -121,7 +121,7 @@ func FuzzJWS(f *testing.F) {
 		}
 		var sigKey sig.Key
 		msg1, err := Parse(context.TODO(), []byte(data), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm
+			alg := header.Algorithm()
 			if !alg.Available() {
 				return nil, errors.New("unknown algorithm")
 			}

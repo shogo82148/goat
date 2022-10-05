@@ -22,11 +22,8 @@ import (
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
-	// Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
-	Algorithm jwa.SignatureAlgorithm
-
-	// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
-	JWKSetURL *url.URL
+	alg jwa.SignatureAlgorithm
+	jku *url.URL
 
 	// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
 	JWK *jwk.Key
@@ -58,6 +55,24 @@ type Header struct {
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+// Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+func (h *Header) Algorithm() jwa.SignatureAlgorithm {
+	return h.alg
+}
+
+func (h *Header) SetAlgorithm(alg jwa.SignatureAlgorithm) {
+	h.alg = alg
+}
+
+// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
+func (h *Header) JWKSetURL() *url.URL {
+	return h.jku
+}
+
+func (h *Header) SetJWKSetURL(jku *url.URL) {
+	h.jku = jku
 }
 
 // Message is a decoded JWS.
@@ -149,11 +164,11 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	}
 
 	if alg, ok := d.GetString("alg"); ok {
-		h.Algorithm = jwa.SignatureAlgorithm(alg)
+		h.alg = jwa.SignatureAlgorithm(alg)
 	}
 
 	if jku, ok := d.GetURL("jku"); ok {
-		h.JWKSetURL = jku
+		h.jku = jku
 	}
 
 	if v, ok := d.GetObject("jwk"); ok {
@@ -261,12 +276,12 @@ func encodeHeader(h *Header) ([]byte, error) {
 		raw[k] = v
 	}
 	e := jsonutils.NewEncoder(raw)
-	if v := h.Algorithm; v != "" {
-		e.Set("alg", v.String())
+	if v := h.alg; v != "" {
+		e.Set(jwa.AlgorithmKey, string(v))
 	}
 
-	if u := h.JWKSetURL; u != nil {
-		e.Set("jku", u.String())
+	if u := h.jku; u != nil {
+		e.Set(jwa.JWKSetURLKey, u.String())
 	}
 
 	if key := h.JWK; key != nil {
