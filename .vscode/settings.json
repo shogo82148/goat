@@ -1,0 +1,28 @@
+{
+    "cSpell.words": [
+        "agcmkw",
+        "AQAB",
+        "ciphertext",
+        "Diffie-Hellman",
+        "ECDH",
+        "ecdhes",
+        "eddsa",
+        "GCMKW",
+        "jsonutils",
+        "keymanage",
+        "keysize",
+        "PBES2",
+        "pbse2",
+        "pubinfo",
+        "pubkey",
+        "RSAES",
+        "rsaoaep",
+        "rsapkcs",
+        "RSASSA-PSS",
+        "SECG",
+        "secp256k1"
+    ],
+    "cSpell.ignoreRegExpList": [
+        "[a-zA-Z0-9./_-]{16,}" // base64 strings
+    ]
+}
