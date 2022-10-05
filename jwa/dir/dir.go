@@ -44,10 +44,10 @@ type KeyWrapper struct {
 	cek []byte
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) (map[string]any, []byte, error) {
-	return nil, []byte{}, nil
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+	return []byte{}, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(header map[string]any, data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return w.cek, nil
 }

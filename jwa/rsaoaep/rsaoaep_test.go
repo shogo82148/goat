@@ -1,7 +1,6 @@
 package rsaoaep
 
 import (
-	"crypto/rsa"
 	"crypto/subtle"
 	"testing"
 
@@ -45,9 +44,7 @@ func TestUnwrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	alg := New()
-	w := alg.NewKeyWrapper(&Options{
-		PrivateKey: k.PrivateKey.(*rsa.PrivateKey),
-	})
+	w := alg.NewKeyWrapper(k.KeyPair())
 	cek, err := w.UnwrapKey([]byte{
 		56, 163, 154, 192, 58, 53, 222, 4, 105, 218, 136, 218, 29, 94, 203,
 		22, 150, 92, 129, 94, 211, 232, 53, 89, 41, 60, 138, 56, 196, 216,
@@ -67,7 +64,7 @@ func TestUnwrap(t *testing.T) {
 		89, 116, 92, 103, 246, 83, 216, 182, 176, 84, 37, 147, 35, 45, 219,
 		172, 99, 226, 233, 73, 37, 124, 42, 72, 49, 242, 35, 127, 184, 134,
 		117, 114, 135, 206,
-	})
+	}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -32,21 +32,25 @@ type Options struct {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-// opts must be a pointer to [Options].
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
-	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsapkcs1v15: invalid option type: %T", opts))
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+	priv, ok := privateKey.(*rsa.PrivateKey)
+	if !ok && privateKey != nil {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))
 	}
-	if key.PrivateKey != nil {
+	pub, ok := publicKey.(*rsa.PublicKey)
+	if !ok {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid public key type: %T", publicKey))
+	}
+
+	if priv != nil {
 		return &KeyWrapper{
-			priv: key.PrivateKey,
-			pub:  &key.PrivateKey.PublicKey,
+			priv: priv,
+			pub:  &priv.PublicKey,
 		}
 	}
+
 	return &KeyWrapper{
-		priv: key.PrivateKey,
-		pub:  key.PublicKey,
+		pub: pub,
 	}
 }
 
@@ -57,10 +61,10 @@ type KeyWrapper struct {
 	pub  *rsa.PublicKey
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return rsa.EncryptPKCS1v15(rand.Reader, w.pub, cek)
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return rsa.DecryptPKCS1v15(rand.Reader, w.priv, data)
 }

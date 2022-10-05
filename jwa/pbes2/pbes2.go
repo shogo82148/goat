@@ -3,13 +3,10 @@ package pbes2
 import (
 	"crypto"
 	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"hash"
-	"math"
 
-	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/keymanage"
@@ -79,52 +76,87 @@ type KeyWrapper struct {
 	key []byte
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) (map[string]any, []byte, error) {
-	p2s := make([]byte, 32)
-	if _, err := rand.Read(p2s); err != nil {
-		return nil, nil, fmt.Errorf("pkse2: failed initialize p2s: %w", err)
-	}
-	p2c := 10000
-	return w.WrapKeyOpts(p2s, p2c, cek)
+type pbes2SaltInputGetter interface {
+	PBES2SaltInput() []byte
 }
 
-func (w *KeyWrapper) WrapKeyOpts(p2s []byte, p2c int, cek []byte) (header map[string]any, data []byte, err error) {
+type pbes2SaltInputSetter interface {
+	SetPBES2SaltInput(p2s []byte)
+}
+
+type pbes2CountGetter interface {
+	PBES2Count() int
+}
+
+type PBES2CountSetter interface {
+	SetPBES2Count(p2c int)
+}
+
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+	var p2s []byte
+	var p2c int
+	if getter, ok := opts.(pbes2SaltInputGetter); ok {
+		p2s = getter.PBES2SaltInput()
+	}
+	if p2s == nil {
+		setter, ok := opts.(pbes2SaltInputSetter)
+		if !ok {
+			return nil, errors.New("pbse2: neither PBES2SaltInput nor SetPBES2SaltInput found")
+		}
+		p2s = make([]byte, 32)
+		if _, err := rand.Read(p2s); err != nil {
+			return nil, fmt.Errorf("pkse2: failed initialize p2s: %w", err)
+		}
+		setter.SetPBES2SaltInput(p2s)
+	}
+	if getter, ok := opts.(pbes2CountGetter); ok {
+		p2c = getter.PBES2Count()
+	}
+	if p2c == 0 {
+		setter, ok := opts.(PBES2CountSetter)
+		if !ok {
+			return nil, errors.New("pbse2: neither PBES2Count nor SetPBES2Count found")
+		}
+		p2c = 10000
+		setter.SetPBES2Count(p2c)
+	}
+	return w.wrapKey(p2s, p2c, cek, opts)
+}
+
+func (w *KeyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []byte, err error) {
 	name := w.alg.name
-	salt := make([]byte, 0, len(name)+len(p2s))
+	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
 	salt = append(salt, '\x00')
+	salt = append(salt, p2s...)
 	dk := pbkdf2.Key(w.key, salt, p2c, w.alg.size, w.alg.hash)
-	_, data, err = akw.NewKeyWrapper(dk).WrapKey(cek)
+	data, err = akw.NewKeyWrapper(dk).WrapKey(cek, opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("pbse2: failed to wrap key: %w", err)
+		return nil, fmt.Errorf("pbse2: failed to wrap key: %w", err)
 	}
-	header = map[string]any{
-		jwa.PBES2SaltInput: base64.RawURLEncoding.EncodeToString(salt),
-		jwa.PBES2Count:     p2c,
-	}
-	return header, data, nil
+	return data, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(header map[string]any, data []byte) ([]byte, error) {
-	d := jsonutils.NewDecoder("pbse2", header)
-	p2s := d.MustBytes(jwa.PBES2SaltInput)
-	p2c := d.MustInt64(jwa.PBES2Count)
-	if err := d.Err(); err != nil {
-		return nil, err
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	p2s, ok := opts.(pbes2SaltInputGetter)
+	if !ok {
+		return nil, errors.New("pbse2: PBES2SaltInput not found")
 	}
-	if p2c <= 0 || p2c > math.MaxInt {
-		return nil, errors.New("pbse2: p2c is out of range")
+	p2c, ok := opts.(pbes2CountGetter)
+	if !ok {
+		return nil, errors.New("pbse2: PBES2Count not found")
 	}
-	return w.UnwrapKeyOpts(p2s, int(p2c), data)
+	return w.unwrapKey(p2s.PBES2SaltInput(), p2c.PBES2Count(), data, opts)
 }
 
-func (w *KeyWrapper) UnwrapKeyOpts(p2s []byte, p2c int, data []byte) ([]byte, error) {
+func (w *KeyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]byte, error) {
 	name := w.alg.name
-	salt := make([]byte, 0, len(name)+len(p2s))
+	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
 	salt = append(salt, '\x00')
+	salt = append(salt, p2s...)
 	dk := pbkdf2.Key(w.key, salt, p2c, w.alg.size, w.alg.hash)
-	cek, err := akw.NewKeyWrapper(dk).UnwrapKey(nil, data)
+	cek, err := akw.NewKeyWrapper(dk).UnwrapKey(data, opts)
 	if err != nil {
 		return nil, fmt.Errorf("pbse2: failed to unwrap key: %w", err)
 	}

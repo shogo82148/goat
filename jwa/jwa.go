@@ -403,6 +403,8 @@ func (zip CompressionAlgorithm) String() string {
 // https://www.iana.org/assignments/jose/jose.xhtml
 const (
 	AlgorithmKey                    = "alg"
+	EncryptionAlgorithmKey          = "enc"
+	CompressionAlgorithmKey         = "zip"
 	JWKSetURLKey                    = "jku"
 	JSONWebKey                      = "jwk"
 	KeyIDKey                        = "kid"
@@ -418,8 +420,8 @@ const (
 	AgreementPartyVInfoKey          = "apv"
 	InitializationVectorKey         = "iv"
 	AuthenticationTagKey            = "tag"
-	PBES2SaltInput                  = "p2s"
-	PBES2Count                      = "p2c"
+	PBES2SaltInputKey               = "p2s"
+	PBES2CountKey                   = "p2c"
 	IssuerKey                       = "iss"
 	SubjectKey                      = "sub"
 	AudienceKey                     = "aud"

@@ -37,21 +37,17 @@ type Algorithm struct {
 	hash crypto.Hash
 }
 
-type Options struct {
-	// PrivateKey is used for UnwrapKey.
-	PrivateKey *rsa.PrivateKey
-
-	// PublicKey is used for WrapKey.
-	PublicKey *rsa.PublicKey
-}
-
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
+	priv, ok := privateKey.(*rsa.PrivateKey)
+	if !ok && privateKey != nil {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))
+	}
+	pub, ok := publicKey.(*rsa.PublicKey)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid option type: %T", opts))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid public key type: %T", publicKey))
 	}
 
-	if priv := key.PrivateKey; priv != nil {
+	if priv != nil {
 		return &KeyWrapper{
 			alg:  alg,
 			priv: priv,
@@ -61,7 +57,7 @@ func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
 
 	return &KeyWrapper{
 		alg: alg,
-		pub: key.PublicKey,
+		pub: pub,
 	}
 }
 
@@ -74,12 +70,12 @@ type KeyWrapper struct {
 	pub  *rsa.PublicKey
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	hash := w.alg.hash.New()
 	return rsa.EncryptOAEP(hash, rand.Reader, w.pub, cek, label)
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	hash := w.alg.hash.New()
 	return rsa.DecryptOAEP(hash, rand.Reader, w.priv, data, label)
 }

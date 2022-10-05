@@ -13,15 +13,12 @@ import (
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwa/dir"
+	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
 
 var alg = &Algorithm{
-	f: func(key []byte) keymanage.KeyWrapper {
-		return dir.New().NewKeyWrapper(&dir.Options{
-			Key: key,
-		})
-	},
+	alg: dir.New(),
 }
 
 // New returns a new algorithm
@@ -32,11 +29,7 @@ func New() keymanage.Algorithm {
 
 var a128kw = &Algorithm{
 	size: 16,
-	f: func(key []byte) keymanage.KeyWrapper {
-		return akw.New128().NewKeyWrapper(&akw.Options{
-			Key: key,
-		})
-	},
+	alg:  akw.New128(),
 }
 
 // NewA128KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A128KW".
@@ -46,11 +39,7 @@ func NewA128KW() keymanage.Algorithm {
 
 var a192kw = &Algorithm{
 	size: 24,
-	f: func(key []byte) keymanage.KeyWrapper {
-		return akw.New192().NewKeyWrapper(&akw.Options{
-			Key: key,
-		})
-	},
+	alg:  akw.New192(),
 }
 
 // NewA192KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A192KW".
@@ -60,11 +49,7 @@ func NewA192KW() keymanage.Algorithm {
 
 var a256kw = &Algorithm{
 	size: 32,
-	f: func(key []byte) keymanage.KeyWrapper {
-		return akw.New256().NewKeyWrapper(&akw.Options{
-			Key: key,
-		})
-	},
+	alg:  akw.New256(),
 }
 
 // NewA256KW returns a new algorithm ECDH-ES using Concat KDF and CEK wrapped with "A256KW".
@@ -83,70 +68,77 @@ var _ keymanage.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct {
 	size int
-	f    func([]byte) keymanage.KeyWrapper
+	alg  keymanage.Algorithm
 }
 
-type Options struct {
-	PrivateKey any
+type encryptionGetter interface {
+	Encryption() jwa.EncryptionAlgorithm
+}
 
-	// EncryptionAlgorithm is "enc" (Encryption Algorithm) Header Parameter.
-	EncryptionAlgorithm jwa.EncryptionAlgorithm
+type ephemeralPublicKeyGetter interface {
+	EphemeralPublicKey() *jwk.Key
+}
 
-	// EphemeralPublicKey is "epk" (Ephemeral Public Key) Header Parameter.
-	EphemeralPublicKey any
+type agreementPartyUInfoGetter interface {
+	AgreementPartyUInfo() []byte
+}
 
-	// AgreementPartyUInfo is "apu" (Agreement PartyUInfo) Header Parameter.
-	AgreementPartyUInfo []byte
-
-	// AgreementPartyVInfo is "apv" (Agreement PartyVInfo) Header Parameter.
-	AgreementPartyVInfo []byte
+type agreementPartyVInfoGetter interface {
+	AgreementPartyVInfo() []byte
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-// opts must be a pointer to [Options].
-func (alg *Algorithm) NewKeyWrapper(opts any) keymanage.KeyWrapper {
-	key, ok := opts.(*Options)
-	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("ecdhes: invalid option type: %T", opts))
-	}
-	size := alg.size
-	if size == 0 {
-		size = key.EncryptionAlgorithm.New().CEKSize()
-	}
+func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
 	return &KeyWrapper{
-		alg:  []byte(key.EncryptionAlgorithm.String()),
-		size: size,
-		f:    alg.f,
-		opts: *key,
+		priv: privateKey,
+		alg:  alg,
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	alg  []byte
-	size int
-	f    func([]byte) keymanage.KeyWrapper
-	opts Options
+	priv any
+	alg  *Algorithm
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte) ([]byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	enc, ok := opts.(encryptionGetter)
+	if !ok {
+		return nil, fmt.Errorf("ecdhes: method Encryption not found")
+	}
+	epk, ok := opts.(ephemeralPublicKeyGetter)
+	if !ok {
+		return nil, fmt.Errorf("ecdhes: method EphemeralPublicKey not found")
+	}
+	apu, ok := opts.(agreementPartyUInfoGetter)
+	if !ok {
+		return nil, fmt.Errorf("ecdhes: method AgreementPartyUInfo not found")
+	}
+	apv, ok := opts.(agreementPartyVInfoGetter)
+	if !ok {
+		return nil, fmt.Errorf("ecdhes: method AgreementPartyVInfo not found")
+	}
+	size := w.alg.size
+	if size == 0 {
+		size = enc.Encryption().New().CEKSize()
+	}
 	key, err := deriveECDHES(
-		w.alg,
-		w.opts.AgreementPartyUInfo,
-		w.opts.AgreementPartyVInfo,
-		w.opts.PrivateKey,
-		w.opts.EphemeralPublicKey,
-		w.size,
+		[]byte(enc.Encryption()),
+		apu.AgreementPartyUInfo(),
+		apv.AgreementPartyVInfo(),
+		w.priv,
+		epk.EphemeralPublicKey().PublicKey,
+		size,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return w.f(key).UnwrapKey(data)
+	return w.alg.alg.NewKeyWrapper(key, nil).UnwrapKey(data, opts)
 }
 
 func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, error) {

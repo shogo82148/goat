@@ -89,13 +89,13 @@ const chunkLen = 8
 // defined in [RFC 3394].
 //
 // [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
-func (w *KeyWrapper) WrapKey(cek []byte) (map[string]any, []byte, error) {
+func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
-		return nil, nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
+		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
 	}
 	block, err := aes.NewCipher(w.key)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	n := len(cek) / chunkLen
@@ -130,14 +130,14 @@ func (w *KeyWrapper) WrapKey(cek []byte) (map[string]any, []byte, error) {
 	}
 
 	copy(b, a)
-	return nil, buf[chunkLen:], nil
+	return buf[chunkLen:], nil
 }
 
 // UnwrapKey unwraps cek with AWS Key Wrap algorithm
 // defined in [RFC 3394].
 //
 // [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
-func (w *KeyWrapper) UnwrapKey(header map[string]any, data []byte) ([]byte, error) {
+func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
 	}

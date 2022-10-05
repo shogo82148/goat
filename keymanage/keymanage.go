@@ -6,8 +6,8 @@ type Algorithm interface {
 }
 
 type KeyWrapper interface {
-	WrapKey(cek []byte) (header map[string]any, data []byte, err error)
-	UnwrapKey(header map[string]any, data []byte) (cek []byte, err error)
+	WrapKey(cek []byte, opts any) (data []byte, err error)
+	UnwrapKey(data []byte, opts any) (cek []byte, err error)
 }
 
 func NewInvalidKeyWrapper(err error) KeyWrapper {
@@ -20,10 +20,10 @@ type invalidKeyWrapper struct {
 	err error
 }
 
-func (w *invalidKeyWrapper) WrapKey(cek []byte) (header map[string]any, data []byte, err error) {
-	return nil, nil, w.err
+func (w *invalidKeyWrapper) WrapKey(cek []byte, opts any) (data []byte, err error) {
+	return nil, w.err
 }
 
-func (w *invalidKeyWrapper) UnwrapKey(header map[string]any, data []byte) (cek []byte, err error) {
+func (w *invalidKeyWrapper) UnwrapKey(data []byte, opts any) (cek []byte, err error) {
 	return nil, w.err
 }

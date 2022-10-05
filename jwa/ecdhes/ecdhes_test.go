@@ -9,6 +9,29 @@ import (
 	"github.com/shogo82148/goat/jwk"
 )
 
+type options struct {
+	enc jwa.EncryptionAlgorithm
+	epk *jwk.Key
+	apu []byte
+	apv []byte
+}
+
+func (opts *options) Encryption() jwa.EncryptionAlgorithm {
+	return opts.enc
+}
+
+func (opts *options) EphemeralPublicKey() *jwk.Key {
+	return opts.epk
+}
+
+func (opts *options) AgreementPartyUInfo() []byte {
+	return opts.apu
+}
+
+func (opts *options) AgreementPartyVInfo() []byte {
+	return opts.apv
+}
+
 func TestUnwrap(t *testing.T) {
 	// RFC 7518 Appendix C. Example ECDH-ES Key Agreement Computation
 	alice := `{"kty":"EC",` +
@@ -34,15 +57,15 @@ func TestUnwrap(t *testing.T) {
 	}
 
 	alg := New()
-	key := alg.NewKeyWrapper(&Options{
-		PrivateKey:          aliceKey.PrivateKey,
-		EncryptionAlgorithm: jwa.A128GCM,
-		EphemeralPublicKey:  bobKey.PublicKey,
-		AgreementPartyUInfo: []byte("Alice"),
-		AgreementPartyVInfo: []byte("Bob"),
-	})
+	key := alg.NewKeyWrapper(aliceKey.KeyPair())
+	opts := &options{
+		enc: jwa.A128GCM,
+		epk: bobKey,
+		apu: []byte("Alice"),
+		apv: []byte("Bob"),
+	}
 
-	got, err := key.UnwrapKey([]byte{})
+	got, err := key.UnwrapKey([]byte{}, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

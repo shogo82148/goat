@@ -22,7 +22,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -39,7 +39,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F1011121314151617")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -56,7 +56,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,7 +73,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F1011121314151617")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -91,7 +91,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -109,7 +109,7 @@ func TestWrap(t *testing.T) {
 		key := mustHex("000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F")
 		cek := mustHex("00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F")
 		w := NewKeyWrapper(key)
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -139,7 +139,7 @@ func TestWrap(t *testing.T) {
 			206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
 			44, 207,
 		}
-		_, got, err := w.WrapKey(cek)
+		got, err := w.WrapKey(cek, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,7 +164,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -181,7 +181,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -198,7 +198,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -216,7 +216,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -234,7 +234,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF0001020304050607")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -253,7 +253,7 @@ func TestUnwrap(t *testing.T) {
 		want := mustHex("00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F")
 
 		w := NewKeyWrapper(key)
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -282,7 +282,7 @@ func TestUnwrap(t *testing.T) {
 			206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
 			44, 207,
 		}
-		got, err := w.UnwrapKey(nil, data)
+		got, err := w.UnwrapKey(data, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -24,11 +25,9 @@ var b64 = base64.RawURLEncoding
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
-	// Algorithm is RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
-	Algorithm jwa.KeyManagementAlgorithm
+	alg jwa.KeyManagementAlgorithm
 
-	// Encryption is RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
-	Encryption jwa.EncryptionAlgorithm
+	enc jwa.EncryptionAlgorithm
 
 	// Compression is RFC7516 Section 4.1.3. "zip" (Compression Algorithm) Header Parameter.
 	Compression jwa.CompressionAlgorithm
@@ -63,31 +62,83 @@ type Header struct {
 	// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
 	Critical []string
 
-	// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
-	EphemeralPublicKey *jwk.Key
-
-	// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
-	AgreementPartyUInfo []byte
-
-	// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
-	AgreementPartyVInfo []byte
-
-	// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
-	// It is the 96-bit IV value used for the key encryption operation.
-	InitializationVector []byte
-
-	// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
-	AuthenticationTag []byte
-
-	// PBES2SaltInput is RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
-	PBES2SaltInput []byte
-
-	// PBES2Count is RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
-	PBES2Count int
+	epk *jwk.Key
+	apu []byte
+	apv []byte
+	iv  []byte
+	tag []byte
+	p2s []byte
+	p2c int
 
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+// Algorithm returns the key management algorithm
+// defined in RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+func (h *Header) Algorithm() jwa.KeyManagementAlgorithm {
+	return h.alg
+}
+
+func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
+	h.alg = alg
+}
+
+// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
+// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
+// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
+
+// Encryption return the encryption algorithm
+// defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
+func (h *Header) Encryption() jwa.EncryptionAlgorithm {
+	return h.enc
+}
+
+func (h *Header) SetEncryption(enc jwa.EncryptionAlgorithm) {
+	h.enc = enc
+}
+
+// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
+// It is the 96-bit IV value used for the key encryption operation.
+func (h *Header) InitializationVector() []byte {
+	return h.iv
+}
+
+func (h *Header) SetInitializationVector(iv []byte) {
+	h.iv = iv
+}
+
+// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
+func (h *Header) AuthenticationTag() []byte {
+	return h.tag
+}
+
+func (h *Header) SetAuthenticationTag(tag []byte) {
+	h.tag = tag
+}
+
+// PBES2SaltInput is the PBES2 salt input
+// defined in RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
+func (h *Header) PBES2SaltInput() []byte {
+	return h.p2s
+}
+
+func (h *Header) SetPBES2SaltInput(p2s []byte) {
+	h.p2s = p2s
+}
+
+// PBES2Count is the PBES2 Count
+// defined in RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
+func (h *Header) PBES2Count() int {
+	return h.p2c
+}
+
+func (h *Header) SetPBES2Count(p2c int) {
+	if p2c < 0 {
+		panic("jwe: p2c is out of range")
+	}
+	h.p2c = p2c
 }
 
 // Message is a decoded JWS.
@@ -158,7 +209,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	if err != nil {
 		return nil, err
 	}
-	cek, err := wrapper.UnwrapKey(encryptedRawKey)
+	cek, err := wrapper.UnwrapKey(encryptedRawKey, h)
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +228,7 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	}
 
 	// Decrypt the content
-	enc := h.Encryption
+	enc := h.Encryption()
 	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
 	}
@@ -207,12 +258,12 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		Raw: raw,
 	}
 
-	if alg, ok := d.GetString("alg"); ok {
-		h.Algorithm = jwa.KeyManagementAlgorithm(alg)
+	if alg, ok := d.GetString(jwa.AlgorithmKey); ok {
+		h.alg = jwa.KeyManagementAlgorithm(alg)
 	}
 
 	if enc, ok := d.GetString("enc"); ok {
-		h.Encryption = jwa.EncryptionAlgorithm(enc)
+		h.enc = jwa.EncryptionAlgorithm(enc)
 	}
 
 	if zip, ok := d.GetString("zip"); ok {
@@ -281,35 +332,38 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	h.Critical, _ = d.GetStringArray("crit")
 
 	// Header Parameters Used for ECDH Key Agreement
-	if epk, ok := d.GetObject("epk"); ok {
+	if epk, ok := d.GetObject(jwa.EphemeralPublicKeyKey); ok {
 		key, err := jwk.ParseMap(epk)
-		if err != nil {
-			d.SaveError(fmt.Errorf("jwe: failed to parse epk: %w", err))
+		if err == nil {
+			h.epk = key
 		} else {
-			h.EphemeralPublicKey = key
+			d.SaveError(fmt.Errorf("jwe: failed to parse epk: %w", err))
 		}
 	}
-	if apu, ok := d.GetBytes("apu"); ok {
-		h.AgreementPartyUInfo = append([]byte(nil), apu...)
+	if apu, ok := d.GetBytes(jwa.AgreementPartyUInfoKey); ok {
+		h.apu = append([]byte(nil), apu...)
 	}
-	if apv, ok := d.GetBytes("apv"); ok {
-		h.AgreementPartyVInfo = append([]byte(nil), apv...)
+	if apv, ok := d.GetBytes(jwa.AgreementPartyVInfoKey); ok {
+		h.apv = append([]byte(nil), apv...)
 	}
 
 	// Header Parameter used for Key wrapping with AES GCM.
-	if iv, ok := d.GetBytes("iv"); ok {
-		h.InitializationVector = append([]byte(nil), iv...)
+	if iv, ok := d.GetBytes(jwa.InitializationVectorKey); ok {
+		h.iv = append([]byte(nil), iv...)
 	}
-	if tag, ok := d.GetBytes("tag"); ok {
-		h.AuthenticationTag = append([]byte(nil), tag...)
+	if tag, ok := d.GetBytes(jwa.AuthenticationTagKey); ok {
+		h.tag = append([]byte(nil), tag...)
 	}
 
 	// Header Parameters Used for PBES2 Key Encryption
-	if p2s, ok := d.GetBytes("p2s"); ok {
-		h.PBES2SaltInput = append([]byte(nil), p2s...)
+	if p2s, ok := d.GetBytes(jwa.PBES2SaltInputKey); ok {
+		h.p2s = append([]byte(nil), p2s...)
 	}
-	if p2c, ok := d.GetInt64("p2c"); ok {
-		h.PBES2Count = int(p2c)
+	if p2c, ok := d.GetInt64(jwa.PBES2CountKey); ok {
+		if p2c < 0 || p2c > math.MaxInt {
+			d.SaveError(errors.New("jwe: p2c is out of range"))
+		}
+		h.p2c = int(p2c)
 	}
 
 	if err := d.Err(); err != nil {
@@ -319,16 +373,16 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	if !header.Encryption.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + header.Encryption.String() + " is not available")
+	if !header.Encryption().Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + header.Encryption().String() + " is not available")
 	}
-	enc := header.Encryption.New()
+	enc := header.Encryption().New()
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
 		return nil, err
 	}
 	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
-	encryptedKey, err := keyWrapper.WrapKey(cek)
+	encryptedKey, err := keyWrapper.WrapKey(cek, header)
 	if err != nil {
 		return nil, err
 	}
@@ -366,12 +420,12 @@ func encodeHeader(h *Header) ([]byte, error) {
 		raw[k] = v
 	}
 	e := jsonutils.NewEncoder(raw)
-	if v := h.Algorithm; v != "" {
-		e.Set("alg", v.String())
+	if v := h.alg; v != "" {
+		e.Set("alg", string(v))
 	}
 
-	if enc := h.Encryption; enc != "" {
-		e.Set("enc", enc.String())
+	if enc := h.enc; enc != "" {
+		e.Set("enc", string(enc))
 	}
 
 	if zip := h.Compression; zip != "" {
@@ -434,30 +488,30 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 
 	// Header Parameters Used for ECDH Key Agreement
-	if epk := h.EphemeralPublicKey; epk != nil {
-		e.Set("epk", h.EphemeralPublicKey)
+	if epk := h.epk; epk != nil {
+		e.Set(jwa.EphemeralPublicKeyKey, h.epk)
 	}
-	if apu := h.AgreementPartyUInfo; apu != nil {
-		e.SetBytes("apu", apu)
+	if apu := h.apu; apu != nil {
+		e.SetBytes(jwa.AgreementPartyUInfoKey, apu)
 	}
-	if apv := h.AgreementPartyUInfo; apv != nil {
-		e.SetBytes("apv", apv)
+	if apv := h.apu; apv != nil {
+		e.SetBytes(jwa.AgreementPartyVInfoKey, apv)
 	}
 
 	// Header Parameter used for Key wrapping with AES GCM.
-	if iv := h.InitializationVector; iv != nil {
-		e.SetBytes("iv", iv)
+	if iv := h.iv; iv != nil {
+		e.SetBytes(jwa.InitializationVectorKey, iv)
 	}
-	if tag := h.AuthenticationTag; tag != nil {
-		e.SetBytes("tag", tag)
+	if tag := h.tag; tag != nil {
+		e.SetBytes(jwa.AuthenticationTagKey, tag)
 	}
 
 	// Header Parameters Used for PBES2 Key Encryption
-	if p2s := h.PBES2SaltInput; p2s != nil {
-		e.SetBytes("p2s", p2s)
+	if p2s := h.p2s; p2s != nil {
+		e.SetBytes(jwa.PBES2SaltInputKey, p2s)
 	}
-	if p2c := h.PBES2Count; p2c != 0 {
-		e.Set("p2c", p2c)
+	if p2c := h.p2c; p2c != 0 {
+		e.Set(jwa.PBES2CountKey, p2c)
 	}
 
 	if err := e.Err(); err != nil {
