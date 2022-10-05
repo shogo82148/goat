@@ -16,8 +16,8 @@ func TestParseKey_Ed25519(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType != jwa.OKP {
-			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.KeyType)
+		if key.kty != jwa.OKP {
+			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.kty)
 		}
 
 		privateKey := ed25519.PrivateKey{
@@ -46,8 +46,8 @@ func TestParseKey_Ed25519(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType != jwa.OKP {
-			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.KeyType)
+		if key.kty != jwa.OKP {
+			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.kty)
 		}
 
 		publicKey := ed25519.PublicKey{

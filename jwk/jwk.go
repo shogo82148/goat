@@ -24,14 +24,9 @@ import (
 
 // Key is a JSON Web Key.
 type Key struct {
-	// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
-	KeyType jwa.KeyType
-
-	// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
-	PublicKeyUse string
-
-	// KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
-	KeyOperations []string
+	kty    jwa.KeyType
+	use    string
+	keyOps []string
 
 	// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
 	Algorithm jwa.KeyAlgorithm
@@ -64,13 +59,36 @@ type Key struct {
 	Raw map[string]any
 }
 
+// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
+func (k *Key) KeyType() jwa.KeyType {
+	return k.kty
+}
+
+// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
+func (k *Key) PublicKeyUse() string {
+	return k.use
+}
+
+func (k *Key) SetPublicKeyUse(use string) {
+	k.use = use
+}
+
+// KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
+func (k *Key) KeyOperations() []string {
+	return k.keyOps
+}
+
+func (k *Key) SetKeyOperation(keyOps []string) {
+	k.keyOps = keyOps
+}
+
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
-	key.KeyType = jwa.KeyType(d.MustString("kty"))
+	key.kty = jwa.KeyType(d.MustString("kty"))
 	key.KeyID, _ = d.GetString("kid")
-	key.PublicKeyUse, _ = d.GetString("use")
+	key.use, _ = d.GetString("use")
 	if ops, ok := d.GetStringArray("key_ops"); ok {
-		key.KeyOperations = ops
+		key.keyOps = ops
 	}
 	if alg, ok := d.GetString("alg"); ok {
 		key.Algorithm = jwa.KeyAlgorithm(alg)
@@ -123,14 +141,14 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 }
 
 func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
-	e.Set("kty", key.KeyType.String())
+	e.Set("kty", key.kty.String())
 	if v := key.KeyID; v != "" {
 		e.Set("kid", v)
 	}
-	if v := key.PublicKeyUse; v != "" {
+	if v := key.use; v != "" {
 		e.Set("use", v)
 	}
-	if v := key.KeyOperations; v != nil {
+	if v := key.keyOps; v != nil {
 		e.Set("key_ops", v)
 	}
 	if v := key.Algorithm; v != "" {
@@ -252,7 +270,7 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 	// remove optional parameters
 	thumbKey := &Key{
-		KeyType:   key.KeyType,
+		kty:       key.kty,
 		PublicKey: key.PublicKey,
 	}
 	data, err := thumbKey.MarshalJSON()
@@ -281,7 +299,7 @@ func ParseMap(raw map[string]any) (*Key, error) {
 		return nil, err
 	}
 
-	switch key.KeyType {
+	switch key.kty {
 	case jwa.EC:
 		parseEcdsaKey(d, key)
 	case jwa.RSA:
@@ -291,7 +309,7 @@ func ParseMap(raw map[string]any) (*Key, error) {
 	case jwa.Oct:
 		parseSymmetricKey(d, key)
 	default:
-		return nil, fmt.Errorf("jwk: unknown key type: %q", key.KeyType)
+		return nil, fmt.Errorf("jwk: unknown key type: %q", key.kty)
 	}
 	if err := d.Err(); err != nil {
 		return nil, err

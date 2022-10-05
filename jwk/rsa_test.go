@@ -44,7 +44,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		n := newBigInt("2044670291674465456259634338875880586006520963996017350503745333127027051873224508977372301204320323" +
@@ -103,7 +103,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		if want, got := key.Algorithm, jwa.RS256.KeyAlgorithm(); want != got {
@@ -161,7 +161,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.KeyType; want != got {
+		if want, got := jwa.RSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		if want, got := jwa.RS256.KeyAlgorithm(), key.Algorithm; want != got {
@@ -306,8 +306,8 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if key.KeyType != "RSA" {
-		t.Errorf("unexpected key type: want %s, got %s", "RSA", key.KeyType)
+	if key.kty != "RSA" {
+		t.Errorf("unexpected key type: want %s, got %s", "RSA", key.kty)
 	}
 	if len(key.X509CertificateChain) != 1 {
 		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.X509CertificateChain))
