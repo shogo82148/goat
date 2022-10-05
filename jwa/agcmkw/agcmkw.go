@@ -79,7 +79,7 @@ type authenticationTagSetter interface {
 func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrapper {
 	priv, ok := privateKey.([]byte)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid private key type: %T", privateKey))
 	}
 	if len(priv) != alg.keySize {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: invalid key size: %d-bit key is required, but it is %d-bit", alg.keySize*8, len(priv)*8))

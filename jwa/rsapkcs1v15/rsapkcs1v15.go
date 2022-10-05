@@ -39,7 +39,7 @@ func (alg *Algorithm) NewKeyWrapper(privateKey, publicKey any) keymanage.KeyWrap
 	}
 	pub, ok := publicKey.(*rsa.PublicKey)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid public key type: %T", publicKey))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsapkcs1v15: invalid public key type: %T", publicKey))
 	}
 
 	if priv != nil {
