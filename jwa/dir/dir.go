@@ -1,4 +1,5 @@
-// Package dir implements direct use of a shared symmetric key as the CEK.
+// Package dir implements a Key Wrapping algorithm
+// that is direct use of a shared symmetric key as the CEK.
 package dir
 
 import (
@@ -22,10 +23,6 @@ func init() {
 var _ keymanage.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct{}
-
-type Options struct {
-	Key []byte
-}
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
 func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
