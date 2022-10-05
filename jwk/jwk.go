@@ -24,23 +24,15 @@ import (
 
 // Key is a JSON Web Key.
 type Key struct {
-	kty    jwa.KeyType
-	use    string
-	keyOps []string
-	alg    jwa.KeyAlgorithm
-	kid    string
-
-	// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
-	X509URL *url.URL
-
-	// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
-	X509CertificateChain []*x509.Certificate
-
-	// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
-	X509CertificateSHA1 []byte
-
-	// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
-	X509CertificateSHA256 []byte
+	kty     jwa.KeyType
+	use     string
+	keyOps  []string
+	alg     jwa.KeyAlgorithm
+	kid     string
+	x5u     *url.URL
+	x5c     []*x509.Certificate
+	x5t     []byte
+	x5tS256 []byte
 
 	// PrivateKey is the private key.
 	// If the key doesn't contain any private key, it returns nil.
@@ -96,6 +88,42 @@ func (key *Key) SetKeyID(kid string) {
 	key.kid = kid
 }
 
+// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
+func (key *Key) X509URL() *url.URL {
+	return key.x5u
+}
+
+func (key *Key) SetX509URL(x5u *url.URL) {
+	key.x5u = x5u
+}
+
+// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
+func (key *Key) X509CertificateChain() []*x509.Certificate {
+	return key.x5c
+}
+
+func (key *Key) SetX509CertificateChain(x5c []*x509.Certificate) {
+	key.x5c = x5c
+}
+
+// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
+func (key *Key) X509CertificateSHA1() []byte {
+	return key.x5t
+}
+
+func (key *Key) SetX509CertificateSHA1(x5t []byte) {
+	key.x5t = x5t
+}
+
+// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
+func (key *Key) X509CertificateSHA256() []byte {
+	return key.x5tS256
+}
+
+func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
+	key.x5tS256 = x5tS256
+}
+
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
@@ -110,7 +138,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 
 	// decode the certificates
 	if x5u, ok := d.GetURL("x5u"); ok {
-		key.X509URL = x5u
+		key.x5u = x5u
 	}
 	var cert0 []byte
 	if x5c, ok := d.GetStringArray("x5c"); ok {
@@ -130,12 +158,12 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 			}
 			certs = append(certs, cert)
 		}
-		key.X509CertificateChain = certs
+		key.x5c = certs
 	}
 
 	// check thumbprints
 	if x5t, ok := d.GetBytes("x5t"); ok {
-		key.X509CertificateSHA1 = x5t
+		key.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t) == 0 {
@@ -144,7 +172,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		}
 	}
 	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
-		key.X509CertificateSHA256 = x5t256
+		key.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
@@ -168,27 +196,27 @@ func encodeCommonParameters(e *jsonutils.Encoder, key *Key) {
 	if v := key.alg; v != "" {
 		e.Set("alg", v)
 	}
-	if x5u := key.X509URL; x5u != nil {
+	if x5u := key.x5u; x5u != nil {
 		e.Set("x5u", x5u.String())
 	}
-	if x5c := key.X509CertificateChain; x5c != nil {
+	if x5c := key.x5c; x5c != nil {
 		chain := make([][]byte, 0, len(x5c))
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
 		e.Set("x5c", chain)
 	}
-	if x5t := key.X509CertificateSHA1; x5t != nil {
+	if x5t := key.x5t; x5t != nil {
 		e.SetBytes("x5t", x5t)
-	} else if len(key.X509CertificateChain) > 0 {
-		cert := key.X509CertificateChain[0]
+	} else if len(key.x5c) > 0 {
+		cert := key.x5c[0]
 		sum := sha1.Sum(cert.Raw)
 		e.SetBytes("x5t", sum[:])
 	}
-	if x5t256 := key.X509CertificateSHA256; x5t256 != nil {
+	if x5t256 := key.x5tS256; x5t256 != nil {
 		e.SetBytes("x5t#S256", x5t256)
-	} else if len(key.X509CertificateChain) > 0 {
-		cert := key.X509CertificateChain[0]
+	} else if len(key.x5c) > 0 {
+		cert := key.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
 		e.SetBytes("x5t#S256", sum[:])
 	}

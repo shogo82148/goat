@@ -33,7 +33,7 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 	}
 
 	// sanity check of the certificate
-	if certs := key.X509CertificateChain; len(certs) > 0 {
+	if certs := key.x5c; len(certs) > 0 {
 		cert := certs[0]
 		publicKey := cert.PublicKey
 		if !pub.Equal(publicKey) {

@@ -309,12 +309,12 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	if key.kty != "RSA" {
 		t.Errorf("unexpected key type: want %s, got %s", "RSA", key.kty)
 	}
-	if len(key.X509CertificateChain) != 1 {
-		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.X509CertificateChain))
+	if len(key.x5c) != 1 {
+		t.Errorf("unexpected certificate chain length: want 1, got %d", len(key.x5c))
 	}
 
 	keyPublicKey := key.PublicKey.(*rsa.PublicKey)
-	cert := key.X509CertificateChain[0]
+	cert := key.x5c[0]
 	certPublicKey := cert.PublicKey.(*rsa.PublicKey)
 	if !keyPublicKey.Equal(certPublicKey) {
 		t.Error("public keys are missmatch")
