@@ -149,7 +149,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	copy(buf[len(data):], tagBytes)
 	cek, err := w.aead.Open(buf[:0], iv.InitializationVector(), buf, []byte{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("agcmkw: failed decrypt CEK: %w", err)
 	}
 	return cek, nil
 }
