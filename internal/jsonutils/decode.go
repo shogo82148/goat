@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+var b64 = base64.RawURLEncoding
+
 type Decoder struct {
 	pkg string
 	raw map[string]any
@@ -40,17 +42,21 @@ func (d *Decoder) grow(n int) {
 		n = 64
 	}
 	d.src = make([]byte, n)
-	d.dst = make([]byte, base64.RawURLEncoding.DecodedLen(n))
+	d.dst = make([]byte, b64.DecodedLen(n))
 }
 
 // Decode decodes s as base64 raw url encoding.
 // the returned slice is valid until next call.
 func (d *Decoder) Decode(s string, name string) []byte {
 	d.grow(len(s))
+	return d.decode(d.dst, s, name)
+}
+
+func (d *Decoder) decode(dst []byte, s, name string) []byte {
+	d.grow(len(s))
 	src := d.src[:len(s)]
-	dst := d.dst[:cap(d.dst)]
 	copy(src, s)
-	n, err := base64.RawURLEncoding.Decode(dst, src)
+	n, err := b64.Decode(dst, src)
 	if err != nil {
 		if d.err == nil {
 			d.err = &base64DecodeError{
@@ -212,26 +218,31 @@ func (d *Decoder) GetBytes(name string) ([]byte, bool) {
 	if !ok {
 		return nil, false
 	}
-	data := d.Decode(s, name)
-	if data == nil {
-		return nil, false
-	}
-	return data, true
+	buf := make([]byte, b64.DecodedLen(len(s)))
+	return d.decode(buf, s, name), true
 }
 
 func (d *Decoder) MustBytes(name string) []byte {
-	s := d.MustString(name)
-	if s == "" {
+	s, ok := d.GetString(name)
+	if !ok {
+		if d.err == nil {
+			d.err = &missingError{
+				pkg:  d.pkg,
+				name: name,
+			}
+		}
 		return nil
 	}
-	return d.Decode(s, name)
+	buf := make([]byte, b64.DecodedLen(len(s)))
+	return d.decode(buf, s, name)
 }
 
 func (d *Decoder) GetBigInt(name string) (*big.Int, bool) {
-	data, ok := d.GetBytes(name)
+	s, ok := d.GetString(name)
 	if !ok {
 		return nil, false
 	}
+	data := d.Decode(s, name)
 	if len(data) == 0 {
 		if d.err == nil {
 			d.err = fmt.Errorf("%s: failed to parse the parameter %s as big.Int", d.pkg, name)

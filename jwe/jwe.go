@@ -439,23 +439,23 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 	if apu, ok := d.GetBytes(jwa.AgreementPartyUInfoKey); ok {
-		h.apu = append([]byte(nil), apu...)
+		h.apu = apu
 	}
 	if apv, ok := d.GetBytes(jwa.AgreementPartyVInfoKey); ok {
-		h.apv = append([]byte(nil), apv...)
+		h.apv = apv
 	}
 
 	// Header Parameter used for Key wrapping with AES GCM.
 	if iv, ok := d.GetBytes(jwa.InitializationVectorKey); ok {
-		h.iv = append([]byte(nil), iv...)
+		h.iv = iv
 	}
 	if tag, ok := d.GetBytes(jwa.AuthenticationTagKey); ok {
-		h.tag = append([]byte(nil), tag...)
+		h.tag = tag
 	}
 
 	// Header Parameters Used for PBES2 Key Encryption
 	if p2s, ok := d.GetBytes(jwa.PBES2SaltInputKey); ok {
-		h.p2s = append([]byte(nil), p2s...)
+		h.p2s = p2s
 	}
 	if p2c, ok := d.GetInt64(jwa.PBES2CountKey); ok {
 		if p2c < 0 || p2c > math.MaxInt {
