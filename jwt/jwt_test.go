@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"context"
 	"encoding/base64"
 	"testing"
 	"time"
@@ -44,7 +43,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		token, err := Parse(context.TODO(), raw, jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -72,7 +71,7 @@ func TestParse(t *testing.T) {
 				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 				".",
 		)
-		token, err := Parse(context.TODO(), raw, jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(nil, nil), nil
 		}))
@@ -99,7 +98,7 @@ func TestParse_Claims(t *testing.T) {
 		return now
 	})()
 
-	algNone := jws.FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.Key, error) {
+	algNone := FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 		alg := jwa.None.New()
 		return alg.NewKey(nil, nil), nil
 	})
@@ -113,13 +112,13 @@ func TestParse_Claims(t *testing.T) {
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before expiration time
-	_, err = Parse(context.TODO(), data, algNone)
+	_, err = Parse(data, algNone)
 	if err != nil {
 		t.Error(err)
 	}
 
 	now = time.Unix(1300819380, 0) // just expiration time
-	_, err = Parse(context.TODO(), data, algNone)
+	_, err = Parse(data, algNone)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
@@ -130,13 +129,13 @@ func TestParse_Claims(t *testing.T) {
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before the token is valid
-	_, err = Parse(context.TODO(), data, algNone)
+	_, err = Parse(data, algNone)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
 
 	now = time.Unix(1300819380, 0) // just activated
-	_, err = Parse(context.TODO(), data, algNone)
+	_, err = Parse(data, algNone)
 	if err != nil {
 		t.Error(err)
 	}
@@ -155,7 +154,8 @@ func TestSign(t *testing.T) {
 		}
 		sigKey := jwa.HS256.New().NewKey(key.KeyPair())
 
-		header := jws.NewHeader(jwa.HS256)
+		header := new(jws.Header)
+		header.SetAlgorithm(jwa.HS256)
 		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",
@@ -184,7 +184,8 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
 		sigKey := jwa.None.New().NewKey(nil, nil)
-		header := jws.NewHeader(jwa.None)
+		header := new(jws.Header)
+		header.SetAlgorithm(jwa.None)
 		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",

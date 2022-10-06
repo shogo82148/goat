@@ -3,7 +3,6 @@ package jws
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -19,6 +18,22 @@ import (
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/sig"
 )
+
+var b64 = base64.RawURLEncoding
+
+type jsonJWS struct {
+	Payload    string          `json:"payload"`
+	Protected  string          `json:"protected,omitempty"`
+	Header     map[string]any  `json:"header,omitempty"`
+	Signature  string          `json:"signature,omitempty"`
+	Signatures []jsonSignature `json:"signatures,omitempty"`
+}
+
+type jsonSignature struct {
+	Protected string         `json:"protected,omitempty"`
+	Header    map[string]any `json:"header,omitempty"`
+	Signature string         `json:"signature"`
+}
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
@@ -37,12 +52,6 @@ type Header struct {
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
-}
-
-func NewHeader(alg jwa.SignatureAlgorithm) *Header {
-	return &Header{
-		alg: alg,
-	}
 }
 
 // Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
@@ -144,26 +153,58 @@ func (h *Header) SetCritical(crit []string) {
 	h.crit = crit
 }
 
-// Message is a decoded JWS.
+func (h *Header) UnmarshalJSON(data []byte) error {
+	var raw map[string]any
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return err
+	}
+	header, err := parseHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = *header
+	return nil
+}
+
+func (h *Header) MarshalJSON() ([]byte, error) {
+	raw, err := encodeHeader(h)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(raw)
+}
+
+// NewMessage returns a new Message that has no signature.
+func NewMessage(payload []byte) *Message {
+	return &Message{
+		b64payload: b64Encode(payload),
+		payload:    append([]byte(nil), payload...),
+	}
+}
+
+// Message is signed message.
 type Message struct {
-	Header *Header
+	Signatures []*Signature
 
-	Payload []byte
+	b64payload []byte
+	payload    []byte
 }
 
-// KeyFinder is a wrapper for the FindKey method.
-type KeyFinder interface {
-	FindKey(ctx context.Context, header *Header) (key sig.Key, err error)
+// Signature is a signature of Message.
+type Signature struct {
+	header       *Header // Unprotected Header
+	protected    *Header // Protected Header
+	raw          []byte  // protected header
+	b64signature []byte
+	signature    []byte
 }
 
-type FindKeyFunc func(ctx context.Context, header *Header) (key sig.Key, err error)
+func Parse(data []byte) (*Message, error) {
+	// copy data
+	data = append([]byte(nil), data...)
 
-func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (key sig.Key, err error) {
-	return f(ctx, header)
-}
-
-// Parse parses a JWS.
-func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
 	if idx1 < 0 {
@@ -174,56 +215,102 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 		return nil, errors.New("jws: failed to parse JWS: invalid format")
 	}
 	idx2 += idx1 + 1
-	header := data[:idx1]
-	payload := data[idx1+1 : idx2]
-	signature := data[idx2+1:]
+	b64header := data[:idx1]
+	b64payload := data[idx1+1 : idx2]
+	b64signature := data[idx2+1:]
 
-	// parse the header
-	var raw map[string]any
-	dec := json.NewDecoder(base64.NewDecoder(base64.RawURLEncoding, bytes.NewReader(header)))
-	dec.UseNumber()
-	if err := dec.Decode(&raw); err != nil {
+	// decode header
+	header, err := b64Decode(b64header)
+	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
-	h, err := parseHeader(raw)
-	if err != nil {
-		return nil, err
-	}
-
-	// decode signature
-	size := len(signature)
-	if len(payload) > size {
-		size = len(payload)
-	}
-	buf := make([]byte, base64.RawURLEncoding.DecodedLen(size))
-	n, err := base64.RawURLEncoding.Decode(buf, signature)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
-	}
-	buf = buf[:n]
-
-	// find the key
-	key, err := finder.FindKey(ctx, h)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to find key: %w", err)
-	}
-
-	// verify the signature
-	if err := key.Verify(data[:idx2], buf); err != nil {
-		return nil, err
+	var h Header
+	if err := h.UnmarshalJSON(header); err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
 
 	// decode payload
-	buf = buf[:cap(buf)]
-	n, err = base64.RawURLEncoding.Decode(buf, payload)
+	payload, err := b64Decode(b64payload)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
 	}
 
+	// decode signature
+	signature, err := b64Decode(b64signature)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
+	}
+
 	return &Message{
-		Header:  h,
-		Payload: buf[:n],
+		b64payload: b64payload,
+		payload:    payload,
+		Signatures: []*Signature{
+			{
+				protected:    &h,
+				raw:          b64header,
+				b64signature: b64signature,
+				signature:    signature,
+			},
+		},
 	}, nil
+}
+
+// UnmarshalJSON implements [encoding/json.Unmarshaler].
+// It parses data as JSON Serialized JWS.
+func (msg *Message) UnmarshalJSON(data []byte) error {
+	var jws jsonJWS
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&jws); err != nil {
+		return fmt.Errorf("jws: failed to parse JWS: %w", err)
+	}
+
+	// decode payload
+	payload, err := b64.DecodeString(jws.Payload)
+	if err != nil {
+		return fmt.Errorf("jws: failed to parse payload: %w", err)
+	}
+
+	// decode signatures
+	signatures := make([]*Signature, 0, len(jws.Signatures))
+	for _, sig := range jws.Signatures {
+		// decode protected header
+		raw, err := b64.DecodeString(sig.Protected)
+		if err != nil {
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
+		}
+		protected := new(Header)
+		if err := protected.UnmarshalJSON(raw); err != nil {
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
+		}
+
+		// decode unprotected header
+		header, err := parseHeader(sig.Header)
+		if err != nil {
+			return fmt.Errorf("jws: failed to parse unprotected header: %w", err)
+		}
+
+		// decode signature
+		signature, err := b64.DecodeString(sig.Signature)
+		if err != nil {
+			return fmt.Errorf("jws: failed to parse signature: %w", err)
+		}
+
+		signatures = append(signatures, &Signature{
+			protected:    protected,
+			header:       header,
+			raw:          []byte(sig.Protected),
+			b64signature: []byte(sig.Signature),
+			signature:    signature,
+		})
+	}
+
+	*msg = Message{
+		b64payload: []byte(jws.Payload),
+		payload:    payload,
+		Signatures: signatures,
+	}
+	return nil
 }
 
 func parseHeader(raw map[string]any) (*Header, error) {
@@ -303,43 +390,10 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	return h, nil
 }
 
-func Sign(header *Header, payload []byte, key sig.Key) ([]byte, error) {
-	// encode the header
-	headerBytes, err := encodeHeader(header)
-	if err != nil {
-		return nil, err
+func encodeHeader(h *Header) (map[string]any, error) {
+	if h == nil {
+		return nil, nil
 	}
-
-	// encode header and payload
-	b64 := base64.RawURLEncoding
-	l1 := b64.EncodedLen(len(headerBytes))
-	l2 := b64.EncodedLen(len(payload))
-	buf := make([]byte, l1+l2+2+b64.EncodedLen(512))
-	b64.Encode(buf[:l1:l1], headerBytes)
-	buf[l1] = '.'
-	b64.Encode(buf[l1+1:l1+1+l2:l1+1+l2], payload)
-
-	// sign
-	sig, err := key.Sign(buf[:l1+1+l2])
-	if err != nil {
-		return nil, err
-	}
-
-	// encode signature to base64
-	l3 := b64.EncodedLen(len(sig))
-	if len(buf) < l1+l2+l3+2 {
-		tmp := make([]byte, l1+l2+l3+2)
-		copy(tmp, buf)
-		buf = tmp
-	} else {
-		buf = buf[:l1+l2+l3+2]
-	}
-	buf[l1+1+l2] = '.'
-	b64.Encode(buf[l1+l2+2:], sig)
-	return buf, nil
-}
-
-func encodeHeader(h *Header) ([]byte, error) {
 	raw := make(map[string]any, len(h.Raw))
 	for k, v := range h.Raw {
 		raw[k] = v
@@ -407,5 +461,107 @@ func encodeHeader(h *Header) ([]byte, error) {
 	if err := e.Err(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(e.Data())
+	return e.Data(), nil
+}
+
+// KeyFinder is a wrapper for the FindKey method.
+type KeyFinder interface {
+	FindKey(protected, unprotected *Header) (key sig.Key, err error)
+}
+
+type FindKeyFunc func(protected, unprotected *Header) (key sig.Key, err error)
+
+func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.Key, err error) {
+	return f(protected, unprotected)
+}
+
+// Verify verifies the JWS message.
+func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
+	// pre-allocate buffer
+	size := 0
+	for _, sig := range msg.Signatures {
+		if len(sig.raw) > size {
+			size = len(sig.raw)
+		}
+	}
+	size += len(msg.payload) + 1 // +1 for '.'
+	buf := make([]byte, size)
+
+	for _, sig := range msg.Signatures {
+		key, err := finder.FindKey(sig.protected, sig.header)
+		if err != nil {
+			continue
+		}
+		buf = buf[:0]
+		buf = append(buf, sig.raw...)
+		buf = append(buf, '.')
+		buf = append(buf, msg.b64payload...)
+		err = key.Verify(buf, sig.signature)
+		if err == nil {
+			return sig.protected, msg.payload, nil
+		}
+	}
+	return nil, nil, errors.New("jws: failed to verify the message")
+}
+
+func (msg *Message) Sign(protected, header *Header, key sig.Key) error {
+	// encode the header
+	h1, err := encodeHeader(protected)
+	if err != nil {
+		return err
+	}
+	raw, err := json.Marshal(h1)
+	if err != nil {
+		return err
+	}
+	raw = b64Encode(raw)
+
+	// sign
+	buf := make([]byte, 0, len(msg.b64payload)+len(raw)+1)
+	buf = append(buf, raw...)
+	buf = append(buf, '.')
+	buf = append(buf, msg.b64payload...)
+	signature, err := key.Sign(buf)
+	if err != nil {
+		return fmt.Errorf("jws: failed to sign: %w", err)
+	}
+
+	msg.Signatures = append(msg.Signatures, &Signature{
+		protected:    protected,
+		header:       header,
+		raw:          raw,
+		b64signature: b64Encode(signature),
+		signature:    signature,
+	})
+	return nil
+}
+
+func (msg *Message) Compact() ([]byte, error) {
+	if len(msg.Signatures) != 1 {
+		return nil, fmt.Errorf("jws: invalid number of signatures: %d", len(msg.Signatures))
+	}
+	sig := msg.Signatures[0]
+
+	buf := make([]byte, 0, len(sig.raw)+len(msg.b64payload)+len(sig.b64signature)+2)
+	buf = append(buf, sig.raw...)
+	buf = append(buf, '.')
+	buf = append(buf, msg.b64payload...)
+	buf = append(buf, '.')
+	buf = append(buf, sig.b64signature...)
+	return buf, nil
+}
+
+func b64Decode(src []byte) ([]byte, error) {
+	dst := make([]byte, b64.DecodedLen(len(src)))
+	n, err := b64.Decode(dst, src)
+	if err != nil {
+		return nil, err
+	}
+	return dst[:n], nil
+}
+
+func b64Encode(src []byte) []byte {
+	dst := make([]byte, b64.EncodedLen(len(src)))
+	b64.Encode(dst, src)
+	return dst
 }

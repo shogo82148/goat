@@ -2,8 +2,9 @@ package jwt
 
 import (
 	"bytes"
-	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
+var b64 = base64.RawURLEncoding
 var nowFunc = time.Now // for testing
 
 // Claims is a JWT Claims Set defined in RFC7519.
@@ -41,23 +43,86 @@ type Claims struct {
 	Raw map[string]any
 }
 
+// KeyFinder is a wrapper for the FindKey method.
+type KeyFinder interface {
+	FindKey(header *jws.Header) (key sig.Key, err error)
+}
+
+type FindKeyFunc func(header *jws.Header) (key sig.Key, err error)
+
+func (f FindKeyFunc) FindKey(header *jws.Header) (key sig.Key, err error) {
+	return f(header)
+}
+
 // Token is a decoded JWT token.
 type Token struct {
 	Header *jws.Header
 	Claims *Claims
 }
 
-func Parse(ctx context.Context, data []byte, finder jws.KeyFinder) (*Token, error) {
-	msg, err := jws.Parse(ctx, data, finder)
-	if err != nil {
-		return nil, err
+func Parse(data []byte, finder KeyFinder) (*Token, error) {
+	// split to segments
+	idx1 := bytes.IndexByte(data, '.')
+	if idx1 < 0 {
+		return nil, errors.New("jws: failed to parse JWS: invalid format")
 	}
-	c, err := parseClaims(msg.Payload)
+	idx2 := bytes.IndexByte(data[idx1+1:], '.')
+	if idx2 < 0 {
+		return nil, errors.New("jws: failed to parse JWS: invalid format")
+	}
+	idx2 += idx1 + 1
+	b64header := data[:idx1]
+	b64payload := data[idx1+1 : idx2]
+	b64signature := data[idx2+1:]
+
+	// pre-allocate buffer
+	size := len(b64header)
+	if len(b64payload) > size {
+		size = len(b64payload)
+	}
+	if len(b64signature) > size {
+		size = len(b64signature)
+	}
+	buf := make([]byte, b64.DecodedLen(size))
+
+	// parse header
+	n, err := b64.Decode(buf[:cap(buf)], b64header)
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
+	}
+	buf = buf[:n]
+	var header jws.Header
+	if header.UnmarshalJSON(buf[:n]) != nil {
+		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
+	}
+
+	// verify signature
+	key, err := finder.FindKey(&header)
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to find key: %w", err)
+	}
+	n, err = b64.Decode(buf[:cap(buf)], b64signature)
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to parse signature: %w", err)
+	}
+	buf = buf[:n]
+	if err := key.Verify(data[:idx2], buf[:n]); err != nil {
+		return nil, fmt.Errorf("jwt: failed to verify signature: %w", err)
+	}
+
+	// parse payload
+	n, err = b64.Decode(buf[:cap(buf)], b64payload)
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to parse signature: %w", err)
+	}
+	buf = buf[:n]
+
+	c, err := parseClaims(buf)
 	if err != nil {
 		return nil, err
 	}
 	token := &Token{
-		Header: msg.Header,
+		Header: &header,
 		Claims: c,
 	}
 	return token, nil
@@ -109,7 +174,37 @@ func Sign(header *jws.Header, claims *Claims, key sig.Key) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return jws.Sign(header, payload, key)
+
+	headerBytes, err := header.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to encode header: %w", err)
+	}
+
+	l1 := b64.EncodedLen(len(headerBytes))
+	l2 := b64.EncodedLen(len(payload))
+	buf := make([]byte, l1+l2+2+b64.EncodedLen(512))
+	b64.Encode(buf[:l1], headerBytes)
+	buf[l1] = '.'
+	b64.Encode(buf[l1+1:l1+1+l2:l1+1+l2], payload)
+
+	// sign
+	sig, err := key.Sign(buf[:l1+1+l2])
+	if err != nil {
+		return nil, err
+	}
+
+	// encode signature to base64
+	l3 := b64.EncodedLen(len(sig))
+	if len(buf) < l1+l2+l3+2 {
+		tmp := make([]byte, l1+l2+l3+2)
+		copy(tmp, buf)
+		buf = tmp
+	} else {
+		buf = buf[:l1+l2+l3+2]
+	}
+	buf[l1+1+l2] = '.'
+	b64.Encode(buf[l1+l2+2:], sig)
+	return buf, nil
 }
 
 func encodeClaims(c *Claims) ([]byte, error) {
