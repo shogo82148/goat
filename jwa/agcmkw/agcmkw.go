@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/keymanage"
@@ -133,10 +132,6 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("agcmkw: AuthenticationTag not found")
 	}
-
-	log.Printf("IV  : %#v", iv.InitializationVector())
-	log.Printf("TAG : %#v", tag.AuthenticationTag())
-	log.Printf("DATA: %#v", data)
 
 	tagBytes := tag.AuthenticationTag()
 	buf := make([]byte, len(data)+len(tagBytes))
