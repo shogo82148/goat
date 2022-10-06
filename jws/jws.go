@@ -168,6 +168,14 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (h *Header) MarshalJSON() ([]byte, error) {
+	raw, err := encodeHeader(h)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(raw)
+}
+
 // NewMessage returns a new Message that has no signature.
 func NewMessage(payload []byte) *Message {
 	return &Message{

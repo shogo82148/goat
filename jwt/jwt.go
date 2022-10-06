@@ -163,9 +163,37 @@ func Sign(header *jws.Header, claims *Claims, key sig.Key) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = payload
 
-	return nil, nil
+	headerBytes, err := header.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("jwt: failed to encode header: %w", err)
+	}
+
+	l1 := b64.EncodedLen(len(headerBytes))
+	l2 := b64.EncodedLen(len(payload))
+	buf := make([]byte, l1+l2+2+b64.EncodedLen(512))
+	b64.Encode(buf[:l1], headerBytes)
+	buf[l1] = '.'
+	b64.Encode(buf[l1+1:l1+1+l2:l1+1+l2], payload)
+
+	// sign
+	sig, err := key.Sign(buf[:l1+1+l2])
+	if err != nil {
+		return nil, err
+	}
+
+	// encode signature to base64
+	l3 := b64.EncodedLen(len(sig))
+	if len(buf) < l1+l2+l3+2 {
+		tmp := make([]byte, l1+l2+l3+2)
+		copy(tmp, buf)
+		buf = tmp
+	} else {
+		buf = buf[:l1+l2+l3+2]
+	}
+	buf[l1+1+l2] = '.'
+	b64.Encode(buf[l1+l2+2:], sig)
+	return buf, nil
 }
 
 func encodeClaims(c *Claims) ([]byte, error) {
