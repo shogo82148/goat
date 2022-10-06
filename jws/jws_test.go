@@ -289,7 +289,6 @@ func TestVerify(t *testing.T) {
 	})
 }
 
-/*
 func TestParseJSON(t *testing.T) {
 	t.Run("RFC 7515 Appendix A.6. Example JWS Using General JWS JSON Serialization", func(t *testing.T) {
 		raw := `{` +
@@ -314,10 +313,7 @@ func TestParseJSON(t *testing.T) {
 			`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
 			`lSApmWQxfKTUJqPP3-Kg6NU1Q"}]` +
 			`}`
-		msg, err := ParseJSON(context.TODO(), []byte(raw), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
-			alg := header.Algorithm().New()
-			return alg.NewKey(nil, nil), nil
-		}))
+		msg, err := ParseJSON([]byte(raw))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -336,12 +332,17 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.HS256.New().NewKey(key.KeyPair())
-		h := NewHeader(jwa.HS256)
+		h := new(Header)
+		h.SetAlgorithm(jwa.HS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		got, err := Sign(h, payload, k)
+		msg := NewMessage(payload)
+		if err := msg.Sign(h, nil, k); err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg.Compact()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -394,12 +395,17 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.RS256.New().NewKey(key.KeyPair())
-		h := NewHeader(jwa.RS256)
+		h := new(Header)
+		h.SetAlgorithm(jwa.RS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		got, err := Sign(h, payload, k)
+		msg := NewMessage(payload)
+		if err := msg.Sign(h, nil, k); err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg.Compact()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -422,13 +428,18 @@ func TestSign(t *testing.T) {
 	})
 
 	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
-		k := jwa.None.New().NewKey(nil, nil)
-		h := NewHeader(jwa.None)
+		h := new(Header)
+		h.SetAlgorithm(jwa.None)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		got, err := Sign(h, payload, k)
+		k := jwa.None.New().NewKey(nil, nil)
+		msg := NewMessage(payload)
+		if err := msg.Sign(h, nil, k); err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg.Compact()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -444,4 +455,3 @@ func TestSign(t *testing.T) {
 		}
 	})
 }
-*/
