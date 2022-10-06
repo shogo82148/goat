@@ -3,7 +3,6 @@ package jws
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -25,15 +24,15 @@ var b64 = base64.RawURLEncoding
 type jsonJWS struct {
 	Payload    string          `json:"payload"`
 	Protected  string          `json:"protected"`
-	Header     json.RawMessage `json:"header"`
+	Header     map[string]any  `json:"header"`
 	Signature  string          `json:"signature"`
 	Signatures []jsonSignature `json:"signatures"`
 }
 
 type jsonSignature struct {
-	Protected string          `json:"protected"`
-	Header    json.RawMessage `json:"header"`
-	Signature string          `json:"signature"`
+	Protected string         `json:"protected"`
+	Header    map[string]any `json:"header"`
+	Signature string         `json:"signature"`
 }
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
@@ -175,26 +174,21 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Message is a decoded JWS.
+// Message is signed message.
 type Message struct {
-	Header *Header
-
-	Payload []byte
+	payload    []byte
+	Signatures []*Signature
 }
 
-// KeyFinder is a wrapper for the FindKey method.
-type KeyFinder interface {
-	FindKey(ctx context.Context, header *Header) (key sig.Key, err error)
+// Signature is a signature of Message.
+type Signature struct {
+	header    *Header // Unprotected Header
+	protected *Header // Protected Header
+	raw       []byte  // raw protected header
+	signature []byte
 }
 
-type FindKeyFunc func(ctx context.Context, header *Header) (key sig.Key, err error)
-
-func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (key sig.Key, err error) {
-	return f(ctx, header)
-}
-
-// Parse parses a Compact Serialized JWS.
-func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
+func Parse(data []byte) (*Message, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
 	if idx1 < 0 {
@@ -211,15 +205,12 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 
 	// pre-allocate buffer
 	size := len(signature)
-	if len(payload) > size {
-		size = len(payload)
-	}
 	if len(header) > size {
 		size = len(header)
 	}
 	buf := make([]byte, b64.DecodedLen(size))
 
-	// parse the header
+	// decode header
 	n, err := b64.Decode(buf[:cap(buf)], header)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
@@ -230,6 +221,14 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
 
+	// decode payload
+	payloadBytes := make([]byte, b64.DecodedLen(len(payload)))
+	n, err = b64.Decode(payloadBytes, payload)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
+	}
+	payloadBytes = payloadBytes[:n]
+
 	// decode signature
 	n, err = b64.Decode(buf[:cap(buf)], signature)
 	if err != nil {
@@ -237,39 +236,69 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	}
 	buf = buf[:n]
 
-	// find the key
-	key, err := finder.FindKey(ctx, &h)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to find key: %w", err)
-	}
-
-	// verify the signature
-	if err := key.Verify(data[:idx2], buf); err != nil {
-		return nil, err
-	}
-
-	// decode payload
-	n, err = b64.Decode(buf[:cap(buf)], payload)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
-	}
-	buf = buf[:n]
-
 	return &Message{
-		Header:  &h,
-		Payload: buf,
+		payload: payloadBytes,
+		Signatures: []*Signature{
+			{
+				protected: &h,
+				signature: buf,
+			},
+		},
 	}, nil
 }
 
 // ParseJSON parses a JSON Serialized JWS.
-func ParseJSON(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
+func ParseJSON(data []byte) (*Message, error) {
 	var jws jsonJWS
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	if err := dec.Decode(&jws); err != nil {
 		return nil, fmt.Errorf("jws: failed to parse JWS: %w", err)
 	}
-	return nil, nil
+
+	// decode payload
+	payload, err := b64.DecodeString(jws.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
+	}
+
+	// decode signatures
+	signatures := make([]*Signature, 0, len(jws.Signatures))
+	for _, sig := range jws.Signatures {
+		// decode protected header
+		raw, err := b64.DecodeString(sig.Protected)
+		if err != nil {
+			return nil, fmt.Errorf("jws: failed to parse protected header: %w", err)
+		}
+		protected := new(Header)
+		if err := protected.UnmarshalJSON(raw); err != nil {
+			return nil, fmt.Errorf("jws: failed to parse protected header: %w", err)
+		}
+
+		// decode unprotected header
+		header, err := parseHeader(sig.Header)
+		if err != nil {
+			return nil, fmt.Errorf("jws: failed to parse unprotected header: %w", err)
+		}
+
+		// decode signature
+		signature, err := b64.DecodeString(sig.Signature)
+		if err != nil {
+			return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
+		}
+
+		signatures = append(signatures, &Signature{
+			protected: protected,
+			header:    header,
+			raw:       []byte(sig.Protected),
+			signature: signature,
+		})
+	}
+
+	return &Message{
+		payload:    payload,
+		Signatures: signatures,
+	}, nil
 }
 
 func parseHeader(raw map[string]any) (*Header, error) {
@@ -347,6 +376,24 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		return nil, err
 	}
 	return h, nil
+}
+
+// KeyFinder is a wrapper for the FindKey method.
+type KeyFinder interface {
+	FindKey(header *Header) (key sig.Key, err error)
+}
+
+type FindKeyFunc func(header *Header) (key sig.Key, err error)
+
+func (f FindKeyFunc) FindKey(header *Header) (key sig.Key, err error) {
+	return f(header)
+}
+
+// Verify verifies the JWS message.
+func (msg *Message) Verify(finder KeyFinder) ([]byte, error) {
+	for _, sig := range msg.Signatures {
+	}
+	return msg.payload, nil
 }
 
 func Sign(header *Header, payload []byte, key sig.Key) ([]byte, error) {
