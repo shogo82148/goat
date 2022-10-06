@@ -176,14 +176,17 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 
 // Message is signed message.
 type Message struct {
-	payload    []byte
 	Signatures []*Signature
+
+	// Base64 decoded payload.
+	payload []byte
 }
 
 // Signature is a signature of Message.
 type Signature struct {
 	header    *Header // Unprotected Header
 	protected *Header // Protected Header
+	merged    *Header // merged header
 	raw       []byte  // raw protected header
 	signature []byte
 }
@@ -241,6 +244,8 @@ func Parse(data []byte) (*Message, error) {
 		Signatures: []*Signature{
 			{
 				protected: &h,
+				merged:    &h,
+				raw:       append([]byte(nil), header...),
 				signature: buf,
 			},
 		},
@@ -281,6 +286,15 @@ func ParseJSON(data []byte) (*Message, error) {
 			return nil, fmt.Errorf("jws: failed to parse unprotected header: %w", err)
 		}
 
+		merged, err := mergeHeader(protected.Raw, header.Raw)
+		if err != nil {
+			return nil, err
+		}
+		mergedHeader, err := parseHeader(merged)
+		if err != nil {
+			return nil, fmt.Errorf("jws: failed to parse header: %w", err)
+		}
+
 		// decode signature
 		signature, err := b64.DecodeString(sig.Signature)
 		if err != nil {
@@ -290,6 +304,7 @@ func ParseJSON(data []byte) (*Message, error) {
 		signatures = append(signatures, &Signature{
 			protected: protected,
 			header:    header,
+			merged:    mergedHeader,
 			raw:       []byte(sig.Protected),
 			signature: signature,
 		})
@@ -378,6 +393,20 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	return h, nil
 }
 
+func mergeHeader(a, b map[string]any) (map[string]any, error) {
+	c := make(map[string]any, len(a)+len(b))
+	for k, v := range a {
+		c[k] = v
+	}
+	for k, v := range b {
+		if _, ok := c[k]; ok {
+			return nil, errors.New("jws: duplicate header value")
+		}
+		c[k] = v
+	}
+	return c, nil
+}
+
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
 	FindKey(header *Header) (key sig.Key, err error)
@@ -390,10 +419,34 @@ func (f FindKeyFunc) FindKey(header *Header) (key sig.Key, err error) {
 }
 
 // Verify verifies the JWS message.
-func (msg *Message) Verify(finder KeyFinder) ([]byte, error) {
+func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
+	// Base64-encoded payload
+	payload := make([]byte, b64.EncodedLen(len(msg.payload)))
+	b64.Encode(payload, msg.payload)
+
+	// pre-allocate buffer
+	size := 0
 	for _, sig := range msg.Signatures {
+		if len(sig.raw) > size {
+			size = len(sig.raw)
+		}
 	}
-	return msg.payload, nil
+	buf := make([]byte, len(payload)+size+1) // +1 for '.'
+
+	for _, sig := range msg.Signatures {
+		key, err := finder.FindKey(sig.merged)
+		if err != nil {
+			continue
+		}
+		buf = append(buf[:0], sig.raw...)
+		buf = append(buf, '.')
+		buf = append(buf, payload...)
+		err = key.Verify(buf, sig.signature)
+		if err == nil {
+			return sig.protected, msg.payload, nil
+		}
+	}
+	return nil, nil, errors.New("jws: failed to verify the message")
 }
 
 func Sign(header *Header, payload []byte, key sig.Key) ([]byte, error) {
