@@ -265,6 +265,41 @@ func TestParse(t *testing.T) {
 	})
 }
 
+func TestParseJSON(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.6. Example JWS Using General JWS JSON Serialization", func(t *testing.T) {
+		raw := `{` +
+			`"payload":` +
+			`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
+			`tcGxlLmNvbS9pc19yb290Ijp0cnVlfQ",` +
+			`"signatures":[` +
+			`{"protected":"eyJhbGciOiJSUzI1NiJ9",` +
+			`"header":` +
+			`{"kid":"2010-12-29"},` +
+			`"signature":` +
+			`"cC4hiUPoj9Eetdgtv3hF80EGrhuB__dzERat0XF9g2VtQgr9PJbu3XOiZj5RZ` +
+			`mh7AAuHIm4Bh-0Qc_lF5YKt_O8W2Fp5jujGbds9uJdbF9CUAr7t1dnZcAcQjb` +
+			`KBYNX4BAynRFdiuB--f_nZLgrnbyTyWzO75vRK5h6xBArLIARNPvkSjtQBMHl` +
+			`b1L07Qe7K0GarZRmB_eSN9383LcOLn6_dO--xi12jzDwusC-eOkHWEsqtFZES` +
+			`c6BfI7noOPqvhJ1phCnvWh6IeYI2w9QOYEUipUTI8np6LbgGY9Fs98rqVt5AX` +
+			`LIhWkWywlVmtVrBp0igcN_IoypGlUPQGe77Rw"},` +
+			`{"protected":"eyJhbGciOiJFUzI1NiJ9",` +
+			`"header":` +
+			`{"kid":"e9bc097a-ce51-4036-9562-d2ade882db0d"},` +
+			`"signature":` +
+			`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
+			`lSApmWQxfKTUJqPP3-Kg6NU1Q"}]` +
+			`}`
+		msg, err := ParseJSON(context.TODO(), []byte(raw), FindKeyFunc(func(ctx context.Context, header *Header) (sig.Key, error) {
+			alg := header.Algorithm().New()
+			return alg.NewKey(nil, nil), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = msg
+	})
+}
+
 func TestSign(t *testing.T) {
 	t.Run("RFC7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
 		rawKey := `{"kty":"oct",` +

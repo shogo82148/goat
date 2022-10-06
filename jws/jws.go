@@ -20,6 +20,20 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
+type jsonJWS struct {
+	Payload    string          `json:"payload"`
+	Protected  string          `json:"protected"`
+	Header     json.RawMessage `json:"header"`
+	Signature  string          `json:"signature"`
+	Signatures []jsonSignature `json:"signatures"`
+}
+
+type jsonSignature struct {
+	Protected string          `json:"protected"`
+	Header    json.RawMessage `json:"header"`
+	Signature string          `json:"signature"`
+}
+
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
 	alg     jwa.SignatureAlgorithm
@@ -162,7 +176,7 @@ func (f FindKeyFunc) FindKey(ctx context.Context, header *Header) (key sig.Key, 
 	return f(ctx, header)
 }
 
-// Parse parses a JWS.
+// Parse parses a Compact Serialized JWS.
 func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
@@ -224,6 +238,17 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 		Header:  h,
 		Payload: buf[:n],
 	}, nil
+}
+
+// ParseJSON parses a JSON Serialized JWS.
+func ParseJSON(ctx context.Context, data []byte, finder KeyFinder) (*Message, error) {
+	var jws jsonJWS
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&jws); err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JWS: %w", err)
+	}
+	return nil, nil
 }
 
 func parseHeader(raw map[string]any) (*Header, error) {
