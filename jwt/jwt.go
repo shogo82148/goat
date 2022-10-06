@@ -64,11 +64,11 @@ func Parse(data []byte, finder KeyFinder) (*Token, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
 	if idx1 < 0 {
-		return nil, errors.New("jws: failed to parse JWS: invalid format")
+		return nil, errors.New("jwt: failed to parse: invalid format")
 	}
 	idx2 := bytes.IndexByte(data[idx1+1:], '.')
 	if idx2 < 0 {
-		return nil, errors.New("jws: failed to parse JWS: invalid format")
+		return nil, errors.New("jwt: failed to parse: invalid format")
 	}
 	idx2 += idx1 + 1
 	b64header := data[:idx1]
