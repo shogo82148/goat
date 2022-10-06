@@ -20,6 +20,8 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
+var b64 = base64.RawURLEncoding
+
 type jsonJWS struct {
 	Payload    string          `json:"payload"`
 	Protected  string          `json:"protected"`
@@ -158,6 +160,21 @@ func (h *Header) SetCritical(crit []string) {
 	h.crit = crit
 }
 
+func (h *Header) UnmarshalJSON(data []byte) error {
+	var raw map[string]any
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return err
+	}
+	header, err := parseHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = *header
+	return nil
+}
+
 // Message is a decoded JWS.
 type Message struct {
 	Header *Header
@@ -192,32 +209,36 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	payload := data[idx1+1 : idx2]
 	signature := data[idx2+1:]
 
-	// parse the header
-	var raw map[string]any
-	dec := json.NewDecoder(base64.NewDecoder(base64.RawURLEncoding, bytes.NewReader(header)))
-	dec.UseNumber()
-	if err := dec.Decode(&raw); err != nil {
-		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
-	}
-	h, err := parseHeader(raw)
-	if err != nil {
-		return nil, err
-	}
-
-	// decode signature
+	// pre-allocate buffer
 	size := len(signature)
 	if len(payload) > size {
 		size = len(payload)
 	}
-	buf := make([]byte, base64.RawURLEncoding.DecodedLen(size))
-	n, err := base64.RawURLEncoding.Decode(buf, signature)
+	if len(header) > size {
+		size = len(header)
+	}
+	buf := make([]byte, b64.DecodedLen(size))
+
+	// parse the header
+	n, err := b64.Decode(buf[:cap(buf)], signature)
+	if err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
+	}
+	buf = buf[:n]
+	var h Header
+	if err := h.UnmarshalJSON(buf); err != nil {
+		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
+	}
+
+	// decode signature
+	n, err = b64.Decode(buf[:cap(buf)], signature)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
 	}
 	buf = buf[:n]
 
 	// find the key
-	key, err := finder.FindKey(ctx, h)
+	key, err := finder.FindKey(ctx, &h)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to find key: %w", err)
 	}
@@ -228,15 +249,15 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	}
 
 	// decode payload
-	buf = buf[:cap(buf)]
-	n, err = base64.RawURLEncoding.Decode(buf, payload)
+	n, err = b64.Decode(buf[:cap(buf)], payload)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
 	}
+	buf = buf[:n]
 
 	return &Message{
-		Header:  h,
-		Payload: buf[:n],
+		Header:  &h,
+		Payload: buf,
 	}, nil
 }
 
@@ -336,7 +357,6 @@ func Sign(header *Header, payload []byte, key sig.Key) ([]byte, error) {
 	}
 
 	// encode header and payload
-	b64 := base64.RawURLEncoding
 	l1 := b64.EncodedLen(len(headerBytes))
 	l2 := b64.EncodedLen(len(payload))
 	buf := make([]byte, l1+l2+2+b64.EncodedLen(512))
