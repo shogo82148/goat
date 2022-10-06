@@ -23,15 +23,15 @@ var b64 = base64.RawURLEncoding
 
 type jsonJWS struct {
 	Payload    string          `json:"payload"`
-	Protected  string          `json:"protected"`
-	Header     map[string]any  `json:"header"`
-	Signature  string          `json:"signature"`
-	Signatures []jsonSignature `json:"signatures"`
+	Protected  string          `json:"protected,omitempty"`
+	Header     map[string]any  `json:"header,omitempty"`
+	Signature  string          `json:"signature,omitempty"`
+	Signatures []jsonSignature `json:"signatures,omitempty"`
 }
 
 type jsonSignature struct {
-	Protected string         `json:"protected"`
-	Header    map[string]any `json:"header"`
+	Protected string         `json:"protected,omitempty"`
+	Header    map[string]any `json:"header,omitempty"`
 	Signature string         `json:"signature"`
 }
 
@@ -296,14 +296,16 @@ func ParseJSON(data []byte) (*Message, error) {
 		}
 
 		signatures = append(signatures, &Signature{
-			protected: protected,
-			header:    header,
-			raw:       []byte(sig.Protected),
-			signature: signature,
+			protected:    protected,
+			header:       header,
+			raw:          []byte(sig.Protected),
+			b64signature: []byte(sig.Signature),
+			signature:    signature,
 		})
 	}
 
 	return &Message{
+		b64payload: []byte(jws.Payload),
 		payload:    payload,
 		Signatures: signatures,
 	}, nil
