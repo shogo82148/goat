@@ -2,6 +2,7 @@ package jwe
 
 import (
 	"bytes"
+	"compress/flate"
 	"context"
 	"crypto/rand"
 	"crypto/sha1"
@@ -328,11 +329,22 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	// Decrypt the content
 	enc := h.EncryptionAlgorithm()
 	if !enc.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + enc.String() + " is not available")
+		return nil, errors.New("jwe: requested content encryption algorithm " + enc.String() + " is not available")
 	}
 	plaintext, err := enc.New().Decrypt(cek, iv, header, rawCiphertext, rawAuthTag)
 	if err != nil {
 		return nil, err
+	}
+
+	// decompress the content
+	if h.CompressionAlgorithm() == jwa.DEF {
+		var buf bytes.Buffer
+		r := flate.NewReader(bytes.NewReader(plaintext))
+		if _, err := buf.ReadFrom(r); err != nil {
+			return nil, fmt.Errorf("jwe: failed to decompress the content: %w", err)
+		}
+		r.Close()
+		plaintext = buf.Bytes()
 	}
 
 	return &Message{
@@ -491,6 +503,22 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 		return nil, err
 	}
 	encodedHeader := b64Encode(rawHeader)
+
+	if header.CompressionAlgorithm() == jwa.DEF {
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
+	}
+
 	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
 	if err != nil {
 		return nil, err
