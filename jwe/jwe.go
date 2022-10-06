@@ -503,6 +503,22 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 		return nil, err
 	}
 	encodedHeader := b64Encode(rawHeader)
+
+	if header.CompressionAlgorithm() == jwa.DEF {
+		var buf bytes.Buffer
+		w, err := flate.NewWriter(&buf, -1)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
+	}
+
 	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
 	if err != nil {
 		return nil, err

@@ -498,7 +498,7 @@ func TestEncrypt(t *testing.T) {
 	// $ echo 'Hello JWE!' > input.txt
 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
 	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
-	t.Run("jwx A128GCMKW", func(t *testing.T) {
+	t.Run("jwx A128GCMKW compressed", func(t *testing.T) {
 		rawKey := `{` +
 			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
 			`"kty": "oct"` +
@@ -514,6 +514,7 @@ func TestEncrypt(t *testing.T) {
 		header.SetAlgorithm(jwa.A128GCMKW)
 		header.SetEncryptionAlgorithm(jwa.A128GCM)
 		header.SetInitializationVector(iv)
+		header.SetCompressionAlgorithm(jwa.DEF)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k.KeyPair())
 		plaintext := "Hello JWE!\n"
