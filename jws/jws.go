@@ -220,7 +220,7 @@ func Parse(ctx context.Context, data []byte, finder KeyFinder) (*Message, error)
 	buf := make([]byte, b64.DecodedLen(size))
 
 	// parse the header
-	n, err := b64.Decode(buf[:cap(buf)], signature)
+	n, err := b64.Decode(buf[:cap(buf)], header)
 	if err != nil {
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
