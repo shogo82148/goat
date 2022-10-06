@@ -505,8 +505,8 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 	encodedHeader := b64Encode(rawHeader)
 
 	if header.CompressionAlgorithm() == jwa.DEF {
-		var buf bytes.Buffer
-		w, err := flate.NewWriter(&buf, -1)
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
 		if err != nil {
 			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
 		}
