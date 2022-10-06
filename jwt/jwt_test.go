@@ -43,7 +43,7 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		token, err := Parse(raw, jws.FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -71,7 +71,7 @@ func TestParse(t *testing.T) {
 				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 				".",
 		)
-		token, err := Parse(raw, jws.FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(nil, nil), nil
 		}))
@@ -98,7 +98,7 @@ func TestParse_Claims(t *testing.T) {
 		return now
 	})()
 
-	algNone := jws.FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+	algNone := FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
 		alg := jwa.None.New()
 		return alg.NewKey(nil, nil), nil
 	})

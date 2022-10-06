@@ -196,7 +196,6 @@ type Message struct {
 type Signature struct {
 	header       *Header // Unprotected Header
 	protected    *Header // Protected Header
-	merged       *Header // merged header
 	raw          []byte  // protected header
 	b64signature []byte
 	signature    []byte
@@ -248,7 +247,6 @@ func Parse(data []byte) (*Message, error) {
 		Signatures: []*Signature{
 			{
 				protected:    &h,
-				merged:       &h,
 				raw:          b64header,
 				b64signature: b64signature,
 				signature:    signature,
@@ -291,15 +289,6 @@ func ParseJSON(data []byte) (*Message, error) {
 			return nil, fmt.Errorf("jws: failed to parse unprotected header: %w", err)
 		}
 
-		merged, err := mergeHeader(protected.Raw, header.Raw)
-		if err != nil {
-			return nil, err
-		}
-		mergedHeader, err := parseHeader(merged)
-		if err != nil {
-			return nil, fmt.Errorf("jws: failed to parse header: %w", err)
-		}
-
 		// decode signature
 		signature, err := b64.DecodeString(sig.Signature)
 		if err != nil {
@@ -309,7 +298,6 @@ func ParseJSON(data []byte) (*Message, error) {
 		signatures = append(signatures, &Signature{
 			protected: protected,
 			header:    header,
-			merged:    mergedHeader,
 			raw:       []byte(sig.Protected),
 			signature: signature,
 		})
@@ -472,29 +460,15 @@ func encodeHeader(h *Header) (map[string]any, error) {
 	return e.Data(), nil
 }
 
-func mergeHeader(a, b map[string]any) (map[string]any, error) {
-	c := make(map[string]any, len(a)+len(b))
-	for k, v := range a {
-		c[k] = v
-	}
-	for k, v := range b {
-		if _, ok := c[k]; ok {
-			return nil, errors.New("jws: duplicate header value")
-		}
-		c[k] = v
-	}
-	return c, nil
-}
-
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
-	FindKey(header *Header) (key sig.Key, err error)
+	FindKey(protected, unprotected *Header) (key sig.Key, err error)
 }
 
-type FindKeyFunc func(header *Header) (key sig.Key, err error)
+type FindKeyFunc func(protected, unprotected *Header) (key sig.Key, err error)
 
-func (f FindKeyFunc) FindKey(header *Header) (key sig.Key, err error) {
-	return f(header)
+func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.Key, err error) {
+	return f(protected, unprotected)
 }
 
 // Verify verifies the JWS message.
@@ -510,7 +484,7 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
-		key, err := finder.FindKey(sig.merged)
+		key, err := finder.FindKey(sig.protected, sig.header)
 		if err != nil {
 			continue
 		}
@@ -529,18 +503,6 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 func (msg *Message) Sign(protected, header *Header, key sig.Key) error {
 	// encode the header
 	h1, err := encodeHeader(protected)
-	if err != nil {
-		return err
-	}
-	h2, err := encodeHeader(header)
-	if err != nil {
-		return err
-	}
-	h3, err := mergeHeader(h1, h2)
-	if err != nil {
-		return err
-	}
-	merged, err := parseHeader(h3)
 	if err != nil {
 		return err
 	}
@@ -563,7 +525,6 @@ func (msg *Message) Sign(protected, header *Header, key sig.Key) error {
 	msg.Signatures = append(msg.Signatures, &Signature{
 		protected:    protected,
 		header:       header,
-		merged:       merged,
 		raw:          raw,
 		b64signature: b64Encode(signature),
 		signature:    signature,

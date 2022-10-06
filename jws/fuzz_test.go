@@ -123,7 +123,7 @@ func FuzzJWS(f *testing.F) {
 		if err != nil {
 			return
 		}
-		header1, payload1, err := msg1.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header1, payload1, err := msg1.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm()
 			if !alg.Available() {
 				return nil, errors.New("unknown algorithm")
@@ -151,7 +151,7 @@ func FuzzJWS(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, payload3, err := msg3.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		_, payload3, err := msg3.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			return sigKey, nil
 		}))
 		if err != nil {

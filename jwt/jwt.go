@@ -43,13 +43,24 @@ type Claims struct {
 	Raw map[string]any
 }
 
+// KeyFinder is a wrapper for the FindKey method.
+type KeyFinder interface {
+	FindKey(header *jws.Header) (key sig.Key, err error)
+}
+
+type FindKeyFunc func(header *jws.Header) (key sig.Key, err error)
+
+func (f FindKeyFunc) FindKey(header *jws.Header) (key sig.Key, err error) {
+	return f(header)
+}
+
 // Token is a decoded JWT token.
 type Token struct {
 	Header *jws.Header
 	Claims *Claims
 }
 
-func Parse(data []byte, finder jws.KeyFinder) (*Token, error) {
+func Parse(data []byte, finder KeyFinder) (*Token, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
 	if idx1 < 0 {

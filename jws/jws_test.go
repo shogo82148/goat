@@ -37,7 +37,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -112,7 +112,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -156,7 +156,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -203,7 +203,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
@@ -233,7 +233,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(nil, nil), nil
 		}))
@@ -270,7 +270,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
 			alg := header.Algorithm().New()
 			return alg.NewKey(key.KeyPair()), nil
 		}))
