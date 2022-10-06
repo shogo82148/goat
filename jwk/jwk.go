@@ -23,10 +23,23 @@ import (
 	"github.com/shogo82148/goat/jwa"
 )
 
+type KeyUse string
+
+const (
+	// KeyUseSig is Digital Signature or MAC
+	KeyUseSig KeyUse = "sig"
+
+	KeyUseEnc KeyUse = "enc"
+)
+
+func (use KeyUse) String() string {
+	return string(use)
+}
+
 // Key is a JSON Web Key.
 type Key struct {
 	kty     jwa.KeyType
-	use     string
+	use     KeyUse
 	keyOps  []string
 	alg     jwa.KeyAlgorithm
 	kid     string
@@ -48,11 +61,11 @@ func (key *Key) KeyType() jwa.KeyType {
 }
 
 // PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
-func (key *Key) PublicKeyUse() string {
+func (key *Key) PublicKeyUse() KeyUse {
 	return key.use
 }
 
-func (key *Key) SetPublicKeyUse(use string) {
+func (key *Key) SetPublicKeyUse(use KeyUse) {
 	key.use = use
 }
 
@@ -123,7 +136,9 @@ func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
 	key.kid, _ = d.GetString("kid")
-	key.use, _ = d.GetString("use")
+	if use, ok := d.GetString("use"); ok {
+		key.use = KeyUse(use)
+	}
 	if ops, ok := d.GetStringArray("key_ops"); ok {
 		key.keyOps = ops
 	}
