@@ -391,7 +391,7 @@ type CompressionAlgorithm string
 const (
 	CompressionAlgorithmUnknown CompressionAlgorithm = ""
 
-	// DEF is compression with the DEFLATE [RFC1951] algorithm.
+	// DEF is compression with the DEFLATE RFC 1951 algorithm.
 	DEF CompressionAlgorithm = "DEF"
 )
 

@@ -229,6 +229,37 @@ func TestParse(t *testing.T) {
 		}
 	})
 
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx A128GCMKW Compressed", func(t *testing.T) {
+		raw := `eyJhbGciOiJBMTI4R0NNS1ciLCJlbmMiOiJBMTI4R0NNIiwiaXYiOiJFZ3lkYnpXRDU4T19RbVVqIiwidGFnIjoiTWo2QXhXODQ2QkRKZGNQZy1rVGJGZyIsInppcCI6IkRFRiJ9.` +
+			`YLGsDNVS-br9XTwXO_PUdA.` +
+			`btLdyWp8CVr98RIV.` +
+			`fIzbKm4IawNAl6AAzu-YXpE-24sy.` +
+			`5X-zJCDW_KitFcRVqhCcbg`
+
+		got, err := Parse(context.TODO(), []byte(raw), FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			rawKey := `{` +
+				`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+				`"kty": "oct"` +
+				`}`
+			k, err := jwk.ParseKey([]byte(rawKey))
+			if err != nil {
+				return nil, err
+			}
+			alg := header.Algorithm().New()
+			return alg.NewKeyWrapper(k.KeyPair()), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "Hello JWE!\n"
+		if string(got.Plaintext) != want {
+			t.Errorf("want %s, got %s", want, got.Plaintext)
+		}
+	})
 }
 
 func TestEncrypt(t *testing.T) {
@@ -446,6 +477,46 @@ func TestEncrypt(t *testing.T) {
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k.KeyPair())
 		plaintext := "Hello World!\n"
+		ciphertext, err := Encrypt(header, []byte(plaintext), key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(k.KeyPair()), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got.Plaintext) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
+		}
+	})
+
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx A128GCMKW", func(t *testing.T) {
+		rawKey := `{` +
+			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		iv := []byte{
+			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
+		}
+		header := &Header{}
+		header.SetAlgorithm(jwa.A128GCMKW)
+		header.SetEncryptionAlgorithm(jwa.A128GCM)
+		header.SetInitializationVector(iv)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k.KeyPair())
+		plaintext := "Hello JWE!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
 			t.Fatal(err)
