@@ -28,7 +28,7 @@ type Algorithm struct{}
 func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
 	key, ok := privateKey.([]byte)
 	if !ok {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid option type: %T", privateKey))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid key type: %T", privateKey))
 	}
 	return &KeyWrapper{
 		cek: key,
