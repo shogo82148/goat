@@ -25,7 +25,7 @@ type Claims struct {
 	Subject string
 
 	// RFC7519 Section 4.1.3. "aud" (Audience) Claim
-	Audience string
+	Audience []string
 
 	// RFC7519 Section 4.1.4. "exp" (Expiration Time) Claim
 	ExpirationTime time.Time
@@ -144,7 +144,22 @@ func parseClaims(data []byte) (*Claims, error) {
 
 	c.Issuer, _ = d.GetString("iss")
 	c.Subject, _ = d.GetString("sub")
-	c.Audience, _ = d.GetString("aud")
+
+	// In RFC7519, the "aud" claim is defined as a string or an array of strings.
+	if aud, ok := raw["aud"]; ok {
+		switch aud := aud.(type) {
+		case []any:
+			for _, v := range aud {
+				s, ok := v.(string)
+				if !ok {
+					d.SaveError(fmt.Errorf("jwt: invalid type of aud claim: %T", v))
+				}
+				c.Audience = append(c.Audience, s)
+			}
+		case string:
+			c.Audience = []string{aud}
+		}
+	}
 
 	if t, ok := d.GetTime("exp"); ok {
 		c.ExpirationTime = t
@@ -220,8 +235,12 @@ func encodeClaims(c *Claims) ([]byte, error) {
 	if sub := c.Subject; sub != "" {
 		e.Set("sub", sub)
 	}
-	if aud := c.Audience; aud != "" {
-		e.Set("aud", aud)
+	if aud := c.Audience; aud != nil {
+		if len(aud) == 1 {
+			e.Set("aud", aud[0])
+		} else {
+			e.Set("aud", aud)
+		}
 	}
 	if exp := c.ExpirationTime; !exp.IsZero() {
 		e.SetTime("exp", exp)
