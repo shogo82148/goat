@@ -138,9 +138,6 @@ func FuzzJWS(f *testing.F) {
 			return // the key doesn't support signing, we skip it.
 		}
 
-		_ = header1
-		_ = payload1
-
 		msg2 := NewMessage(payload1)
 		if err := msg2.Sign(header1, nil, sigKey); err != nil {
 			t.Error(err)
