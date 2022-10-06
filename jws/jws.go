@@ -255,19 +255,20 @@ func Parse(data []byte) (*Message, error) {
 	}, nil
 }
 
-// ParseJSON parses a JSON Serialized JWS.
-func ParseJSON(data []byte) (*Message, error) {
+// UnmarshalJSON implements [encoding/json.Unmarshaler].
+// It parses data as JSON Serialized JWS.
+func (msg *Message) UnmarshalJSON(data []byte) error {
 	var jws jsonJWS
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	if err := dec.Decode(&jws); err != nil {
-		return nil, fmt.Errorf("jws: failed to parse JWS: %w", err)
+		return fmt.Errorf("jws: failed to parse JWS: %w", err)
 	}
 
 	// decode payload
 	payload, err := b64.DecodeString(jws.Payload)
 	if err != nil {
-		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
+		return fmt.Errorf("jws: failed to parse payload: %w", err)
 	}
 
 	// decode signatures
@@ -276,23 +277,23 @@ func ParseJSON(data []byte) (*Message, error) {
 		// decode protected header
 		raw, err := b64.DecodeString(sig.Protected)
 		if err != nil {
-			return nil, fmt.Errorf("jws: failed to parse protected header: %w", err)
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
 		}
 		protected := new(Header)
 		if err := protected.UnmarshalJSON(raw); err != nil {
-			return nil, fmt.Errorf("jws: failed to parse protected header: %w", err)
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
 		}
 
 		// decode unprotected header
 		header, err := parseHeader(sig.Header)
 		if err != nil {
-			return nil, fmt.Errorf("jws: failed to parse unprotected header: %w", err)
+			return fmt.Errorf("jws: failed to parse unprotected header: %w", err)
 		}
 
 		// decode signature
 		signature, err := b64.DecodeString(sig.Signature)
 		if err != nil {
-			return nil, fmt.Errorf("jws: failed to parse signature: %w", err)
+			return fmt.Errorf("jws: failed to parse signature: %w", err)
 		}
 
 		signatures = append(signatures, &Signature{
@@ -304,11 +305,12 @@ func ParseJSON(data []byte) (*Message, error) {
 		})
 	}
 
-	return &Message{
+	*msg = Message{
 		b64payload: []byte(jws.Payload),
 		payload:    payload,
 		Signatures: signatures,
-	}, nil
+	}
+	return nil
 }
 
 func parseHeader(raw map[string]any) (*Header, error) {

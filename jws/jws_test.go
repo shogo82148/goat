@@ -314,8 +314,8 @@ func TestParseJSON(t *testing.T) {
 			`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
 			`lSApmWQxfKTUJqPP3-Kg6NU1Q"}]` +
 			`}`
-		msg, err := ParseJSON([]byte(raw))
-		if err != nil {
+		var msg Message
+		if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
 			t.Fatal(err)
 		}
 
