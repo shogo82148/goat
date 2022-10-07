@@ -60,40 +60,46 @@ type Algorithm struct {
 var _ sig.SigningKey = (*SigningKey)(nil)
 
 type SigningKey struct {
-	hash       crypto.Hash
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
-	canSign    bool
-	canVerify  bool
+	hash      crypto.Hash
+	priv      *ecdsa.PrivateKey
+	pub       *ecdsa.PublicKey
+	canSign   bool
+	canVerify bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
 func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
-	priv := key.PrivateKey()
-	pub := key.PublicKey()
 	k := &SigningKey{
 		hash:      alg.hash,
 		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
 		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
+
+	priv := key.PrivateKey()
+	pub := key.PublicKey()
 	if key, ok := priv.(*ecdsa.PrivateKey); ok {
-		if key == nil || key.Curve != alg.crv {
-			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
-		}
-		k.privateKey = key
+		k.priv = key
 	} else if priv != nil {
 		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
 	if key, ok := pub.(*ecdsa.PublicKey); ok {
-		if key != nil && key.Curve != alg.crv {
-			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
-		}
-		k.publicKey = key
-	} else if pub != nil {
+		k.pub = key
+	} else if priv != nil {
 		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
-	if k.privateKey != nil && k.publicKey == nil {
-		k.publicKey = &k.privateKey.PublicKey
+
+	if k.priv != nil {
+		if k.priv.Curve != alg.crv {
+			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
+		}
+	}
+	if k.pub != nil {
+		if k.pub.Curve != alg.crv {
+			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
+		}
+	}
+	if k.priv != nil && k.pub == nil {
+		k.pub = &k.priv.PublicKey
 	}
 	return k
 }
@@ -103,7 +109,7 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
-	if key.privateKey == nil || !key.canSign {
+	if key.priv == nil || !key.canSign {
 		return nil, sig.ErrSignUnavailable
 	}
 
@@ -113,11 +119,11 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	}
 	sum := hash.Sum(nil)
 
-	r, s, err := ecdsa.Sign(rand.Reader, key.privateKey, sum)
+	r, s, err := ecdsa.Sign(rand.Reader, key.priv, sum)
 	if err != nil {
 		return nil, err
 	}
-	bits := key.privateKey.Curve.Params().BitSize
+	bits := key.priv.Curve.Params().BitSize
 	size := (bits + 7) / 8
 
 	ret := make([]byte, 2*size)
@@ -135,7 +141,7 @@ func (key *SigningKey) Verify(payload, signature []byte) error {
 		return sig.ErrSignUnavailable
 	}
 
-	bits := key.publicKey.Curve.Params().BitSize
+	bits := key.pub.Curve.Params().BitSize
 	size := (bits + 7) / 8
 	if len(signature) != 2*size {
 		return sig.ErrSignatureMismatch
@@ -149,7 +155,7 @@ func (key *SigningKey) Verify(payload, signature []byte) error {
 
 	r := new(big.Int).SetBytes(signature[:size])
 	s := new(big.Int).SetBytes(signature[size:])
-	if !ecdsa.Verify(key.publicKey, sum, r, s) {
+	if !ecdsa.Verify(key.pub, sum, r, s) {
 		return sig.ErrSignatureMismatch
 	}
 	return nil
