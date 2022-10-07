@@ -143,7 +143,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	}
 	size := w.alg.size
 	if size == 0 {
-		size = enc.Encryption().New().CEKSize()
+		size = enc.Encryption().CEKSize()
 	}
 	key, err := deriveECDHES(
 		[]byte(enc.Encryption()),

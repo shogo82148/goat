@@ -483,11 +483,10 @@ func parseHeader(raw map[string]any) (*Header, error) {
 }
 
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	henc := header.EncryptionAlgorithm()
-	if !henc.Available() {
+	enc := header.EncryptionAlgorithm()
+	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + string(henc) + " is not available")
 	}
-	enc := henc.New()
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
 		return nil, err
@@ -519,7 +518,7 @@ func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) 
 		plaintext = buf.Bytes()
 	}
 
-	payload, authTag, err := enc.Encrypt(cek, iv, encodedHeader, plaintext)
+	payload, authTag, err := enc.New().Encrypt(cek, iv, encodedHeader, plaintext)
 	if err != nil {
 		return nil, err
 	}
