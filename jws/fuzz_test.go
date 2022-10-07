@@ -118,17 +118,17 @@ func FuzzJWS(f *testing.F) {
 		if err != nil {
 			return
 		}
-		var sigKey sig.Key
+		var sigKey sig.SigningKey
 		msg1, err := Parse([]byte(data))
 		if err != nil {
 			return
 		}
-		header1, payload1, err := msg1.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header1, payload1, err := msg1.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm()
 			if !alg.Available() {
 				return nil, errors.New("unknown algorithm")
 			}
-			sigKey = alg.New().NewKey(k.KeyPair())
+			sigKey = alg.New().NewSigningKey(k)
 			return sigKey, nil
 		}))
 		if err != nil {
@@ -151,7 +151,7 @@ func FuzzJWS(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, payload3, err := msg3.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		_, payload3, err := msg3.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			return sigKey, nil
 		}))
 		if err != nil {

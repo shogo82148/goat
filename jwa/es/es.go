@@ -1,4 +1,4 @@
-// package es implements ECDSA algorithm.
+// package es implements a signing algorithm ECDSA using SHA-2.
 package es
 
 import (
@@ -9,6 +9,7 @@ import (
 	"math/big"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -56,47 +57,59 @@ type Algorithm struct {
 	crv  elliptic.Curve
 }
 
-var _ sig.Key = (*Key)(nil)
+var _ sig.SigningKey = (*SigningKey)(nil)
 
-type Key struct {
-	hash       crypto.Hash
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
+type SigningKey struct {
+	hash      crypto.Hash
+	priv      *ecdsa.PrivateKey
+	pub       *ecdsa.PublicKey
+	canSign   bool
+	canVerify bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
-	key := &Key{
-		hash: alg.hash,
+func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+	k := &SigningKey{
+		hash:      alg.hash,
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
-	if k, ok := privateKey.(*ecdsa.PrivateKey); ok {
-		if k == nil || k.Curve != alg.crv {
-			return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+
+	priv := key.PrivateKey()
+	pub := key.PublicKey()
+	if key, ok := priv.(*ecdsa.PrivateKey); ok {
+		k.priv = key
+	} else if priv != nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
+	}
+	if key, ok := pub.(*ecdsa.PublicKey); ok {
+		k.pub = key
+	} else if priv != nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
+	}
+
+	if k.priv != nil {
+		if k.priv.Curve != alg.crv {
+			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 		}
-		key.privateKey = k
-	} else if privateKey != nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 	}
-	if k, ok := publicKey.(*ecdsa.PublicKey); ok {
-		if k == nil || k.Curve != alg.crv {
-			return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	if k.pub != nil {
+		if k.pub.Curve != alg.crv {
+			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 		}
-		key.publicKey = k
-	} else if publicKey != nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
 	}
-	if key.privateKey != nil && key.publicKey == nil {
-		key.publicKey = &key.privateKey.PublicKey
+	if k.priv != nil && k.pub == nil {
+		k.pub = &k.priv.PublicKey
 	}
-	return key
+	return k
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
-	if key.privateKey == nil {
+	if key.priv == nil || !key.canSign {
 		return nil, sig.ErrSignUnavailable
 	}
 
@@ -106,11 +119,11 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 	}
 	sum := hash.Sum(nil)
 
-	r, s, err := ecdsa.Sign(rand.Reader, key.privateKey, sum)
+	r, s, err := ecdsa.Sign(rand.Reader, key.priv, sum)
 	if err != nil {
 		return nil, err
 	}
-	bits := key.privateKey.Curve.Params().BitSize
+	bits := key.priv.Curve.Params().BitSize
 	size := (bits + 7) / 8
 
 	ret := make([]byte, 2*size)
@@ -120,12 +133,15 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
+	}
 
-	bits := key.publicKey.Curve.Params().BitSize
+	bits := key.pub.Curve.Params().BitSize
 	size := (bits + 7) / 8
 	if len(signature) != 2*size {
 		return sig.ErrSignatureMismatch
@@ -139,7 +155,7 @@ func (key *Key) Verify(payload, signature []byte) error {
 
 	r := new(big.Int).SetBytes(signature[:size])
 	s := new(big.Int).SetBytes(signature[size:])
-	if !ecdsa.Verify(key.publicKey, sum, r, s) {
+	if !ecdsa.Verify(key.pub, sum, r, s) {
 		return sig.ErrSignatureMismatch
 	}
 	return nil

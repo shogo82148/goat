@@ -1,6 +1,7 @@
 package rs
 
 import (
+	"crypto"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/rsa"
@@ -99,10 +100,23 @@ var tests = []struct {
 	},
 }
 
+type rawKey struct {
+	priv *rsa.PrivateKey
+	pub  *rsa.PublicKey
+}
+
+func (k *rawKey) PrivateKey() crypto.PrivateKey {
+	return k.priv
+}
+
+func (k *rawKey) PublicKey() crypto.PublicKey {
+	return k.pub
+}
+
 func TestSign(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.priv, test.pub)
+		key := alg.NewSigningKey(&rawKey{test.priv, test.pub})
 		got, err := key.Sign(test.in)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -117,7 +131,7 @@ func TestSign(t *testing.T) {
 func TestVerify(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(nil, test.pub)
+		key := alg.NewSigningKey(&rawKey{nil, test.pub})
 		err := key.Verify(test.in, test.out)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -132,12 +146,12 @@ func TestWeakKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	key := New256().NewKey(rsakey, rsakey.Public())
+	key := New256().NewSigningKey(&rawKey{rsakey, &rsakey.PublicKey})
 	if _, err := key.Sign([]byte("payload")); err == nil {
 		t.Error("want some error, but not")
 	}
 
-	key = New256Weak().NewKey(rsakey, rsakey.Public())
+	key = New256Weak().NewSigningKey(&rawKey{rsakey, &rsakey.PublicKey})
 	if _, err := key.Sign([]byte("payload")); err != nil {
 		t.Error(err)
 	}

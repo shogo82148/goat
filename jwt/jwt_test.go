@@ -43,9 +43,9 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -71,9 +71,9 @@ func TestParse(t *testing.T) {
 				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 				".",
 		)
-		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(nil, nil), nil
+			return alg.NewSigningKey(nil), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -98,9 +98,9 @@ func TestParse_Claims(t *testing.T) {
 		return now
 	})()
 
-	algNone := FindKeyFunc(func(header *jws.Header) (sig.Key, error) {
+	algNone := FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
 		alg := jwa.None.New()
-		return alg.NewKey(nil, nil), nil
+		return alg.NewSigningKey(nil), nil
 	})
 
 	var err error
@@ -152,7 +152,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sigKey := jwa.HS256.New().NewKey(key.KeyPair())
+		sigKey := jwa.HS256.New().NewSigningKey(key)
 
 		header := new(jws.Header)
 		header.SetAlgorithm(jwa.HS256)
@@ -183,7 +183,7 @@ func TestSign(t *testing.T) {
 	})
 
 	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
-		sigKey := jwa.None.New().NewKey(nil, nil)
+		sigKey := jwa.None.New().NewSigningKey(nil)
 		header := new(jws.Header)
 		header.SetAlgorithm(jwa.None)
 		header.SetType("JWT")

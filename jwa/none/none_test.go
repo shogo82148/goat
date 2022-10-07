@@ -2,12 +2,18 @@ package none
 
 import (
 	"bytes"
+	"crypto"
 	"testing"
 )
 
+type dummyKey struct{}
+
+func (k *dummyKey) PrivateKey() crypto.PrivateKey { return nil }
+func (k *dummyKey) PublicKey() crypto.PublicKey   { return nil }
+
 func TestSign(t *testing.T) {
 	alg := New()
-	key := alg.NewKey(nil, nil)
+	key := alg.NewSigningKey(nil)
 	got, err := key.Sign([]byte("payload"))
 	if err != nil {
 		t.Fatal(err)
@@ -21,7 +27,7 @@ func TestSign(t *testing.T) {
 func TestSign_InvalidKey(t *testing.T) {
 	alg := New()
 	// only nil is accepted as private and public key.
-	key := alg.NewKey("invalid key", nil)
+	key := alg.NewSigningKey(&dummyKey{})
 	_, err := key.Sign([]byte("payload"))
 	if err == nil {
 		t.Error("want error, got nil")
@@ -31,7 +37,7 @@ func TestSign_InvalidKey(t *testing.T) {
 func TestVerify(t *testing.T) {
 	var err error
 	alg := New()
-	key := alg.NewKey(nil, nil)
+	key := alg.NewSigningKey(nil)
 
 	err = key.Verify([]byte("payload"), []byte{})
 	if err != nil {
@@ -47,7 +53,7 @@ func TestVerify(t *testing.T) {
 func TestVerify_InvalidKey(t *testing.T) {
 	var err error
 	alg := New()
-	key := alg.NewKey("invalid", nil)
+	key := alg.NewSigningKey(&dummyKey{})
 
 	err = key.Verify([]byte("payload"), []byte{})
 	if err == nil {

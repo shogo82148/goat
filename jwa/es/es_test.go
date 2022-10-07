@@ -1,6 +1,7 @@
 package es
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -99,10 +100,23 @@ var tests = []struct {
 	},
 }
 
+type rawKey struct {
+	priv *ecdsa.PrivateKey
+	pub  *ecdsa.PublicKey
+}
+
+func (k *rawKey) PrivateKey() crypto.PrivateKey {
+	return k.priv
+}
+
+func (k *rawKey) PublicKey() crypto.PublicKey {
+	return k.pub
+}
+
 func TestVerify(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(nil, test.pub)
+		key := alg.NewSigningKey(&rawKey{nil, test.pub})
 		if err := key.Verify(test.in, test.sig); err != nil {
 			t.Errorf("test %d: %v", i, err)
 		}
@@ -112,7 +126,7 @@ func TestVerify(t *testing.T) {
 func TestSignAndVerify(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.priv, test.pub)
+		key := alg.NewSigningKey(&rawKey{test.priv, test.pub})
 		sig, err := key.Sign(test.in)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -126,7 +140,7 @@ func TestSignAndVerify(t *testing.T) {
 func TestSign_NilPublicKey(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.priv, nil)
+		key := alg.NewSigningKey(&rawKey{test.priv, nil})
 		sig, err := key.Sign(test.in)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -156,13 +170,13 @@ func Test_InvalidCurve(t *testing.T) {
 		}
 		alg := test.alg()
 
-		key1 := alg.NewKey(priv, nil)
+		key1 := alg.NewSigningKey(&rawKey{priv, nil})
 		_, err = key1.Sign([]byte("payload"))
 		if err == nil {
 			t.Errorf("test %d: want error, but not", i)
 		}
 
-		key2 := alg.NewKey(nil, priv.PublicKey)
+		key2 := alg.NewSigningKey(&rawKey{nil, &priv.PublicKey})
 		err = key2.Verify([]byte("payload"), []byte{})
 		if err == nil {
 			t.Errorf("test %d: want error, but not", i)

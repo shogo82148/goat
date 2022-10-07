@@ -502,12 +502,12 @@ func encodeHeader(h *Header) (map[string]any, error) {
 
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
-	FindKey(protected, unprotected *Header) (key sig.Key, err error)
+	FindKey(protected, unprotected *Header) (key sig.SigningKey, err error)
 }
 
-type FindKeyFunc func(protected, unprotected *Header) (key sig.Key, err error)
+type FindKeyFunc func(protected, unprotected *Header) (key sig.SigningKey, err error)
 
-func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.Key, err error) {
+func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.SigningKey, err error) {
 	return f(protected, unprotected)
 }
 
@@ -540,7 +540,7 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 	return nil, nil, errors.New("jws: failed to verify the message")
 }
 
-func (msg *Message) Sign(protected, header *Header, key sig.Key) error {
+func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	// encode the header
 	h1, err := encodeHeader(protected)
 	if err != nil {
