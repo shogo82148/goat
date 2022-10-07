@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
 )
 
@@ -83,19 +84,27 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("agcmkw: failed to initialize gcm: %w", err))
 	}
 	return &KeyWrapper{
-		aead: aead,
+		aead:      aead,
+		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
+		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	aead cipher.AEAD
+	aead      cipher.AEAD
+	canWrap   bool
+	canUnwrap bool
 }
 
 // WrapKey encrypts CEK.
 // It writes the Authentication Tag into opts.AuthenticationTag of NewKeyWrapper.
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+	if !w.canWrap {
+		return nil, fmt.Errorf("agcmkw: key wrapping operation is not allowed")
+	}
+
 	var iv []byte
 	if getter, ok := opts.(initializationVectorGetter); ok {
 		iv = getter.InitializationVector()
@@ -124,6 +133,10 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 
 // UnwrapKey decrypts encrypted CEK.
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	if !w.canUnwrap {
+		return nil, fmt.Errorf("agcmkw: key unwrapping operation is not allowed")
+	}
+
 	iv, ok := opts.(initializationVectorGetter)
 	if !ok {
 		return nil, errors.New("agcmkw: InitializationVector not found")
