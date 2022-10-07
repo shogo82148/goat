@@ -110,9 +110,9 @@ type Algorithm struct {
 	weak bool
 }
 
-var _ sig.SigningKey = (*Key)(nil)
+var _ sig.SigningKey = (*SigningKey)(nil)
 
-type Key struct {
+type SigningKey struct {
 	hash       crypto.Hash
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
@@ -125,7 +125,7 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
 
-	k := &Key{
+	k := &SigningKey{
 		hash:      alg.hash,
 		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
 		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
@@ -155,7 +155,7 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
@@ -170,7 +170,7 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}
