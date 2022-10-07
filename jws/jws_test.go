@@ -38,9 +38,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -113,9 +113,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -157,9 +157,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -204,9 +204,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -234,9 +234,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(nil, nil), nil
+			return alg.NewSigningKey(nil), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -271,9 +271,9 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.Key, error) {
+		header, payload, err := msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
 			alg := header.Algorithm().New()
-			return alg.NewKey(key.KeyPair()), nil
+			return alg.NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -319,7 +319,7 @@ func TestParseJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.Key, error) {
+		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
 			if header.KeyID() != "2010-12-29" {
 				return nil, errors.New("unknown key id")
 			}
@@ -357,7 +357,7 @@ func TestParseJSON(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			return protected.Algorithm().New().NewKey(key.KeyPair()), nil
+			return protected.Algorithm().New().NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -369,7 +369,7 @@ func TestParseJSON(t *testing.T) {
 			t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
 		}
 
-		_, payload, err = msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.Key, error) {
+		_, payload, err = msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
 			if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 				return nil, errors.New("unknown key id")
 			}
@@ -383,7 +383,7 @@ func TestParseJSON(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			return protected.Algorithm().New().NewKey(key.KeyPair()), nil
+			return protected.Algorithm().New().NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -409,7 +409,7 @@ func TestParseJSON(t *testing.T) {
 		if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
 			t.Fatal(err)
 		}
-		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.Key, error) {
+		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
 			if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 				return nil, errors.New("unknown key id")
 			}
@@ -423,7 +423,7 @@ func TestParseJSON(t *testing.T) {
 			if err != nil {
 				return nil, err
 			}
-			return protected.Algorithm().New().NewKey(key.KeyPair()), nil
+			return protected.Algorithm().New().NewSigningKey(key), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -447,7 +447,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.HS256.New().NewKey(key.KeyPair())
+		k := jwa.HS256.New().NewSigningKey(key)
 		h := new(Header)
 		h.SetAlgorithm(jwa.HS256)
 		h.SetType("JWT")
@@ -510,7 +510,7 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.RS256.New().NewKey(key.KeyPair())
+		k := jwa.RS256.New().NewSigningKey(key)
 		h := new(Header)
 		h.SetAlgorithm(jwa.RS256)
 		h.SetType("JWT")
@@ -550,7 +550,7 @@ func TestSign(t *testing.T) {
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		k := jwa.None.New().NewKey(nil, nil)
+		k := jwa.None.New().NewSigningKey(nil)
 		msg := NewMessage(payload)
 		if err := msg.Sign(h, nil, k); err != nil {
 			t.Fatal(err)

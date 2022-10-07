@@ -7,15 +7,19 @@ import (
 	"reflect"
 )
 
-// Algorithm is an algorithm for signature.
-type Algorithm interface {
-	// NewKey returns a new key for privateKey and publicKey.
-	// If Algorithm uses symmetric keys, publicKey is nil.
-	NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) Key
+type Key interface {
+	PrivateKey() crypto.PrivateKey
+	PublicKey() crypto.PublicKey
 }
 
-// Key is a key for signature.
-type Key interface {
+// Algorithm is an algorithm for signing.
+type Algorithm interface {
+	// NewSigningKey returns a new key for signing.
+	NewSigningKey(key Key) SigningKey
+}
+
+// SigningKey is a key for signing.
+type SigningKey interface {
 	Sign(payload []byte) (signature []byte, err error)
 	Verify(payload, signature []byte) error
 }
@@ -37,7 +41,7 @@ type invalidKey struct {
 
 // NewInvalidKey returns a new key that returns an error for all
 // Sign and Verify operations.
-func NewInvalidKey(alg string, privateKey, publicKey any) Key {
+func NewInvalidKey(alg string, privateKey, publicKey any) SigningKey {
 	t1 := reflect.TypeOf(privateKey)
 	t2 := reflect.TypeOf(publicKey)
 	return &invalidKey{
@@ -76,7 +80,7 @@ type errKey struct {
 
 // NewInvalidKey returns a new key that returns an error for all
 // Sign and Verify operations.
-func NewErrorKey(err error) Key {
+func NewErrorKey(err error) SigningKey {
 	return &errKey{
 		err: err,
 	}

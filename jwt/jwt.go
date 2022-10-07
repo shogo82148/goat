@@ -45,12 +45,12 @@ type Claims struct {
 
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
-	FindKey(header *jws.Header) (key sig.Key, err error)
+	FindKey(header *jws.Header) (key sig.SigningKey, err error)
 }
 
-type FindKeyFunc func(header *jws.Header) (key sig.Key, err error)
+type FindKeyFunc func(header *jws.Header) (key sig.SigningKey, err error)
 
-func (f FindKeyFunc) FindKey(header *jws.Header) (key sig.Key, err error) {
+func (f FindKeyFunc) FindKey(header *jws.Header) (key sig.SigningKey, err error) {
 	return f(header)
 }
 
@@ -184,7 +184,7 @@ func parseClaims(data []byte) (*Claims, error) {
 	return c, nil
 }
 
-func Sign(header *jws.Header, claims *Claims, key sig.Key) ([]byte, error) {
+func Sign(header *jws.Header, claims *Claims, key sig.SigningKey) ([]byte, error) {
 	payload, err := encodeClaims(claims)
 	if err != nil {
 		return nil, err

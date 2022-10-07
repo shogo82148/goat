@@ -1,6 +1,7 @@
 package hs
 
 import (
+	"crypto"
 	"crypto/hmac"
 	"crypto/rand"
 	_ "crypto/sha256"
@@ -320,10 +321,20 @@ var tests = []struct {
 	},
 }
 
+type rawKey []byte
+
+func (k rawKey) PrivateKey() crypto.PrivateKey {
+	return []byte(k)
+}
+
+func (k rawKey) PublicKey() crypto.PublicKey {
+	return nil
+}
+
 func TestSign(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.key, nil)
+		key := alg.NewSigningKey(rawKey(test.key))
 		got, err := key.Sign(test.in)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -343,7 +354,7 @@ func TestSign(t *testing.T) {
 func TestVerify(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.key, nil)
+		key := alg.NewSigningKey(rawKey(test.key))
 		want, err := hex.DecodeString(test.out)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -360,7 +371,7 @@ func TestVerify(t *testing.T) {
 func TestVerify_Mismatch(t *testing.T) {
 	for i, test := range tests {
 		alg := test.alg()
-		key := alg.NewKey(test.key, nil)
+		key := alg.NewSigningKey(rawKey(test.key))
 		want, err := hex.DecodeString(test.out)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -384,12 +395,12 @@ func TestWeakKeys(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	key := New256().NewKey(priv, nil)
+	key := New256().NewSigningKey(rawKey(priv))
 	if _, err := key.Sign([]byte("payload")); err == nil {
 		t.Error("want some error, but not")
 	}
 
-	key = New256Weak().NewKey(priv, nil)
+	key = New256Weak().NewSigningKey(rawKey(priv))
 	if _, err := key.Sign([]byte("payload")); err != nil {
 		t.Error(err)
 	}
