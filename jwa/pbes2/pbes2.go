@@ -11,6 +11,7 @@ import (
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwa/akw"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
 	"golang.org/x/crypto/pbkdf2"
 )
@@ -66,22 +67,27 @@ type Algorithm struct {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
-	key, ok := privateKey.([]byte)
+func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+	privateKey := key.PrivateKey()
+	priv, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("pbes2: invalid option type: %T", privateKey))
 	}
 	return &KeyWrapper{
-		alg: alg,
-		key: key,
+		alg:       alg,
+		key:       priv,
+		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
+		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	alg *Algorithm
-	key []byte
+	alg       *Algorithm
+	key       []byte
+	canWrap   bool
+	canUnwrap bool
 }
 
 type pbes2SaltInputGetter interface {
@@ -101,6 +107,10 @@ type PBES2CountSetter interface {
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+	if !w.canWrap {
+		return nil, fmt.Errorf("pbse2: key wrapping operation is not allowed")
+	}
+
 	var p2s []byte
 	var p2c int
 	if getter, ok := opts.(pbes2SaltInputGetter); ok {
@@ -146,6 +156,10 @@ func (w *KeyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	if !w.canUnwrap {
+		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
+	}
+
 	p2s, ok := opts.(pbes2SaltInputGetter)
 	if !ok {
 		return nil, errors.New("pbse2: PBES2SaltInput not found")

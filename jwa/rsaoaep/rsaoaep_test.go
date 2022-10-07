@@ -44,7 +44,7 @@ func TestUnwrap(t *testing.T) {
 		t.Fatal(err)
 	}
 	alg := New()
-	w := alg.NewKeyWrapper(k.KeyPair())
+	w := alg.NewKeyWrapper(k)
 	cek, err := w.UnwrapKey([]byte{
 		56, 163, 154, 192, 58, 53, 222, 4, 105, 218, 136, 218, 29, 94, 203,
 		22, 150, 92, 129, 94, 211, 232, 53, 89, 41, 60, 138, 56, 196, 216,

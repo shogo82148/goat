@@ -2,13 +2,13 @@
 package akw
 
 import (
-	"crypto"
 	"crypto/aes"
 	"crypto/subtle"
 	"errors"
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
 )
 
@@ -46,7 +46,9 @@ func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {
 	switch len(privateKey) {
 	case 16, 24, 32:
 		return &KeyWrapper{
-			key: privateKey,
+			key:       privateKey,
+			canWrap:   true,
+			canUnwrap: true,
 		}
 	}
 	return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(privateKey)))
@@ -62,23 +64,28 @@ type Options struct {
 	Key []byte
 }
 
-func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
-	key, ok := privateKey.([]byte)
+func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+	privateKey := key.PrivateKey()
+	priv, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid private key type: []byte is required but got %T", privateKey))
 	}
-	if len(key) != alg.keySize {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d is required but got %d", alg.keySize, len(key)))
+	if len(priv) != alg.keySize {
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d is required but got %d", alg.keySize, len(priv)))
 	}
 	return &KeyWrapper{
-		key: key,
+		key:       priv,
+		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
+		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
 	}
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	key []byte
+	key       []byte
+	canWrap   bool
+	canUnwrap bool
 }
 
 // from RFC 3394 Section 2.2.3.1 Default Initial Value
@@ -94,6 +101,10 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
 	}
+	if !w.canWrap {
+		return nil, fmt.Errorf("rsapkcs1v15: key wrapping operation is not allowed")
+	}
+
 	block, err := aes.NewCipher(w.key)
 	if err != nil {
 		return nil, err
@@ -142,6 +153,10 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
 	}
+	if !w.canUnwrap {
+		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
+	}
+
 	block, err := aes.NewCipher(w.key)
 	if err != nil {
 		return nil, err

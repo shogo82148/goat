@@ -1,6 +1,7 @@
 package pbes2
 
 import (
+	"crypto"
 	"crypto/subtle"
 	"testing"
 )
@@ -16,6 +17,16 @@ func (opts *options) PBES2SaltInput() []byte {
 
 func (opts *options) PBES2Count() int {
 	return opts.p2c
+}
+
+type rawKey []byte
+
+func (k rawKey) PrivateKey() crypto.PrivateKey {
+	return []byte(k)
+}
+
+func (k rawKey) PublicKey() crypto.PublicKey {
+	return nil
 }
 
 func TestWrap(t *testing.T) {
@@ -40,7 +51,7 @@ func TestWrap(t *testing.T) {
 	}
 
 	alg := NewHS256A128KW()
-	key := alg.NewKeyWrapper(oct, nil)
+	key := alg.NewKeyWrapper(rawKey(oct))
 	got, err := key.WrapKey(cek, opts)
 	if err != nil {
 		t.Fatal(err)
@@ -79,7 +90,7 @@ func TestUnwrap(t *testing.T) {
 	}
 
 	alg := NewHS256A128KW()
-	key := alg.NewKeyWrapper(oct, nil)
+	key := alg.NewKeyWrapper(rawKey(oct))
 	got, err := key.UnwrapKey(data, opts)
 	if err != nil {
 		t.Fatal(err)

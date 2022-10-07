@@ -65,7 +65,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -125,7 +125,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -153,7 +153,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -186,7 +186,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -218,7 +218,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -250,7 +250,7 @@ func TestParse(t *testing.T) {
 				return nil, err
 			}
 			alg := header.Algorithm().New()
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -303,7 +303,7 @@ func TestEncrypt(t *testing.T) {
 		header.SetAlgorithm(jwa.RSA_OAEP)
 		header.SetEncryptionAlgorithm(jwa.A256GCM)
 		alg := header.Algorithm().New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 
 		plaintext := "The true sign of intelligence is not knowledge but imagination."
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
@@ -311,7 +311,7 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -358,7 +358,7 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.RSA1_5.New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
 		header.SetAlgorithm(jwa.RSA1_5)
@@ -370,7 +370,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -390,7 +390,7 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		alg := jwa.A128KW.New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
 		header.SetAlgorithm(jwa.A128KW)
@@ -402,7 +402,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -434,7 +434,7 @@ func TestEncrypt(t *testing.T) {
 		header.SetEncryptionAlgorithm(jwa.A128GCM)
 		header.SetInitializationVector(iv)
 		alg := header.Algorithm().New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -442,7 +442,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -475,7 +475,7 @@ func TestEncrypt(t *testing.T) {
 		header.SetPBES2SaltInput(salt)
 		header.SetPBES2Count(10000)
 		alg := header.Algorithm().New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello World!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -483,7 +483,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)
@@ -516,7 +516,7 @@ func TestEncrypt(t *testing.T) {
 		header.SetInitializationVector(iv)
 		header.SetCompressionAlgorithm(jwa.DEF)
 		alg := header.Algorithm().New()
-		key := alg.NewKeyWrapper(k.KeyPair())
+		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
 		if err != nil {
@@ -524,7 +524,7 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-			return alg.NewKeyWrapper(k.KeyPair()), nil
+			return alg.NewKeyWrapper(k), nil
 		}))
 		if err != nil {
 			t.Fatal(err)

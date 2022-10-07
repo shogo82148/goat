@@ -15,6 +15,7 @@ import (
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwa/dir"
 	"github.com/shogo82148/goat/jwk"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
 )
 
@@ -89,18 +90,30 @@ type agreementPartyVInfoGetter interface {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	return &KeyWrapper{
-		priv: privateKey,
-		alg:  alg,
+		priv:      key.PrivateKey(),
+		alg:       alg,
+		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
 	}
+}
+
+type bytesKey []byte
+
+func (k bytesKey) PrivateKey() crypto.PrivateKey {
+	return []byte(k)
+}
+
+func (k bytesKey) PublicKey() crypto.PublicKey {
+	return nil
 }
 
 var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 
 type KeyWrapper struct {
-	priv any
-	alg  *Algorithm
+	priv      any
+	alg       *Algorithm
+	canUnwrap bool
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
@@ -108,6 +121,10 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+	if !w.canUnwrap {
+		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
+	}
+
 	enc, ok := opts.(encryptionGetter)
 	if !ok {
 		return nil, fmt.Errorf("ecdhes: method Encryption not found")
@@ -139,7 +156,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return w.alg.alg.NewKeyWrapper(key, nil).UnwrapKey(data, opts)
+	return w.alg.alg.NewKeyWrapper(bytesKey(key)).UnwrapKey(data, opts)
 }
 
 func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, error) {

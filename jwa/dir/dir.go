@@ -3,7 +3,6 @@
 package dir
 
 import (
-	"crypto"
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
@@ -25,13 +24,14 @@ var _ keymanage.Algorithm = (*Algorithm)(nil)
 type Algorithm struct{}
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
-	key, ok := privateKey.([]byte)
+func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+	privateKey := key.PrivateKey()
+	cek, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("dir: invalid key type: %T", privateKey))
 	}
 	return &KeyWrapper{
-		cek: key,
+		cek: cek,
 	}
 }
 

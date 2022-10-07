@@ -1,10 +1,23 @@
 package dir
 
-import "testing"
+import (
+	"crypto"
+	"testing"
+)
+
+type rawKey []byte
+
+func (k rawKey) PrivateKey() crypto.PrivateKey {
+	return []byte(k)
+}
+
+func (k rawKey) PublicKey() crypto.PublicKey {
+	return nil
+}
 
 func TestWrapKey(t *testing.T) {
 	alg := New()
-	kw := alg.NewKeyWrapper([]byte("foo bar"), nil)
+	kw := alg.NewKeyWrapper(rawKey("foo bar"))
 	data, err := kw.WrapKey([]byte{}, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -16,7 +29,7 @@ func TestWrapKey(t *testing.T) {
 
 func TestUnwrapKey(t *testing.T) {
 	alg := New()
-	kw := alg.NewKeyWrapper([]byte("foo bar"), nil)
+	kw := alg.NewKeyWrapper(rawKey("foo bar"))
 	data, err := kw.UnwrapKey([]byte{}, nil)
 	if err != nil {
 		t.Fatal(err)
