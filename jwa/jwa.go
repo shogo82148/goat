@@ -326,6 +326,36 @@ func (enc EncryptionAlgorithm) Available() bool {
 	return f != nil
 }
 
+// CEKSize returns the byte size of CEK(Content Encryption Key) for the algorithm.
+func (enc EncryptionAlgorithm) CEKSize() int {
+	switch enc {
+	case A128CBC_HS256:
+		return 32
+	case A192CBC_HS384:
+		return 48
+	case A256CBC_HS512:
+		return 64
+	case A128GCM:
+		return 16
+	case A192GCM:
+		return 24
+	case A256GCM:
+		return 32
+	}
+	return 0
+}
+
+// IVSice returns the byte size of IV(Initialization Vector) for the algorithm.
+func (enc EncryptionAlgorithm) IVSize() int {
+	switch enc {
+	case A128CBC_HS256, A192CBC_HS384, A256CBC_HS512:
+		return 16
+	case A128GCM, A192GCM, A256GCM:
+		return 12
+	}
+	return 0
+}
+
 // KeyType is a key type defined in the IANA "JSON Web Key Types".
 type KeyType string
 

@@ -3,6 +3,8 @@ package agcm
 import (
 	"bytes"
 	"testing"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 func TestDecrypt(t *testing.T) {
@@ -94,5 +96,22 @@ func TestEncrypt(t *testing.T) {
 	}
 	if !bytes.Equal(authTag, wantAuthTag) {
 		t.Errorf("want %#v, got %#v", wantAuthTag, authTag)
+	}
+}
+
+func TestCEKSize_and_IVSize(t *testing.T) {
+	tests := []jwa.EncryptionAlgorithm{
+		jwa.A128GCM,
+		jwa.A192GCM,
+		jwa.A256GCM,
+	}
+	for _, enc := range tests {
+		enc1 := enc.New()
+		if want, got := enc1.IVSize(), enc.IVSize(); want != got {
+			t.Errorf("%s: IVSize is mismatch: want %d, got %d", enc.String(), want, got)
+		}
+		if want, got := enc1.CEKSize(), enc.CEKSize(); want != got {
+			t.Errorf("%s: CEKSize is mismatch: want %d, got %d", enc.String(), want, got)
+		}
 	}
 }
