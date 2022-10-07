@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/subtle"
 	"testing"
+
+	"github.com/shogo82148/goat/jwa"
 )
 
 func TestDecrypt(t *testing.T) {
@@ -87,5 +89,22 @@ func TestEncrypt(t *testing.T) {
 	}
 	if !bytes.Equal(authTag, wantAuthTag) {
 		t.Errorf("want %#v, got %#v", wantAuthTag, authTag)
+	}
+}
+
+func TestCEKSize_and_IVSize(t *testing.T) {
+	tests := []jwa.EncryptionAlgorithm{
+		jwa.A128CBC_HS256,
+		jwa.A192CBC_HS384,
+		jwa.A256CBC_HS512,
+	}
+	for _, enc := range tests {
+		enc1 := enc.New()
+		if want, got := enc1.IVSize(), enc.IVSize(); want != got {
+			t.Errorf("%s: IVSize is mismatch: want %d, got %d", enc.String(), want, got)
+		}
+		if want, got := enc1.CEKSize(), enc.CEKSize(); want != got {
+			t.Errorf("%s: CEKSize is mismatch: want %d, got %d", enc.String(), want, got)
+		}
 	}
 }
