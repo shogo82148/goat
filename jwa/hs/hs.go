@@ -1,4 +1,4 @@
-// package hs implements HMAC algorithm for JSON Web Signature (JWS) using SHA-2.
+// package hs implements a signing algorithm HMAC using SHA-2.
 package hs
 
 import (
@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -107,38 +108,48 @@ type Algorithm struct {
 	weak bool
 }
 
-var _ sig.Key = (*Key)(nil)
+var _ sig.SigningKey = (*SigningKey)(nil)
 
-// Key is a key for signing.
-type Key struct {
-	hash crypto.Hash
-	key  []byte
+// SigningKey is a key for signing.
+type SigningKey struct {
+	hash      crypto.Hash
+	key       []byte
+	canSign   bool
+	canVerify bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
-	key, ok := privateKey.([]byte)
+func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+	priv := key.PrivateKey()
+	pub := key.PublicKey()
+
+	secret, ok := priv.([]byte)
 	if !ok || key == nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
-	if publicKey != nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	if pub != nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
 	if !alg.weak {
-		if len(key) < alg.hash.Size() {
-			return sig.NewErrorKey(fmt.Errorf("hs: weak key size: %d", len(key)))
+		if len(secret) < alg.hash.Size() {
+			return sig.NewErrorKey(fmt.Errorf("hs: weak key size: %d", len(secret)))
 		}
 	}
-	return &Key{
-		hash: alg.hash,
-		key:  key,
+	return &SigningKey{
+		hash:      alg.hash,
+		key:       secret,
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
+	}
+	if !key.canSign {
+		return nil, sig.ErrSignUnavailable
 	}
 	mac := hmac.New(key.hash.New, key.key)
 	if _, err := mac.Write(payload); err != nil {
@@ -148,10 +159,13 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
 	mac := hmac.New(key.hash.New, key.key)
 	if _, err := mac.Write(payload); err != nil {
 		return err
+	}
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
 	}
 	sum := mac.Sum(nil)
 	if !hmac.Equal(signature, sum) {

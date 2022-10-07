@@ -1,10 +1,24 @@
 package eddsa
 
 import (
+	"crypto"
 	"crypto/ed25519"
 	"crypto/subtle"
 	"testing"
 )
+
+type rawKey struct {
+	priv ed25519.PrivateKey
+	pub  ed25519.PublicKey
+}
+
+func (k *rawKey) PrivateKey() crypto.PrivateKey {
+	return k.priv
+}
+
+func (k *rawKey) PublicKey() crypto.PublicKey {
+	return k.pub
+}
 
 func TestSign(t *testing.T) {
 	// RFC 8037 Appendix A.4. Ed25519 Signing
@@ -17,7 +31,7 @@ func TestSign(t *testing.T) {
 	}
 
 	alg := New()
-	key := alg.NewKey(privateKey, nil)
+	key := alg.NewSigningKey(&rawKey{privateKey, nil})
 	got, err := key.Sign([]byte(payload))
 	if err != nil {
 		t.Fatal(err)
@@ -48,7 +62,7 @@ func TestVerify(t *testing.T) {
 	}
 
 	alg := New()
-	key := alg.NewKey(nil, publicKey)
+	key := alg.NewSigningKey(&rawKey{nil, publicKey})
 	err := key.Verify([]byte(payload), sig)
 	if err != nil {
 		t.Fatal(err)

@@ -2,8 +2,6 @@
 package none
 
 import (
-	"crypto"
-
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/sig"
 )
@@ -25,25 +23,25 @@ var _ sig.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct{}
 
-var _ sig.Key = (*Key)(nil)
+var _ sig.SigningKey = (*SigningKey)(nil)
 
-type Key struct{}
+type SigningKey struct{}
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
-	if privateKey != nil || publicKey != nil {
-		return sig.NewInvalidKey("none", privateKey, publicKey)
+func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+	if key != nil {
+		return sig.NewInvalidKey("none", key, nil)
 	}
-	return &Key{}
+	return &SigningKey{}
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	return []byte{}, nil
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
 	if len(signature) != 0 {
 		return sig.ErrSignatureMismatch
 	}

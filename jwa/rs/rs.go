@@ -1,3 +1,5 @@
+// Package rs implements a signing algorithm
+// RSASSA-PKCS1-v1_5 using SHA-2.
 package rs
 
 import (
@@ -7,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -107,49 +110,56 @@ type Algorithm struct {
 	weak bool
 }
 
-var _ sig.Key = (*Key)(nil)
+var _ sig.SigningKey = (*SigningKey)(nil)
 
-type Key struct {
+type SigningKey struct {
 	hash       crypto.Hash
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
+	canSign    bool
+	canVerify  bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewKey(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) sig.Key {
-	key := &Key{
-		hash: alg.hash,
+func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+	priv := key.PrivateKey()
+	pub := key.PublicKey()
+
+	k := &SigningKey{
+		hash:      alg.hash,
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
-	if k, ok := privateKey.(*rsa.PrivateKey); ok {
-		key.privateKey = k
-	} else if privateKey != nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	if key, ok := priv.(*rsa.PrivateKey); ok {
+		k.privateKey = key
+	} else if priv != nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
-	if k, ok := publicKey.(*rsa.PublicKey); ok {
-		key.publicKey = k
-	} else if publicKey != nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	if key, ok := pub.(*rsa.PublicKey); ok {
+		k.publicKey = key
+	} else if pub != nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
-	if key.privateKey != nil && key.publicKey == nil {
-		key.publicKey = &key.privateKey.PublicKey
+	if k.privateKey != nil && k.publicKey == nil {
+		k.publicKey = &k.privateKey.PublicKey
 	}
-	if key.publicKey == nil {
-		return sig.NewInvalidKey(alg.alg.String(), privateKey, publicKey)
+	if k.publicKey == nil {
+		return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 	}
 	if !alg.weak {
-		if size := key.publicKey.N.BitLen(); size < 2048 {
+		if size := k.publicKey.N.BitLen(); size < 2048 {
 			return sig.NewErrorKey(fmt.Errorf("rs: weak key bit length: %d", size))
 		}
 	}
-	return key
+	return k
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
-	if key.privateKey == nil {
+	if key.privateKey == nil || !key.canSign {
 		return nil, sig.ErrSignUnavailable
 	}
 	hash := key.hash.New()
@@ -160,9 +170,12 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
+	}
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
 	}
 	hash := key.hash.New()
 	if _, err := hash.Write(payload); err != nil {
