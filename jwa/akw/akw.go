@@ -46,7 +46,9 @@ func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {
 	switch len(privateKey) {
 	case 16, 24, 32:
 		return &KeyWrapper{
-			key: privateKey,
+			key:       privateKey,
+			canWrap:   true,
+			canUnwrap: true,
 		}
 	}
 	return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(privateKey)))
