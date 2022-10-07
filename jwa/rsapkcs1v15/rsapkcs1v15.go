@@ -30,7 +30,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	priv, ok := privateKey.(*rsa.PrivateKey)
 	if !ok && privateKey != nil {
-		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))
+		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsapkcs1v15: invalid private key type: %T", privateKey))
 	}
 
 	publicKey := key.PublicKey()
