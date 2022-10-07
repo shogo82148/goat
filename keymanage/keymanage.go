@@ -3,8 +3,15 @@ package keymanage
 
 import "crypto"
 
+// Key is a key for wrapping or unwrapping Content Encryption Key (CEK).
+type Key interface {
+	PrivateKey() crypto.PrivateKey
+	PublicKey() crypto.PublicKey
+}
+
+// Algorithm is an algorithm for wrapping or unwrapping Content Encryption Key (CEK).
 type Algorithm interface {
-	NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) KeyWrapper
+	NewKeyWrapper(key Key) KeyWrapper
 }
 
 type KeyWrapper interface {

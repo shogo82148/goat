@@ -57,7 +57,7 @@ func TestUnwrap(t *testing.T) {
 	}
 
 	alg := New()
-	key := alg.NewKeyWrapper(aliceKey.KeyPair())
+	key := alg.NewKeyWrapper(aliceKey)
 	opts := &options{
 		enc: jwa.A128GCM,
 		epk: bobKey,

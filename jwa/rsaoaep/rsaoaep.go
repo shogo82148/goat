@@ -38,11 +38,13 @@ type Algorithm struct {
 	hash crypto.Hash
 }
 
-func (alg *Algorithm) NewKeyWrapper(privateKey crypto.PrivateKey, publicKey crypto.PublicKey) keymanage.KeyWrapper {
+func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+	privateKey := key.PrivateKey()
 	priv, ok := privateKey.(*rsa.PrivateKey)
 	if !ok && privateKey != nil {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid private key type: %T", privateKey))
 	}
+	publicKey := key.PublicKey()
 	pub, ok := publicKey.(*rsa.PublicKey)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("rsaoaep: invalid public key type: %T", publicKey))
