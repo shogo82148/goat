@@ -485,7 +485,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
 	enc := header.EncryptionAlgorithm()
 	if !enc.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + string(henc) + " is not available")
+		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
 	}
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
