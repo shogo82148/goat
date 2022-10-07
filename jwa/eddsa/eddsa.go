@@ -5,6 +5,7 @@ import (
 	"crypto/ed25519"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -22,7 +23,10 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
 
-	var k Key
+	k := SigningKey{
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
+	}
 	if key, ok := priv.(ed25519.PrivateKey); ok {
 		k.priv = key
 	} else if priv != nil {
@@ -39,17 +43,25 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	return &k
 }
 
-type Key struct {
-	priv ed25519.PrivateKey
-	pub  ed25519.PublicKey
+type SigningKey struct {
+	priv      ed25519.PrivateKey
+	pub       ed25519.PublicKey
+	canSign   bool
+	canVerify bool
 }
 
-func (key *Key) Sign(payload []byte) (signature []byte, err error) {
+func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
+	if !key.canSign {
+		return nil, sig.ErrSignUnavailable
+	}
 	signature = ed25519.Sign(key.priv, payload)
 	return
 }
 
-func (key *Key) Verify(payload, signature []byte) error {
+func (key *SigningKey) Verify(payload, signature []byte) error {
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
+	}
 	if !ed25519.Verify(key.pub, payload, signature) {
 		return sig.ErrSignatureMismatch
 	}

@@ -8,8 +8,8 @@ import (
 
 type dummyKey struct{}
 
-func (k *dummyKey) PrivateKey() crypto.PrivateKey
-func (k *dummyKey) PublicKey() crypto.PublicKey
+func (k *dummyKey) PrivateKey() crypto.PrivateKey { return nil }
+func (k *dummyKey) PublicKey() crypto.PublicKey   { return nil }
 
 func TestSign(t *testing.T) {
 	alg := New()

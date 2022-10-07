@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -111,8 +112,10 @@ var _ sig.SigningKey = (*SigningKey)(nil)
 
 // SigningKey is a key for signing.
 type SigningKey struct {
-	hash crypto.Hash
-	key  []byte
+	hash      crypto.Hash
+	key       []byte
+	canSign   bool
+	canVerify bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
@@ -133,8 +136,10 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 		}
 	}
 	return &SigningKey{
-		hash: alg.hash,
-		key:  secret,
+		hash:      alg.hash,
+		key:       secret,
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
 }
 
@@ -142,6 +147,9 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
+	}
+	if !key.canSign {
+		return nil, sig.ErrSignUnavailable
 	}
 	mac := hmac.New(key.hash.New, key.key)
 	if _, err := mac.Write(payload); err != nil {
@@ -155,6 +163,9 @@ func (key *SigningKey) Verify(payload, signature []byte) error {
 	mac := hmac.New(key.hash.New, key.key)
 	if _, err := mac.Write(payload); err != nil {
 		return err
+	}
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
 	}
 	sum := mac.Sum(nil)
 	if !hmac.Equal(signature, sum) {

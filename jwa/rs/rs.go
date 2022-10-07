@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -115,14 +116,19 @@ type Key struct {
 	hash       crypto.Hash
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
+	canSign    bool
+	canVerify  bool
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
 func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
+
 	k := &Key{
-		hash: alg.hash,
+		hash:      alg.hash,
+		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
 	}
 	if key, ok := priv.(*rsa.PrivateKey); ok {
 		k.privateKey = key
@@ -153,7 +159,7 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
-	if key.privateKey == nil {
+	if key.privateKey == nil || !key.canSign {
 		return nil, sig.ErrSignUnavailable
 	}
 	hash := key.hash.New()
@@ -167,6 +173,9 @@ func (key *Key) Sign(payload []byte) (signature []byte, err error) {
 func (key *Key) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
+	}
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
 	}
 	hash := key.hash.New()
 	if _, err := hash.Write(payload); err != nil {
