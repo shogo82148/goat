@@ -21,26 +21,14 @@ import (
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 )
-
-type KeyUse string
-
-const (
-	// KeyUseSig is Digital Signature or MAC
-	KeyUseSig KeyUse = "sig"
-
-	KeyUseEnc KeyUse = "enc"
-)
-
-func (use KeyUse) String() string {
-	return string(use)
-}
 
 // Key is a JSON Web Key.
 type Key struct {
 	kty     jwa.KeyType
-	use     KeyUse
-	keyOps  []string
+	use     jwktypes.KeyUse
+	keyOps  []jwktypes.KeyOp
 	alg     jwa.KeyAlgorithm
 	kid     string
 	x5u     *url.URL
@@ -61,20 +49,20 @@ func (key *Key) KeyType() jwa.KeyType {
 }
 
 // PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
-func (key *Key) PublicKeyUse() KeyUse {
+func (key *Key) PublicKeyUse() jwktypes.KeyUse {
 	return key.use
 }
 
-func (key *Key) SetPublicKeyUse(use KeyUse) {
+func (key *Key) SetPublicKeyUse(use jwktypes.KeyUse) {
 	key.use = use
 }
 
 // KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
-func (key *Key) KeyOperations() []string {
+func (key *Key) KeyOperations() []jwktypes.KeyOp {
 	return key.keyOps
 }
 
-func (key *Key) SetKeyOperation(keyOps []string) {
+func (key *Key) SetKeyOperation(keyOps []jwktypes.KeyOp) {
 	key.keyOps = keyOps
 }
 
@@ -137,10 +125,13 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
 	key.kid, _ = d.GetString("kid")
 	if use, ok := d.GetString("use"); ok {
-		key.use = KeyUse(use)
+		key.use = jwktypes.KeyUse(use)
 	}
 	if ops, ok := d.GetStringArray("key_ops"); ok {
-		key.keyOps = ops
+		key.keyOps = make([]jwktypes.KeyOp, len(ops))
+		for i := range ops {
+			key.keyOps[i] = jwktypes.KeyOp(ops[i])
+		}
 	}
 	if alg, ok := d.GetString("alg"); ok {
 		key.alg = jwa.KeyAlgorithm(alg)
