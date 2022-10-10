@@ -279,6 +279,21 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
 	}
 
+	if protected.CompressionAlgorithm() == jwa.DEF {
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
+	}
+
 	// generate a new content encryption key
 	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
 	if _, err := rand.Read(entropy); err != nil {
@@ -318,6 +333,21 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, protected *Header, plaintext []byte) (*Message, error) {
 	if !enc.Available() {
 		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
+	}
+
+	if protected.CompressionAlgorithm() == jwa.DEF {
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
 	}
 
 	if deriver, ok := kw.(keymanage.KeyDeriver); ok {
@@ -365,14 +395,51 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		}, nil
 	}
 
-	msg, err := NewMessage(enc, protected, plaintext)
+	// generate a new content encryption key
+	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
+	if _, err := rand.Read(entropy); err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+	}
+	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+
+	header := protected.Clone()
+	encryptedKey, err := kw.WrapKey(cek, header)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to encrypt key: %w", err)
+	}
+
+	// encode the protected header
+	header.SetEncryptionAlgorithm(enc)
+	rawHeader, err := encodeHeader(header)
 	if err != nil {
 		return nil, err
 	}
-	if err := msg.Encrypt(kw, nil); err != nil {
-		return nil, err
+	b64header := b64Encode(rawHeader)
+
+	// encrypt CEK
+	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
 	}
-	return msg, nil
+
+	return &Message{
+		header:        header,
+		cek:           cek,
+		iv:            iv,
+		b64iv:         b64Encode(iv),
+		ciphertext:    ciphertext,
+		b64ciphertext: b64Encode(ciphertext),
+		protected:     rawHeader,
+		b64protected:  b64header,
+		tag:           authTag,
+		b64tag:        b64Encode(authTag),
+		Recipients: []*Recipient{
+			{
+				encryptedKey:    encryptedKey,
+				b64encryptedKey: b64Encode(encryptedKey),
+			},
+		},
+	}, nil
 }
 
 // KeyWrapperFinder is a wrapper for the FindKeyWrapper method.

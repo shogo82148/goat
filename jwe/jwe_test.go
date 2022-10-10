@@ -490,7 +490,7 @@ func TestEncrypt(t *testing.T) {
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
-		msg1, err := NewMessage(jwa.A128GCM, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -520,85 +520,100 @@ func TestEncrypt(t *testing.T) {
 		}
 	})
 
-	// 	// https://github.com/lestrrat-go/jwx
-	// 	// $ echo 'Hello World!' > payload.txt
-	// 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
-	// 	// $ jwx jwe encrypt --key oct.json --key-encryption PBES2-HS256+A128KW --content-encryption A128GCM payload.txt
-	// 	t.Run("jwx PBES2-HS256+A128KW", func(t *testing.T) {
-	// 		rawKey := `{` +
-	// 			`"k": "uOnJO3TwtrVnA6QIKw3xXg",` +
-	// 			`"kty": "oct"` +
-	// 			`}`
-	// 		k, err := jwk.ParseKey([]byte(rawKey))
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
-	// 		salt := []byte{
-	// 			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
-	// 		}
-	// 		header := &Header{}
-	// 		header.SetAlgorithm(jwa.PBES2_HS256_A128KW)
-	// 		header.SetEncryptionAlgorithm(jwa.A128GCM)
-	// 		header.SetPBES2SaltInput(salt)
-	// 		header.SetPBES2Count(10000)
-	// 		alg := header.Algorithm().New()
-	// 		key := alg.NewKeyWrapper(k)
-	// 		plaintext := "Hello World!\n"
-	// 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello World!' > payload.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --key-encryption PBES2-HS256+A128KW --content-encryption A128GCM payload.txt
+	t.Run("jwx PBES2-HS256+A128KW", func(t *testing.T) {
+		rawKey := `{` +
+			`"k": "uOnJO3TwtrVnA6QIKw3xXg",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		header := &Header{}
+		header.SetAlgorithm(jwa.PBES2_HS256_A128KW)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k)
+		plaintext := "Hello World!\n"
+		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = msg1.Encrypt(key, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	// 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-	// 			return alg.NewKeyWrapper(k), nil
-	// 		}))
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
+		ciphertext, err := msg1.Compact()
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	// 		if string(got.Plaintext) != plaintext {
-	// 			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
-	// 		}
-	// 	})
+		msg2, err := Parse(ciphertext)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg2.Decrypt(FindKeyWrapperFunc(func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(k), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	// 	// https://github.com/lestrrat-go/jwx
-	// 	// $ echo 'Hello JWE!' > input.txt
-	// 	// $ jwx jwk generate --type oct --keysize 16 > oct.json
-	// 	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
-	// 	t.Run("jwx A128GCMKW compressed", func(t *testing.T) {
-	// 		rawKey := `{` +
-	// 			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
-	// 			`"kty": "oct"` +
-	// 			`}`
-	// 		k, err := jwk.ParseKey([]byte(rawKey))
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
-	// 		iv := []byte{
-	// 			131, 206, 249, 161, 154, 238, 39, 156, 163, 249, 10, 154,
-	// 		}
-	// 		header := &Header{}
-	// 		header.SetAlgorithm(jwa.A128GCMKW)
-	// 		header.SetEncryptionAlgorithm(jwa.A128GCM)
-	// 		header.SetInitializationVector(iv)
-	// 		header.SetCompressionAlgorithm(jwa.DEF)
-	// 		alg := header.Algorithm().New()
-	// 		key := alg.NewKeyWrapper(k)
-	// 		plaintext := "Hello JWE!\n"
-	// 		ciphertext, err := Encrypt(header, []byte(plaintext), key)
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
+		if string(got) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got)
+		}
+	})
 
-	// 		got, err := Parse(context.TODO(), ciphertext, FindKeyWrapperFunc(func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-	// 			return alg.NewKeyWrapper(k), nil
-	// 		}))
-	// 		if err != nil {
-	// 			t.Fatal(err)
-	// 		}
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx A128GCMKW compressed", func(t *testing.T) {
+		rawKey := `{` +
+			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		header := &Header{}
+		header.SetAlgorithm(jwa.A128GCMKW)
+		header.SetCompressionAlgorithm(jwa.DEF)
+		alg := header.Algorithm().New()
+		key := alg.NewKeyWrapper(k)
+		plaintext := "Hello JWE!\n"
+		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = msg1.Encrypt(key, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	//		if string(got.Plaintext) != plaintext {
-	//			t.Errorf("want %s, got %s", plaintext, got.Plaintext)
-	//		}
-	//	})
+		ciphertext, err := msg1.Compact()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		msg2, err := Parse(ciphertext)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg2.Decrypt(FindKeyWrapperFunc(func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(k), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got)
+		}
+	})
 }
