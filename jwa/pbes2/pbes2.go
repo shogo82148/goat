@@ -76,8 +76,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	return &KeyWrapper{
 		alg:       alg,
 		key:       priv,
-		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
-		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
+		canDerive: jwktypes.CanUseFor(key, jwktypes.KeyOpDeriveKey),
 	}
 }
 
@@ -86,8 +85,7 @@ var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 type KeyWrapper struct {
 	alg       *Algorithm
 	key       []byte
-	canWrap   bool
-	canUnwrap bool
+	canDerive bool
 }
 
 type pbes2SaltInputGetter interface {
@@ -107,8 +105,8 @@ type PBES2CountSetter interface {
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
-	if !w.canWrap {
-		return nil, fmt.Errorf("pbse2: key wrapping operation is not allowed")
+	if !w.canDerive {
+		return nil, fmt.Errorf("pbse2: key derive operation is not allowed")
 	}
 
 	var p2s []byte
@@ -156,8 +154,8 @@ func (w *KeyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
-	if !w.canUnwrap {
-		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
+	if !w.canDerive {
+		return nil, fmt.Errorf("pbse2: key derive operation is not allowed")
 	}
 
 	p2s, ok := opts.(pbes2SaltInputGetter)

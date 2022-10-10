@@ -19,6 +19,10 @@ type KeyWrapper interface {
 	UnwrapKey(data []byte, opts any) (cek []byte, err error)
 }
 
+type KeyDeriver interface {
+	DeriveKey(opts any) (cek, encryptedCEK []byte, err error)
+}
+
 func NewInvalidKeyWrapper(err error) KeyWrapper {
 	return &invalidKeyWrapper{
 		err: err,

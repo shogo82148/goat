@@ -96,7 +96,7 @@ func checkKeyUse(key any, op KeyOp) bool {
 	case KeyUseSig:
 		return op == KeyOpVerify
 	case KeyUseEnc:
-		return op == KeyOpEncrypt || op == KeyOpWrapKey
+		return op == KeyOpEncrypt || op == KeyOpWrapKey || op == KeyOpDeriveKey
 	default:
 		return false
 	}
