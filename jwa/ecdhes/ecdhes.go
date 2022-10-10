@@ -5,6 +5,7 @@ package ecdhes
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/rand"
 	_ "crypto/sha256" // for crypto.SHA256
 	"errors"
 	"fmt"
@@ -94,7 +95,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	return &KeyWrapper{
 		priv:      key.PrivateKey(),
 		alg:       alg,
-		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
+		canDerive: jwktypes.CanUseFor(key, jwktypes.KeyOpDeriveKey),
 	}
 }
 
@@ -113,7 +114,7 @@ var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
 type KeyWrapper struct {
 	priv      any
 	alg       *Algorithm
-	canUnwrap bool
+	canDerive bool
 }
 
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
@@ -121,42 +122,95 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
-	if !w.canUnwrap {
-		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
+	if !w.canDerive {
+		return nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
 	}
 
-	enc, ok := opts.(encryptionGetter)
-	if !ok {
-		return nil, fmt.Errorf("ecdhes: method Encryption not found")
+	enc, epk, apu, apv, err := getParams(opts)
+	if err != nil {
+		return nil, err
 	}
-	epk, ok := opts.(ephemeralPublicKeyGetter)
-	if !ok {
-		return nil, fmt.Errorf("ecdhes: method EphemeralPublicKey not found")
-	}
-	apu, ok := opts.(agreementPartyUInfoGetter)
-	if !ok {
-		return nil, fmt.Errorf("ecdhes: method AgreementPartyUInfo not found")
-	}
-	apv, ok := opts.(agreementPartyVInfoGetter)
-	if !ok {
-		return nil, fmt.Errorf("ecdhes: method AgreementPartyVInfo not found")
-	}
+	cekSize := enc.CEKSize()
 	size := w.alg.size
 	if size == 0 {
-		size = enc.Encryption().CEKSize()
+		size = cekSize
 	}
 	key, err := deriveECDHES(
-		[]byte(enc.Encryption()),
-		apu.AgreementPartyUInfo(),
-		apv.AgreementPartyVInfo(),
+		[]byte(enc),
+		apu,
+		apv,
 		w.priv,
-		epk.EphemeralPublicKey().PublicKey(),
+		epk.PublicKey(),
 		size,
 	)
 	if err != nil {
 		return nil, err
 	}
 	return w.alg.alg.NewKeyWrapper(bytesKey(key)).UnwrapKey(data, opts)
+}
+
+func (w *KeyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
+	if !w.canDerive {
+		return nil, nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
+	}
+
+	enc, epk, apu, apv, err := getParams(opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	cekSize := enc.CEKSize()
+	size := w.alg.size
+	if size == 0 {
+		size = cekSize
+	}
+	key, err := deriveECDHES(
+		[]byte(enc),
+		apu,
+		apv,
+		w.priv,
+		epk.PublicKey(),
+		size,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cek = make([]byte, cekSize)
+	if _, err := rand.Read(cek); err != nil {
+		return nil, nil, err
+	}
+	encryptedCEK, err = w.alg.alg.NewKeyWrapper(bytesKey(key)).WrapKey(cek, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+	return cek, encryptedCEK, nil
+}
+
+func getParams(opts any) (enc jwa.EncryptionAlgorithm, epk *jwk.Key, apu, apv []byte, err error) {
+	enc0, ok := opts.(encryptionGetter)
+	if !ok {
+		err = fmt.Errorf("ecdhes: method Encryption not found")
+		return
+	}
+	epk0, ok := opts.(ephemeralPublicKeyGetter)
+	if !ok {
+		err = fmt.Errorf("ecdhes: method EphemeralPublicKey not found")
+		return
+	}
+	apu0, ok := opts.(agreementPartyUInfoGetter)
+	if !ok {
+		err = fmt.Errorf("ecdhes: method AgreementPartyUInfo not found")
+	}
+	apv0, ok := opts.(agreementPartyVInfoGetter)
+	if !ok {
+		err = fmt.Errorf("ecdhes: method AgreementPartyVInfo not found")
+	}
+
+	enc = enc0.Encryption()
+	epk = epk0.EphemeralPublicKey()
+	apu = apu0.AgreementPartyUInfo()
+	apv = apv0.AgreementPartyVInfo()
+	return
 }
 
 func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, error) {

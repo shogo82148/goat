@@ -3,7 +3,6 @@ package jwe
 import (
 	"bytes"
 	"compress/flate"
-	"context"
 	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -50,6 +49,22 @@ type Header struct {
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
+}
+
+// Clone returns a shallow copy of h.
+func (h *Header) Clone() *Header {
+	if h == nil {
+		return &Header{
+			Raw: make(map[string]any),
+		}
+	}
+	clone := *h
+	raw := make(map[string]any, len(h.Raw))
+	for k, v := range h.Raw {
+		raw[k] = v
+	}
+	clone.Raw = raw
+	return &clone
 }
 
 // Algorithm returns the key management algorithm
@@ -242,24 +257,252 @@ func (h *Header) SetPBES2Count(p2c int) {
 
 // Message is a decoded JWS.
 type Message struct {
-	Header *Header
+	UnprotectedHeader *Header
+	Recipients        []*Recipient
 
-	Plaintext []byte
+	header                    *Header
+	cek                       []byte
+	iv, b64iv                 []byte
+	ciphertext, b64ciphertext []byte
+	protected, b64protected   []byte
+	tag, b64tag               []byte
+}
+
+type Recipient struct {
+	header          *Header
+	encryptedKey    []byte
+	b64encryptedKey []byte
+}
+
+func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte) (*Message, error) {
+	if !enc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
+	}
+
+	if protected.CompressionAlgorithm() == jwa.DEF {
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
+	}
+
+	// generate a new content encryption key
+	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
+	if _, err := rand.Read(entropy); err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+	}
+	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+
+	// encode the protected header
+	header := protected.Clone()
+	header.SetEncryptionAlgorithm(enc)
+	rawHeader, err := encodeHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	b64header := b64Encode(rawHeader)
+
+	// encrypt CEK
+	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
+	}
+
+	return &Message{
+		header:        header,
+		cek:           cek,
+		iv:            iv,
+		b64iv:         b64Encode(iv),
+		ciphertext:    ciphertext,
+		b64ciphertext: b64Encode(ciphertext),
+		protected:     rawHeader,
+		b64protected:  b64header,
+		tag:           authTag,
+		b64tag:        b64Encode(authTag),
+	}, nil
+}
+
+func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, protected *Header, plaintext []byte) (*Message, error) {
+	if !enc.Available() {
+		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
+	}
+
+	if protected.CompressionAlgorithm() == jwa.DEF {
+		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+		w, err := flate.NewWriter(buf, flate.BestCompression)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if _, err := w.Write(plaintext); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		if err := w.Close(); err != nil {
+			return nil, fmt.Errorf("jwe: failed compress content: %w", err)
+		}
+		plaintext = buf.Bytes()
+	}
+
+	if deriver, ok := kw.(keymanage.KeyDeriver); ok {
+		header := protected.Clone()
+		header.SetEncryptionAlgorithm(enc)
+		cek, encryptedCEK, err := deriver.DeriveKey(header)
+		if err != nil {
+			return nil, err
+		}
+
+		// encode the header
+		rawHeader, err := encodeHeader(header)
+		if err != nil {
+			return nil, err
+		}
+		b64header := b64Encode(rawHeader)
+
+		// encrypt CEK
+		iv := make([]byte, enc.IVSize())
+		if _, err := rand.Read(iv); err != nil {
+			return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+		}
+		ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
+		}
+
+		return &Message{
+			header:        header,
+			cek:           cek,
+			iv:            iv,
+			b64iv:         b64Encode(iv),
+			ciphertext:    ciphertext,
+			b64ciphertext: b64Encode(ciphertext),
+			protected:     rawHeader,
+			b64protected:  b64header,
+			tag:           authTag,
+			b64tag:        b64Encode(authTag),
+			Recipients: []*Recipient{
+				{
+					encryptedKey:    encryptedCEK,
+					b64encryptedKey: b64Encode(encryptedCEK),
+				},
+			},
+		}, nil
+	}
+
+	// generate a new content encryption key
+	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
+	if _, err := rand.Read(entropy); err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+	}
+	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+
+	header := protected.Clone()
+	encryptedKey, err := kw.WrapKey(cek, header)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to encrypt key: %w", err)
+	}
+
+	// encode the protected header
+	header.SetEncryptionAlgorithm(enc)
+	rawHeader, err := encodeHeader(header)
+	if err != nil {
+		return nil, err
+	}
+	b64header := b64Encode(rawHeader)
+
+	// encrypt CEK
+	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
+	}
+
+	return &Message{
+		header:        header,
+		cek:           cek,
+		iv:            iv,
+		b64iv:         b64Encode(iv),
+		ciphertext:    ciphertext,
+		b64ciphertext: b64Encode(ciphertext),
+		protected:     rawHeader,
+		b64protected:  b64header,
+		tag:           authTag,
+		b64tag:        b64Encode(authTag),
+		Recipients: []*Recipient{
+			{
+				encryptedKey:    encryptedKey,
+				b64encryptedKey: b64Encode(encryptedKey),
+			},
+		},
+	}, nil
 }
 
 // KeyWrapperFinder is a wrapper for the FindKeyWrapper method.
 type KeyWrapperFinder interface {
-	FindKeyWrapper(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error)
+	FindKeyWrapper(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error)
 }
 
-type FindKeyWrapperFunc func(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error)
+var _ KeyWrapperFinder = FindKeyWrapperFunc(nil)
 
-func (f FindKeyWrapperFunc) FindKeyWrapper(ctx context.Context, header *Header) (wrapper keymanage.KeyWrapper, err error) {
-	return f(ctx, header)
+type FindKeyWrapperFunc func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error)
+
+func (f FindKeyWrapperFunc) FindKeyWrapper(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+	return f(protected, unprotected, recipient)
 }
 
-// Parse parses and decrypt a JWE.
-func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message, error) {
+func (msg *Message) Decrypt(finder KeyWrapperFinder) (plaintext []byte, err error) {
+	for _, r := range msg.Recipients {
+		kw, err := finder.FindKeyWrapper(msg.header, msg.UnprotectedHeader, r.header)
+		if err != nil {
+			continue
+		}
+		cek, err := kw.UnwrapKey(r.encryptedKey, msg.header) // TODO: merge header
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to unwrap key: %w", err)
+		}
+		enc0 := msg.header.EncryptionAlgorithm()
+		if !enc0.Available() {
+			return nil, errors.New("jwa: requested content encryption algorithm " + string(enc0) + " is not available")
+		}
+		enc := enc0.New()
+		plaintext, err := enc.Decrypt(cek, msg.iv, msg.b64protected, msg.ciphertext, msg.tag)
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to decrypt: %w", err)
+		}
+		if msg.header.CompressionAlgorithm() == jwa.DEF { // TODO: merge header
+			buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
+			r := flate.NewReader(bytes.NewReader(plaintext))
+			if _, err := buf.ReadFrom(r); err != nil {
+				return nil, fmt.Errorf("jwe: failed to decompress content: %w", err)
+			}
+			plaintext = buf.Bytes()
+		}
+		return plaintext, nil
+	}
+	return nil, errors.New("jwe: key wrapper not found")
+}
+
+func (msg *Message) Encrypt(kw keymanage.KeyWrapper, header *Header) error {
+	h := header.Clone()
+	data, err := kw.WrapKey(msg.cek, h)
+	if err != nil {
+		return fmt.Errorf("jwe: failed to encrypt key: %w", err)
+	}
+	msg.Recipients = append(msg.Recipients, &Recipient{
+		header:          h,
+		encryptedKey:    data,
+		b64encryptedKey: b64Encode(data),
+	})
+	return nil
+}
+
+// Parse parses a Compact Serialized JWE.
+func Parse(data []byte) (*Message, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
 	if idx1 < 0 {
@@ -281,76 +524,79 @@ func Parse(ctx context.Context, data []byte, finder KeyWrapperFinder) (*Message,
 	}
 	idx4 += idx3 + 1
 
-	header := data[:idx1]
-	encryptedKey := data[idx1+1 : idx2]
-	initVector := data[idx2+1 : idx3]
-	ciphertext := data[idx3+1 : idx4]
-	authTag := data[idx4+1:]
+	data = append([]byte(nil), data...)
+	b64header := data[:idx1]
+	b64encryptedKey := data[idx1+1 : idx2]
+	b64iv := data[idx2+1 : idx3]
+	b64ciphertext := data[idx3+1 : idx4]
+	b64tag := data[idx4+1:]
 
 	// parse the header
-	var raw map[string]any
-	dec := json.NewDecoder(base64.NewDecoder(b64, bytes.NewReader(header)))
+	rawHeader, err := b64Decode(b64header)
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to decode header: %w", err)
+	}
+	dec := json.NewDecoder(bytes.NewReader(rawHeader))
 	dec.UseNumber()
+	var raw map[string]any
 	if err := dec.Decode(&raw); err != nil {
-		return nil, fmt.Errorf("jwe: failed to parse JOSE header: %w", err)
+		return nil, fmt.Errorf("jwe: failed to decode header: %w", err)
 	}
 	h, err := parseHeader(raw)
 	if err != nil {
 		return nil, err
 	}
 
-	// Decrypt CEK
-	wrapper, err := finder.FindKeyWrapper(ctx, h)
+	iv, err := b64Decode(b64iv)
 	if err != nil {
 		return nil, err
 	}
-	encryptedRawKey, err := b64Decode(encryptedKey)
+	encryptedKey, err := b64Decode(b64encryptedKey)
 	if err != nil {
 		return nil, err
 	}
-	cek, err := wrapper.UnwrapKey(encryptedRawKey, h)
+	ciphertext, err := b64Decode(b64ciphertext)
 	if err != nil {
 		return nil, err
 	}
-
-	iv, err := b64Decode(initVector)
+	tag, err := b64Decode(b64tag)
 	if err != nil {
 		return nil, err
-	}
-	rawCiphertext, err := b64Decode(ciphertext)
-	if err != nil {
-		return nil, err
-	}
-	rawAuthTag, err := b64Decode(authTag)
-	if err != nil {
-		return nil, err
-	}
-
-	// Decrypt the content
-	enc := h.EncryptionAlgorithm()
-	if !enc.Available() {
-		return nil, errors.New("jwe: requested content encryption algorithm " + enc.String() + " is not available")
-	}
-	plaintext, err := enc.New().Decrypt(cek, iv, header, rawCiphertext, rawAuthTag)
-	if err != nil {
-		return nil, err
-	}
-
-	// decompress the content
-	if h.CompressionAlgorithm() == jwa.DEF {
-		var buf bytes.Buffer
-		r := flate.NewReader(bytes.NewReader(plaintext))
-		if _, err := buf.ReadFrom(r); err != nil {
-			return nil, fmt.Errorf("jwe: failed to decompress the content: %w", err)
-		}
-		r.Close()
-		plaintext = buf.Bytes()
 	}
 
 	return &Message{
-		Header:    h,
-		Plaintext: plaintext,
+		header:        h,
+		iv:            iv,
+		b64iv:         b64iv,
+		ciphertext:    ciphertext,
+		b64ciphertext: b64ciphertext,
+		b64protected:  b64header,
+		tag:           tag,
+		b64tag:        b64tag,
+		Recipients: []*Recipient{
+			{
+				encryptedKey:    encryptedKey,
+				b64encryptedKey: b64encryptedKey,
+			},
+		},
 	}, nil
+}
+
+func (msg *Message) Compact() ([]byte, error) {
+	// TODO: validate header
+
+	r := msg.Recipients[0]
+	data := make([]byte, 0)
+	data = append(data, msg.b64protected...)
+	data = append(data, '.')
+	data = append(data, r.b64encryptedKey...)
+	data = append(data, '.')
+	data = append(data, msg.b64iv...)
+	data = append(data, '.')
+	data = append(data, msg.b64ciphertext...)
+	data = append(data, '.')
+	data = append(data, msg.b64tag...)
+	return data, nil
 }
 
 func b64Decode(src []byte) ([]byte, error) {
@@ -482,58 +728,6 @@ func parseHeader(raw map[string]any) (*Header, error) {
 	return h, nil
 }
 
-func Encrypt(header *Header, plaintext []byte, keyWrapper keymanage.KeyWrapper) (ciphertext []byte, err error) {
-	enc := header.EncryptionAlgorithm()
-	if !enc.Available() {
-		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
-	}
-	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
-	if _, err := rand.Read(entropy); err != nil {
-		return nil, err
-	}
-	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
-	encryptedKey, err := keyWrapper.WrapKey(cek, header)
-	if err != nil {
-		return nil, err
-	}
-
-	rawHeader, err := encodeHeader(header)
-	if err != nil {
-		return nil, err
-	}
-	encodedHeader := b64Encode(rawHeader)
-
-	if header.CompressionAlgorithm() == jwa.DEF {
-		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
-		w, err := flate.NewWriter(buf, flate.BestCompression)
-		if err != nil {
-			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
-		}
-		if _, err := w.Write(plaintext); err != nil {
-			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
-		}
-		if err := w.Close(); err != nil {
-			return nil, fmt.Errorf("jwe: failed to compress content: %w", err)
-		}
-		plaintext = buf.Bytes()
-	}
-
-	payload, authTag, err := enc.New().Encrypt(cek, iv, encodedHeader, plaintext)
-	if err != nil {
-		return nil, err
-	}
-	ciphertext = encodedHeader
-	ciphertext = append(ciphertext, '.')
-	ciphertext = append(ciphertext, b64Encode(encryptedKey)...)
-	ciphertext = append(ciphertext, '.')
-	ciphertext = append(ciphertext, b64Encode(iv)...)
-	ciphertext = append(ciphertext, '.')
-	ciphertext = append(ciphertext, b64Encode(payload)...)
-	ciphertext = append(ciphertext, '.')
-	ciphertext = append(ciphertext, b64Encode(authTag)...)
-	return ciphertext, nil
-}
-
 func b64Encode(src []byte) []byte {
 	dst := make([]byte, b64.EncodedLen(len(src)))
 	b64.Encode(dst, src)
@@ -644,4 +838,114 @@ func encodeHeader(h *Header) ([]byte, error) {
 		return nil, err
 	}
 	return json.Marshal(e.Data())
+}
+
+func (msg *Message) UnmarshalJSON(data []byte) error {
+	msg0, err := ParseJSON(data)
+	if err != nil {
+		return err
+	}
+	*msg = *msg0
+	return nil
+}
+
+type jsonJWE struct {
+	Protected   string          `json:"protected"`
+	Unprotected map[string]any  `json:"unprotected,omitempty"`
+	IV          string          `json:"iv,omitempty"`
+	AAD         string          `json:"aad,omitempty"`
+	Ciphertext  string          `json:"ciphertext"`
+	Tag         string          `json:"tag,omitempty"`
+	Recipients  []jsonRecipient `json:"recipients"`
+}
+
+type jsonRecipient struct {
+	Header       map[string]any `json:"header"`
+	EncryptedKey string         `json:"encrypted_key"`
+}
+
+func ParseJSON(data []byte) (*Message, error) {
+	var raw jsonJWE
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return nil, err
+	}
+
+	b64protected := []byte(raw.Protected)
+	protected, err := b64Decode(b64protected)
+	if err != nil {
+		return nil, err
+	}
+	rawHeader, err := unmarshalJSON(protected)
+	if err != nil {
+		return nil, err
+	}
+	h, err := parseHeader(rawHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	unprotected, err := parseHeader(raw.Unprotected)
+	if err != nil {
+		return nil, err
+	}
+
+	b64ciphertext := []byte(raw.Ciphertext)
+	ciphertext, err := b64Decode(b64ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	b64iv := []byte(raw.IV)
+	iv, err := b64Decode(b64iv)
+	if err != nil {
+		return nil, err
+	}
+	b64tag := []byte(raw.Tag)
+	tag, err := b64Decode(b64tag)
+	if err != nil {
+		return nil, err
+	}
+
+	recipients := make([]*Recipient, 0, len(raw.Recipients))
+	for _, r := range raw.Recipients {
+		header, err := parseHeader(r.Header)
+		if err != nil {
+			return nil, err
+		}
+		b64encryptedKey := []byte(r.EncryptedKey)
+		encryptedKey, err := b64Decode(b64encryptedKey)
+		if err != nil {
+			return nil, err
+		}
+		recipients = append(recipients, &Recipient{
+			header:          header,
+			b64encryptedKey: b64encryptedKey,
+			encryptedKey:    encryptedKey,
+		})
+	}
+	return &Message{
+		UnprotectedHeader: unprotected,
+		header:            h,
+		iv:                iv,
+		b64iv:             b64iv,
+		ciphertext:        ciphertext,
+		b64ciphertext:     b64ciphertext,
+		protected:         protected,
+		b64protected:      b64protected,
+		tag:               tag,
+		b64tag:            b64tag,
+		Recipients:        recipients,
+	}, nil
+}
+
+func unmarshalJSON(data []byte) (map[string]any, error) {
+	var raw map[string]any
+	dec := json.NewDecoder(bytes.NewBuffer(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return nil, err
+	}
+	return raw, nil
 }

@@ -94,15 +94,13 @@ var defaultIV = []byte{0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6}
 const chunkLen = 8
 
 // WrapKey wraps cek with AWS Key Wrap algorithm
-// defined in [RFC 3394].
-//
-// [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
+// defined in RFC 3394.
 func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
 	}
 	if !w.canWrap {
-		return nil, fmt.Errorf("rsapkcs1v15: key wrapping operation is not allowed")
+		return nil, fmt.Errorf("akw: key wrapping operation is not allowed")
 	}
 
 	block, err := aes.NewCipher(w.key)
@@ -146,9 +144,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 }
 
 // UnwrapKey unwraps cek with AWS Key Wrap algorithm
-// defined in [RFC 3394].
-//
-// [RFC 3394]: https://www.rfc-editor.org/rfc/rfc3394
+// defined in RFC 3394.
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))

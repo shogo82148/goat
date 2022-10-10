@@ -109,12 +109,12 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if getter, ok := opts.(initializationVectorGetter); ok {
 		iv = getter.InitializationVector()
 	}
-	if iv == nil {
+	if len(iv) == 0 {
 		setter, ok := opts.(initializationVectorSetter)
 		if !ok {
 			return nil, errors.New("agcmkw: neither InitializationVector nor SetInitializationVector found")
 		}
-		iv := make([]byte, w.aead.NonceSize())
+		iv = make([]byte, w.aead.NonceSize())
 		if _, err := rand.Read(iv); err != nil {
 			return nil, fmt.Errorf("agcmkw: failed to initialize iv: %w", err)
 		}

@@ -48,3 +48,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return w.cek, nil
 }
+
+func (w *KeyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
+	return []byte{}, w.cek, nil
+}
