@@ -1,6 +1,7 @@
 package jwe
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -616,4 +617,109 @@ func TestEncrypt(t *testing.T) {
 			t.Errorf("want %s, got %s", plaintext, got)
 		}
 	})
+}
+
+func TestParseJSON(t *testing.T) {
+	raw := `{` +
+		`"protected":` +
+		`"eyJlbmMiOiJBMTI4Q0JDLUhTMjU2In0",` +
+		`"unprotected":` +
+		`{"jku":"https://server.example.com/keys.jwks"},` +
+		`"recipients":[` +
+		`{"header":` +
+		`{"alg":"RSA1_5","kid":"2011-04-29"},` +
+		`"encrypted_key":` +
+		`"UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-` +
+		`kFm1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKx` +
+		`GHZ7PcHALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3` +
+		`YvkkysZIFNPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPh` +
+		`cCdZ6XDP0_F8rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPg` +
+		`wCp6X-nZZd9OHBv-B3oWh2TbqmScqXMR4gp_A"},` +
+		`{"header":` +
+		`{"alg":"A128KW","kid":"7"},` +
+		`"encrypted_key":` +
+		`"6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ"}],` +
+		`"iv":` +
+		`"AxY8DCtDaGlsbGljb3RoZQ",` +
+		`"ciphertext":` +
+		`"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY",` +
+		`"tag":` +
+		`"Mz-VPPyU4RlcuYv1IwIvzw"` +
+		`}`
+	msg, err := ParseJSON([]byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := msg.Decrypt(FindKeyWrapperFunc(func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+		if recipient.KeyID() != "2011-04-29" {
+			return nil, errors.New("key not found")
+		}
+		rawKey := `{"kty":"RSA",` +
+			`"n":"sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl` +
+			`UzewbgBHod5pcM9H95GQRV3JDXboIRROSBigeC5yjU1hGzHHyXss8UDpre` +
+			`cbAYxknTcQkhslANGRUZmdTOQ5qTRsLAt6BTYuyvVRdhS8exSZEy_c4gs_` +
+			`7svlJJQ4H9_NxsiIoLwAEk7-Q3UXERGYw_75IDrGA84-lA_-Ct4eTlXHBI` +
+			`Y2EaV7t7LjJaynVJCpkv4LKjTTAumiGUIuQhrNhZLuF_RJLqHpM2kgWFLU` +
+			`7-VTdL1VbC2tejvcI2BlMkEpk1BzBZI0KQB0GaDWFLN-aEAw3vRw",` +
+			`"e":"AQAB",` +
+			`"d":"VFCWOqXr8nvZNyaaJLXdnNPXZKRaWCjkU5Q2egQQpTBMwhprMzWzpR8Sxq` +
+			`1OPThh_J6MUD8Z35wky9b8eEO0pwNS8xlh1lOFRRBoNqDIKVOku0aZb-ry` +
+			`nq8cxjDTLZQ6Fz7jSjR1Klop-YKaUHc9GsEofQqYruPhzSA-QgajZGPbE_` +
+			`0ZaVDJHfyd7UUBUKunFMScbflYAAOYJqVIVwaYR5zWEEceUjNnTNo_CVSj` +
+			`-VvXLO5VZfCUAVLgW4dpf1SrtZjSt34YLsRarSb127reG_DUwg9Ch-Kyvj` +
+			`T1SkHgUWRVGcyly7uvVGRSDwsXypdrNinPA4jlhoNdizK2zF2CWQ",` +
+			`"p":"9gY2w6I6S6L0juEKsbeDAwpd9WMfgqFoeA9vEyEUuk4kLwBKcoe1x4HG68` +
+			`ik918hdDSE9vDQSccA3xXHOAFOPJ8R9EeIAbTi1VwBYnbTp87X-xcPWlEP` +
+			`krdoUKW60tgs1aNd_Nnc9LEVVPMS390zbFxt8TN_biaBgelNgbC95sM",` +
+			`"q":"uKlCKvKv_ZJMVcdIs5vVSU_6cPtYI1ljWytExV_skstvRSNi9r66jdd9-y` +
+			`BhVfuG4shsp2j7rGnIio901RBeHo6TPKWVVykPu1iYhQXw1jIABfw-MVsN` +
+			`-3bQ76WLdt2SDxsHs7q7zPyUyHXmps7ycZ5c72wGkUwNOjYelmkiNS0",` +
+			`"dp":"w0kZbV63cVRvVX6yk3C8cMxo2qCM4Y8nsq1lmMSYhG4EcL6FWbX5h9yuv` +
+			`ngs4iLEFk6eALoUS4vIWEwcL4txw9LsWH_zKI-hwoReoP77cOdSL4AVcra` +
+			`Hawlkpyd2TWjE5evgbhWtOxnZee3cXJBkAi64Ik6jZxbvk-RR3pEhnCs",` +
+			`"dq":"o_8V14SezckO6CNLKs_btPdFiO9_kC1DsuUTd2LAfIIVeMZ7jn1Gus_Ff` +
+			`7B7IVx3p5KuBGOVF8L-qifLb6nQnLysgHDh132NDioZkhH7mI7hPG-PYE_` +
+			`odApKdnqECHWw0J-F0JWnUd6D2B_1TvF9mXA2Qx-iGYn8OVV1Bsmp6qU",` +
+			`"qi":"eNho5yRBEBxhGBtQRww9QirZsB66TrfFReG_CcteI1aCneT0ELGhYlRlC` +
+			`tUkTRclIfuEPmNsNDPbLoLqqCVznFbvdB7x-Tl-m0l_eFTj2KiqwGqE9PZ` +
+			`B9nNTwMVvH3VRRSLWACvPnSiwP8N5Usy-WRXS-V7TbpxIhvepTfE0NNo"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			return nil, err
+		}
+		alg := recipient.Algorithm().New()
+		return alg.NewKeyWrapper(k), nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "Live long and prosper."
+	if string(got) != want {
+		t.Errorf("want %s, got %s", want, got)
+	}
+
+	got, err = msg.Decrypt(FindKeyWrapperFunc(func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+		if recipient.KeyID() != "7" {
+			return nil, errors.New("key not found")
+		}
+		rawKey := `{"kty":"oct",` +
+			`"k":"GawgguFyGrWKav7AX4VKUg"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			return nil, err
+		}
+		alg := recipient.Algorithm().New()
+		return alg.NewKeyWrapper(k), nil
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want = "Live long and prosper."
+	if string(got) != want {
+		t.Errorf("want %s, got %s", want, got)
+	}
+
 }

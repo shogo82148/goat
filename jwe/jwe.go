@@ -839,3 +839,113 @@ func encodeHeader(h *Header) ([]byte, error) {
 	}
 	return json.Marshal(e.Data())
 }
+
+func (msg *Message) UnmarshalJSON(data []byte) error {
+	msg0, err := ParseJSON(data)
+	if err != nil {
+		return err
+	}
+	*msg = *msg0
+	return nil
+}
+
+type jsonJWE struct {
+	Protected   string          `json:"protected"`
+	Unprotected map[string]any  `json:"unprotected,omitempty"`
+	IV          string          `json:"iv,omitempty"`
+	AAD         string          `json:"aad,omitempty"`
+	Ciphertext  string          `json:"ciphertext"`
+	Tag         string          `json:"tag,omitempty"`
+	Recipients  []jsonRecipient `json:"recipients"`
+}
+
+type jsonRecipient struct {
+	Header       map[string]any `json:"header"`
+	EncryptedKey string         `json:"encrypted_key"`
+}
+
+func ParseJSON(data []byte) (*Message, error) {
+	var raw jsonJWE
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return nil, err
+	}
+
+	b64protected := []byte(raw.Protected)
+	protected, err := b64Decode(b64protected)
+	if err != nil {
+		return nil, err
+	}
+	rawHeader, err := unmarshalJSON(protected)
+	if err != nil {
+		return nil, err
+	}
+	h, err := parseHeader(rawHeader)
+	if err != nil {
+		return nil, err
+	}
+
+	unprotected, err := parseHeader(raw.Unprotected)
+	if err != nil {
+		return nil, err
+	}
+
+	b64ciphertext := []byte(raw.Ciphertext)
+	ciphertext, err := b64Decode(b64ciphertext)
+	if err != nil {
+		return nil, err
+	}
+
+	b64iv := []byte(raw.IV)
+	iv, err := b64Decode(b64iv)
+	if err != nil {
+		return nil, err
+	}
+	b64tag := []byte(raw.Tag)
+	tag, err := b64Decode(b64tag)
+	if err != nil {
+		return nil, err
+	}
+
+	recipients := make([]*Recipient, 0, len(raw.Recipients))
+	for _, r := range raw.Recipients {
+		header, err := parseHeader(r.Header)
+		if err != nil {
+			return nil, err
+		}
+		b64encryptedKey := []byte(r.EncryptedKey)
+		encryptedKey, err := b64Decode(b64encryptedKey)
+		if err != nil {
+			return nil, err
+		}
+		recipients = append(recipients, &Recipient{
+			header:          header,
+			b64encryptedKey: b64encryptedKey,
+			encryptedKey:    encryptedKey,
+		})
+	}
+	return &Message{
+		UnprotectedHeader: unprotected,
+		header:            h,
+		iv:                iv,
+		b64iv:             b64iv,
+		ciphertext:        ciphertext,
+		b64ciphertext:     b64ciphertext,
+		protected:         protected,
+		b64protected:      b64protected,
+		tag:               tag,
+		b64tag:            b64tag,
+		Recipients:        recipients,
+	}, nil
+}
+
+func unmarshalJSON(data []byte) (map[string]any, error) {
+	var raw map[string]any
+	dec := json.NewDecoder(bytes.NewBuffer(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return nil, err
+	}
+	return raw, nil
+}
