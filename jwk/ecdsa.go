@@ -79,9 +79,10 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 	default:
 		e.SaveError(fmt.Errorf("jwk: unknown elliptic curve %v", pub.Curve))
 	}
-	e.SetBigInt("x", pub.X)
-	e.SetBigInt("y", pub.Y)
+	size := (pub.Curve.Params().BitSize + 7) / 8
+	e.SetFixedBigInt("x", pub.X, size)
+	e.SetFixedBigInt("y", pub.Y, size)
 	if priv != nil {
-		e.SetBigInt("d", priv.D)
+		e.SetFixedBigInt("d", priv.D, size)
 	}
 }

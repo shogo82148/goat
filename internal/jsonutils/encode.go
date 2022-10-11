@@ -9,7 +9,8 @@ import (
 type Encoder struct {
 	raw map[string]any
 
-	// pre-allocates base64 decoding buffers.
+	// pre-allocates base64 buffers.
+	src []byte
 	dst []byte
 
 	err error
@@ -29,14 +30,14 @@ func (e *Encoder) Data() map[string]any {
 }
 
 func (e *Encoder) grow(n int) {
-	m := b64.EncodedLen(n)
-	if cap(e.dst) >= m {
+	if cap(e.src) >= n {
 		return
 	}
-	if m < 64 {
-		m = 64
+	if n < 64 {
+		n = 64
 	}
-	e.dst = make([]byte, m)
+	e.src = make([]byte, n)
+	e.dst = make([]byte, b64.EncodedLen(n))
 }
 
 func (e *Encoder) Set(name string, v any) {
@@ -48,7 +49,13 @@ func (e *Encoder) SetBytes(name string, data []byte) {
 }
 
 func (e *Encoder) SetBigInt(name string, i *big.Int) {
-	e.raw[name] = e.Encode(i.Bytes())
+	e.SetFixedBigInt(name, i, (i.BitLen()+7)/8)
+}
+
+func (e *Encoder) SetFixedBigInt(name string, i *big.Int, size int) {
+	e.grow(size)
+	src := i.FillBytes(e.src[:size])
+	e.raw[name] = e.Encode(src)
 }
 
 func (e *Encoder) SetTime(name string, t time.Time) {
