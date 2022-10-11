@@ -1,6 +1,8 @@
 package jwe
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -722,4 +724,19 @@ func TestParseJSON(t *testing.T) {
 		t.Errorf("want %s, got %s", want, got)
 	}
 
+	var jsonData map[string]any
+	if err := json.Unmarshal([]byte(raw), &jsonData); err != nil {
+		t.Fatal(err)
+	}
+	canonical, err := json.Marshal(jsonData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := msg.MarshalJSON()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(canonical, data) {
+		t.Errorf("want %s, got %s", canonical, data)
+	}
 }

@@ -308,7 +308,11 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 	if err != nil {
 		return nil, err
 	}
-	b64header := b64Encode(rawHeader)
+	headerData, err := json.Marshal(rawHeader)
+	if err != nil {
+		return nil, err
+	}
+	b64header := b64Encode(headerData)
 
 	// encrypt CEK
 	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
@@ -323,7 +327,7 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 		b64iv:         b64Encode(iv),
 		ciphertext:    ciphertext,
 		b64ciphertext: b64Encode(ciphertext),
-		protected:     rawHeader,
+		protected:     headerData,
 		b64protected:  b64header,
 		tag:           authTag,
 		b64tag:        b64Encode(authTag),
@@ -363,7 +367,11 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		if err != nil {
 			return nil, err
 		}
-		b64header := b64Encode(rawHeader)
+		headerData, err := json.Marshal(rawHeader)
+		if err != nil {
+			return nil, err
+		}
+		b64header := b64Encode(headerData)
 
 		// encrypt CEK
 		iv := make([]byte, enc.IVSize())
@@ -382,7 +390,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 			b64iv:         b64Encode(iv),
 			ciphertext:    ciphertext,
 			b64ciphertext: b64Encode(ciphertext),
-			protected:     rawHeader,
+			protected:     headerData,
 			b64protected:  b64header,
 			tag:           authTag,
 			b64tag:        b64Encode(authTag),
@@ -414,7 +422,11 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 	if err != nil {
 		return nil, err
 	}
-	b64header := b64Encode(rawHeader)
+	headerData, err := json.Marshal(rawHeader)
+	if err != nil {
+		return nil, err
+	}
+	b64header := b64Encode(headerData)
 
 	// encrypt CEK
 	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
@@ -429,7 +441,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		b64iv:         b64Encode(iv),
 		ciphertext:    ciphertext,
 		b64ciphertext: b64Encode(ciphertext),
-		protected:     rawHeader,
+		protected:     headerData,
 		b64protected:  b64header,
 		tag:           authTag,
 		b64tag:        b64Encode(authTag),
@@ -734,7 +746,7 @@ func b64Encode(src []byte) []byte {
 	return dst
 }
 
-func encodeHeader(h *Header) ([]byte, error) {
+func encodeHeader(h *Header) (map[string]any, error) {
 	raw := make(map[string]any, len(h.Raw))
 	for k, v := range h.Raw {
 		raw[k] = v
@@ -837,7 +849,36 @@ func encodeHeader(h *Header) ([]byte, error) {
 	if err := e.Err(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(e.Data())
+	return e.Data(), nil
+}
+
+func (msg *Message) MarshalJSON() ([]byte, error) {
+	recipients := make([]jsonRecipient, 0, len(msg.Recipients))
+	for _, r := range msg.Recipients {
+		header, err := encodeHeader(r.header)
+		if err != nil {
+			return nil, err
+		}
+		recipients = append(recipients, jsonRecipient{
+			Header:       header,
+			EncryptedKey: string(r.b64encryptedKey),
+		})
+	}
+	raw := jsonJWE{
+		Protected:  string(msg.b64protected),
+		IV:         string(msg.b64iv),
+		Ciphertext: string(msg.b64ciphertext),
+		Tag:        string(msg.b64tag),
+		Recipients: recipients,
+	}
+	if msg.UnprotectedHeader != nil {
+		header, err := encodeHeader(msg.UnprotectedHeader)
+		if err != nil {
+			return nil, err
+		}
+		raw.Unprotected = header
+	}
+	return json.Marshal(raw)
 }
 
 func (msg *Message) UnmarshalJSON(data []byte) error {
@@ -850,18 +891,18 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 }
 
 type jsonJWE struct {
-	Protected   string          `json:"protected"`
-	Unprotected map[string]any  `json:"unprotected,omitempty"`
-	IV          string          `json:"iv,omitempty"`
 	AAD         string          `json:"aad,omitempty"`
 	Ciphertext  string          `json:"ciphertext"`
-	Tag         string          `json:"tag,omitempty"`
+	IV          string          `json:"iv,omitempty"`
+	Protected   string          `json:"protected"`
 	Recipients  []jsonRecipient `json:"recipients"`
+	Tag         string          `json:"tag,omitempty"`
+	Unprotected map[string]any  `json:"unprotected,omitempty"`
 }
 
 type jsonRecipient struct {
-	Header       map[string]any `json:"header"`
 	EncryptedKey string         `json:"encrypted_key"`
+	Header       map[string]any `json:"header"`
 }
 
 func ParseJSON(data []byte) (*Message, error) {
