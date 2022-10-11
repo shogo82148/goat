@@ -3,7 +3,6 @@ package jwk
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"math/big"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -307,9 +306,9 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 	})
 
 	t.Run("RFC 7517 A.2. Example Private Keys (EC)", func(t *testing.T) {
-		x, _ := new(big.Int).SetString("21994169848703329112137818087919262246467304847122821377551355163096090930238", 10)
-		y, _ := new(big.Int).SetString("101451294974385619524093058399734017814808930032421185206609461750712400090915", 10)
-		d, _ := new(big.Int).SetString("110246039328358150430804407946042381407500908316371398015658902487828646033409", 10)
+		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
+		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
+		d := newBigInt("110246039328358150430804407946042381407500908316371398015658902487828646033409")
 		key := &Key{
 			priv: &ecdsa.PrivateKey{
 				PublicKey: ecdsa.PublicKey{
@@ -338,6 +337,43 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 			`"use":"enc",` +
 			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
 			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM"` +
+			`}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("RFC7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
+		x := newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132")
+		y := newBigInt("705914061082973601048865942513844186912223650952616397119610620188911564288314145208762412315826061109317770515164005156360031161563418113875601542699600118")
+		d := newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490")
+		key := &Key{
+			priv: &ecdsa.PrivateKey{
+				PublicKey: ecdsa.PublicKey{
+					Curve: elliptic.P521(),
+					X:     x,
+					Y:     y,
+				},
+				D: d,
+			},
+			pub: &ecdsa.PublicKey{
+				Curve: elliptic.P521(),
+				X:     x,
+				Y:     y,
+			},
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := `{"crv":"P-521",` +
+			`"d":"AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPA` +
+			`xerEzgdRhajnu0ferB0d53vM9mE15j2C",` +
+			`"kty":"EC",` +
+			`"x":"AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_` +
+			`NjFZ6OvLFV1jSfS9tsz4qUxcWceqwQGk",` +
+			`"y":"ADSmRA43Z1DSNx_RvcLI87cdL07l6jQyyBXMoxVg_l2Th-x3S1WDhjDl` +
+			`y79ajL4Kkd0AZMaZmh9ubmf63e3kyMj2"` +
 			`}`
 		if want != string(got) {
 			t.Errorf("unexpected JWK: want %q, got %q", want, got)
