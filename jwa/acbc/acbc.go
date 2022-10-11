@@ -6,6 +6,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
+	"crypto/subtle"
 	"encoding/binary"
 	"errors"
 
@@ -75,13 +76,7 @@ func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plainte
 	}
 	mac := cek[:alg.macKeyLen]
 	enc := cek[alg.macKeyLen:]
-
-	// check the authentication tag
 	plaintext = make([]byte, len(ciphertext))
-	expectedAuthTag := alg.calcAuthTag(mac, aad, iv, ciphertext)
-	if !hmac.Equal(authTag, expectedAuthTag) {
-		return nil, errors.New("acbc: authentication tag mismatch")
-	}
 
 	// decrypt
 	block, err := aes.NewCipher(enc)
@@ -90,11 +85,21 @@ func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plainte
 	}
 	mode := cipher.NewCBCDecrypter(block, iv)
 	size := block.BlockSize()
+	if len(ciphertext)%size != 0 {
+		return nil, errors.New("acbc: invalid size of ciphertext")
+	}
 	for i := 0; i <= len(ciphertext)-size; i += size {
 		mode.CryptBlocks(plaintext[i:i+size], ciphertext[i:i+size])
 	}
-	pad := int(plaintext[len(plaintext)-1])
-	plaintext = plaintext[:len(plaintext)-pad]
+	toRemove, good := extractPadding(plaintext)
+
+	// check the authentication tag
+	expectedAuthTag := alg.calcAuthTag(mac, aad, iv, ciphertext)
+	cmp := subtle.ConstantTimeCompare(authTag, expectedAuthTag) & int(good)
+	if cmp != 1 {
+		return nil, errors.New("acbc: authentication tag mismatch")
+	}
+	plaintext = plaintext[:len(plaintext)-toRemove]
 
 	return
 }
@@ -106,19 +111,10 @@ func (alg *Algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authT
 	if err != nil {
 		return nil, nil, err
 	}
-	size := block.BlockSize()
-
-	// padding
-	l := len(plaintext)
-	pad := size - (l % size)
-	l += pad
 
 	// encrypt
-	ciphertext = make([]byte, l)
-	copy(ciphertext, plaintext)
-	for i := len(plaintext); i < l; i++ {
-		ciphertext[i] = byte(pad)
-	}
+	size := block.BlockSize()
+	ciphertext = padding(plaintext, size)
 	mode := cipher.NewCBCEncrypter(block, iv)
 	for i := 0; i <= len(ciphertext)-size; i += size {
 		mode.CryptBlocks(ciphertext[i:i+size], ciphertext[i:i+size])
@@ -126,6 +122,77 @@ func (alg *Algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authT
 	authTag = alg.calcAuthTag(mac, aad, iv, ciphertext)
 
 	return
+}
+
+// ref. https://github.com/golang/go/blob/ebaa5ff39ee4046f7f94bf34a6e05702286b08d2/src/crypto/tls/conn.go#L269-L317
+//
+// extractPadding returns, in constant time, the length of the padding to remove
+// from the end of payload. It also returns a byte which is equal to 255 if the
+// padding was valid and 0 otherwise. See RFC 2246, Section 6.2.3.2.
+func extractPadding(payload []byte) (toRemove int, good byte) {
+	if len(payload) < 1 {
+		return 0, 0
+	}
+
+	paddingLen := payload[len(payload)-1]
+	t := uint(len(payload)-1) - uint(paddingLen)
+	// if len(payload) >= (paddingLen - 1) then the MSB of t is zero
+	good = byte(int32(^t) >> 31)
+
+	// The maximum possible padding length plus the actual length field
+	toCheck := 256
+	// The length of the padded data is public, so we can use an if here
+	if toCheck > len(payload) {
+		toCheck = len(payload)
+	}
+
+	for i := 1; i <= toCheck; i++ {
+		t := uint(paddingLen) - uint(i)
+		// if i <= paddingLen then the MSB of t is zero
+		mask := byte(int32(^t) >> 31)
+		b := payload[len(payload)-i]
+		good &^= mask&paddingLen ^ mask&b
+	}
+
+	// We AND together the bits of good and replicate the result across
+	// all the bits.
+	good &= good << 4
+	good &= good << 2
+	good &= good << 1
+	good = uint8(int8(good) >> 7)
+
+	// Zero the padding length on error. This ensures any unchecked bytes
+	// are included in the MAC. Otherwise, an attacker that could
+	// distinguish MAC failures from padding failures could mount an attack
+	// similar to POODLE in SSL 3.0: given a good ciphertext that uses a
+	// full block's worth of padding, replace the final block with another
+	// block. If the MAC check passed but the padding check failed, the
+	// last byte of that block decrypted to the block size.
+	//
+	// See also macAndPaddingGood logic below.
+	paddingLen &= good
+
+	toRemove = int(paddingLen)
+	return
+}
+
+func padding(data []byte, size int) []byte {
+	// calculate padding len
+	l := len(data)
+	paddingLen := size - (l % size)
+	pad := byte(paddingLen)
+	l += paddingLen
+	ret := make([]byte, l)
+
+	// fill pad
+	copy(ret, data)
+	for i := 1; i <= size; i++ {
+		t := uint(paddingLen) - uint(i)
+		// if i <= paddingLen then the MSB of t is zero
+		mask := byte(int32(^t) >> 31)
+		ret[l-i] = ^mask&ret[l-i] | mask&pad
+	}
+	return ret
 }
 
 func (alg *Algorithm) calcAuthTag(mac, aad, iv, ciphertext []byte) []byte {

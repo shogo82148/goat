@@ -9,6 +9,7 @@ import (
 )
 
 func TestDecrypt(t *testing.T) {
+	// RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256
 	cek := []byte{
 		4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106,
 		206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
@@ -49,6 +50,7 @@ func TestDecrypt(t *testing.T) {
 }
 
 func TestEncrypt(t *testing.T) {
+	// RFC 7516 Appendix A.3. Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256
 	cek := []byte{
 		4, 211, 31, 197, 84, 157, 252, 254, 11, 100, 157, 250, 63, 170, 106,
 		206, 107, 124, 212, 45, 111, 107, 9, 219, 200, 177, 0, 240, 143, 156,
