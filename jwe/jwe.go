@@ -255,6 +255,29 @@ func (h *Header) SetPBES2Count(p2c int) {
 	h.p2c = p2c
 }
 
+func (h *Header) MarshalJSON() ([]byte, error) {
+	raw, err := encodeHeader(h)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(raw)
+}
+
+func (h *Header) UnmarshalJSON(data []byte) error {
+	raw := make(map[string]any)
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return err
+	}
+	header, err := decodeHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = *header
+	return nil
+}
+
 // Message is a decoded JWS.
 type Message struct {
 	UnprotectedHeader *Header
@@ -304,7 +327,7 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 	// encode the protected header
 	header := protected.Clone()
 	header.SetEncryptionAlgorithm(enc)
-	rawHeader, err := encodeHeader(header)
+	rawHeader, err := header.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -359,7 +382,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		}
 
 		// encode the header
-		rawHeader, err := encodeHeader(header)
+		rawHeader, err := header.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
@@ -410,7 +433,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 
 	// encode the protected header
 	header.SetEncryptionAlgorithm(enc)
-	rawHeader, err := encodeHeader(header)
+	rawHeader, err := header.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -542,7 +565,7 @@ func Parse(data []byte) (*Message, error) {
 	if err := dec.Decode(&raw); err != nil {
 		return nil, fmt.Errorf("jwe: failed to decode header: %w", err)
 	}
-	h, err := parseHeader(raw)
+	h, err := decodeHeader(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -608,7 +631,7 @@ func b64Decode(src []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
-func parseHeader(raw map[string]any) (*Header, error) {
+func decodeHeader(raw map[string]any) (*Header, error) {
 	d := jsonutils.NewDecoder("jws", raw)
 	h := &Header{
 		Raw: raw,
@@ -734,7 +757,7 @@ func b64Encode(src []byte) []byte {
 	return dst
 }
 
-func encodeHeader(h *Header) ([]byte, error) {
+func encodeHeader(h *Header) (map[string]any, error) {
 	raw := make(map[string]any, len(h.Raw))
 	for k, v := range h.Raw {
 		raw[k] = v
@@ -837,7 +860,36 @@ func encodeHeader(h *Header) ([]byte, error) {
 	if err := e.Err(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(e.Data())
+	return e.Data(), nil
+}
+
+func (msg *Message) MarshalJSON() ([]byte, error) {
+	recipients := make([]jsonRecipient, 0, len(msg.Recipients))
+	for _, r := range msg.Recipients {
+		header, err := encodeHeader(r.header)
+		if err != nil {
+			return nil, err
+		}
+		recipients = append(recipients, jsonRecipient{
+			Header:       header,
+			EncryptedKey: string(r.b64encryptedKey),
+		})
+	}
+	raw := jsonJWE{
+		Protected:  string(msg.b64protected),
+		IV:         string(msg.b64iv),
+		Ciphertext: string(msg.b64ciphertext),
+		Tag:        string(msg.b64tag),
+		Recipients: recipients,
+	}
+	if msg.UnprotectedHeader != nil {
+		header, err := encodeHeader(msg.UnprotectedHeader)
+		if err != nil {
+			return nil, err
+		}
+		raw.Unprotected = header
+	}
+	return json.Marshal(raw)
 }
 
 func (msg *Message) UnmarshalJSON(data []byte) error {
@@ -850,18 +902,18 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 }
 
 type jsonJWE struct {
-	Protected   string          `json:"protected"`
-	Unprotected map[string]any  `json:"unprotected,omitempty"`
-	IV          string          `json:"iv,omitempty"`
 	AAD         string          `json:"aad,omitempty"`
 	Ciphertext  string          `json:"ciphertext"`
-	Tag         string          `json:"tag,omitempty"`
+	IV          string          `json:"iv,omitempty"`
+	Protected   string          `json:"protected"`
 	Recipients  []jsonRecipient `json:"recipients"`
+	Tag         string          `json:"tag,omitempty"`
+	Unprotected map[string]any  `json:"unprotected,omitempty"`
 }
 
 type jsonRecipient struct {
-	Header       map[string]any `json:"header"`
 	EncryptedKey string         `json:"encrypted_key"`
+	Header       map[string]any `json:"header"`
 }
 
 func ParseJSON(data []byte) (*Message, error) {
@@ -881,12 +933,12 @@ func ParseJSON(data []byte) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	h, err := parseHeader(rawHeader)
+	h, err := decodeHeader(rawHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	unprotected, err := parseHeader(raw.Unprotected)
+	unprotected, err := decodeHeader(raw.Unprotected)
 	if err != nil {
 		return nil, err
 	}
@@ -910,7 +962,7 @@ func ParseJSON(data []byte) (*Message, error) {
 
 	recipients := make([]*Recipient, 0, len(raw.Recipients))
 	for _, r := range raw.Recipients {
-		header, err := parseHeader(r.Header)
+		header, err := decodeHeader(r.Header)
 		if err != nil {
 			return nil, err
 		}
