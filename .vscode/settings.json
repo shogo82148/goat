@@ -23,7 +23,8 @@
         "rsapkcs",
         "RSASSA-PSS",
         "SECG",
-        "secp256k1"
+        "secp256k1",
+        "unpadding"
     ],
     "cSpell.ignoreRegExpList": [
         "[a-zA-Z0-9./_-]{16,}" // base64 strings
