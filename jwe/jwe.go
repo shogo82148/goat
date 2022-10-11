@@ -255,6 +255,29 @@ func (h *Header) SetPBES2Count(p2c int) {
 	h.p2c = p2c
 }
 
+func (h *Header) MarshalJSON() ([]byte, error) {
+	raw, err := encodeHeader(h)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(raw)
+}
+
+func (h *Header) UnmarshalJSON(data []byte) error {
+	raw := make(map[string]any)
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(&raw); err != nil {
+		return err
+	}
+	header, err := decodeHeader(raw)
+	if err != nil {
+		return err
+	}
+	*h = *header
+	return nil
+}
+
 // Message is a decoded JWS.
 type Message struct {
 	UnprotectedHeader *Header
@@ -304,15 +327,11 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 	// encode the protected header
 	header := protected.Clone()
 	header.SetEncryptionAlgorithm(enc)
-	rawHeader, err := encodeHeader(header)
+	rawHeader, err := header.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
-	headerData, err := json.Marshal(rawHeader)
-	if err != nil {
-		return nil, err
-	}
-	b64header := b64Encode(headerData)
+	b64header := b64Encode(rawHeader)
 
 	// encrypt CEK
 	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
@@ -327,7 +346,7 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 		b64iv:         b64Encode(iv),
 		ciphertext:    ciphertext,
 		b64ciphertext: b64Encode(ciphertext),
-		protected:     headerData,
+		protected:     rawHeader,
 		b64protected:  b64header,
 		tag:           authTag,
 		b64tag:        b64Encode(authTag),
@@ -363,15 +382,11 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		}
 
 		// encode the header
-		rawHeader, err := encodeHeader(header)
+		rawHeader, err := header.MarshalJSON()
 		if err != nil {
 			return nil, err
 		}
-		headerData, err := json.Marshal(rawHeader)
-		if err != nil {
-			return nil, err
-		}
-		b64header := b64Encode(headerData)
+		b64header := b64Encode(rawHeader)
 
 		// encrypt CEK
 		iv := make([]byte, enc.IVSize())
@@ -390,7 +405,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 			b64iv:         b64Encode(iv),
 			ciphertext:    ciphertext,
 			b64ciphertext: b64Encode(ciphertext),
-			protected:     headerData,
+			protected:     rawHeader,
 			b64protected:  b64header,
 			tag:           authTag,
 			b64tag:        b64Encode(authTag),
@@ -418,15 +433,11 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 
 	// encode the protected header
 	header.SetEncryptionAlgorithm(enc)
-	rawHeader, err := encodeHeader(header)
+	rawHeader, err := header.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
-	headerData, err := json.Marshal(rawHeader)
-	if err != nil {
-		return nil, err
-	}
-	b64header := b64Encode(headerData)
+	b64header := b64Encode(rawHeader)
 
 	// encrypt CEK
 	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
@@ -441,7 +452,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		b64iv:         b64Encode(iv),
 		ciphertext:    ciphertext,
 		b64ciphertext: b64Encode(ciphertext),
-		protected:     headerData,
+		protected:     rawHeader,
 		b64protected:  b64header,
 		tag:           authTag,
 		b64tag:        b64Encode(authTag),
@@ -554,7 +565,7 @@ func Parse(data []byte) (*Message, error) {
 	if err := dec.Decode(&raw); err != nil {
 		return nil, fmt.Errorf("jwe: failed to decode header: %w", err)
 	}
-	h, err := parseHeader(raw)
+	h, err := decodeHeader(raw)
 	if err != nil {
 		return nil, err
 	}
@@ -620,7 +631,7 @@ func b64Decode(src []byte) ([]byte, error) {
 	return dst[:n], nil
 }
 
-func parseHeader(raw map[string]any) (*Header, error) {
+func decodeHeader(raw map[string]any) (*Header, error) {
 	d := jsonutils.NewDecoder("jws", raw)
 	h := &Header{
 		Raw: raw,
@@ -922,12 +933,12 @@ func ParseJSON(data []byte) (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	h, err := parseHeader(rawHeader)
+	h, err := decodeHeader(rawHeader)
 	if err != nil {
 		return nil, err
 	}
 
-	unprotected, err := parseHeader(raw.Unprotected)
+	unprotected, err := decodeHeader(raw.Unprotected)
 	if err != nil {
 		return nil, err
 	}
@@ -951,7 +962,7 @@ func ParseJSON(data []byte) (*Message, error) {
 
 	recipients := make([]*Recipient, 0, len(raw.Recipients))
 	for _, r := range raw.Recipients {
-		header, err := parseHeader(r.Header)
+		header, err := decodeHeader(r.Header)
 		if err != nil {
 			return nil, err
 		}
