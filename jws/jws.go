@@ -160,7 +160,7 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&raw); err != nil {
 		return err
 	}
-	header, err := parseHeader(raw)
+	header, err := decodeHeader(raw)
 	if err != nil {
 		return err
 	}
@@ -314,7 +314,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		// decode unprotected header
 		var header *Header
 		if sig.Header != nil {
-			header, err = parseHeader(sig.Header)
+			header, err = decodeHeader(sig.Header)
 			if err != nil {
 				return fmt.Errorf("jws: failed to parse unprotected header: %w", err)
 			}
@@ -349,21 +349,21 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-func parseHeader(raw map[string]any) (*Header, error) {
+func decodeHeader(raw map[string]any) (*Header, error) {
 	d := jsonutils.NewDecoder("jws", raw)
 	h := &Header{
 		Raw: raw,
 	}
 
-	if alg, ok := d.GetString("alg"); ok {
+	if alg, ok := d.GetString(jwa.AlgorithmKey); ok {
 		h.alg = jwa.SignatureAlgorithm(alg)
 	}
 
-	if jku, ok := d.GetURL("jku"); ok {
+	if jku, ok := d.GetURL(jwa.JWKSetURLKey); ok {
 		h.jku = jku
 	}
 
-	if v, ok := d.GetObject("jwk"); ok {
+	if v, ok := d.GetObject(jwa.JSONWebKey); ok {
 		key, err := jwk.ParseMap(v)
 		if err != nil {
 			d.SaveError(err)
@@ -371,12 +371,12 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.jwk = key
 	}
 
-	if x5u, ok := d.GetURL("x5u"); ok {
+	if x5u, ok := d.GetURL(jwa.X509URLKey); ok {
 		h.x5u = x5u
 	}
 
 	var cert0 []byte
-	if x5c, ok := d.GetStringArray("x5c"); ok {
+	if x5c, ok := d.GetStringArray(jwa.X509CertificateChainKey); ok {
 		var certs []*x509.Certificate
 		for i, s := range x5c {
 			der, err := base64.StdEncoding.DecodeString(s)
@@ -395,7 +395,7 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		h.x5c = certs
 	}
 
-	if x5t, ok := d.GetBytes("x5t"); ok {
+	if x5t, ok := d.GetBytes(jwa.X509CertificateSHA1Thumbprint); ok {
 		h.x5t = x5t
 		if cert0 != nil {
 			sum := sha1.Sum(cert0)
@@ -405,20 +405,20 @@ func parseHeader(raw map[string]any) (*Header, error) {
 		}
 	}
 
-	if x5t256, ok := d.GetBytes("x5t#S256"); ok {
+	if x5t256, ok := d.GetBytes(jwa.X509CertificateSHA256Thumbprint); ok {
 		h.x5tS256 = x5t256
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-256 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
 
-	h.kid, _ = d.GetString("kid")
-	h.typ, _ = d.GetString("typ")
-	h.cty, _ = d.GetString("cty")
-	h.crit, _ = d.GetStringArray("crit")
+	h.kid, _ = d.GetString(jwa.KeyIDKey)
+	h.typ, _ = d.GetString(jwa.TypeKey)
+	h.cty, _ = d.GetString(jwa.ContentTypeKey)
+	h.crit, _ = d.GetStringArray(jwa.CriticalKey)
 
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -448,16 +448,16 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		if err != nil {
 			e.SaveError(err)
 		} else {
-			e.Set("jwk", json.RawMessage(data))
+			e.Set(jwa.JSONWebKey, json.RawMessage(data))
 		}
 	}
 
 	if kid := h.kid; kid != "" {
-		e.Set("kid", kid)
+		e.Set(jwa.KeyIDKey, kid)
 	}
 
 	if x5u := h.x5u; x5u != nil {
-		e.Set("x5u", x5u.String())
+		e.Set(jwa.X509URLKey, x5u.String())
 	}
 
 	if x5c := h.x5c; x5c != nil {
@@ -465,33 +465,33 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
-		e.Set("x5c", chain)
+		e.Set(jwa.X509CertificateChainKey, chain)
 	}
 	if x5t := h.x5t; x5t != nil {
-		e.SetBytes("x5t", x5t)
+		e.SetBytes(jwa.X509CertificateSHA1Thumbprint, x5t)
 	} else if len(h.x5c) > 0 {
 		cert := h.x5c[0]
 		sum := sha1.Sum(cert.Raw)
-		e.SetBytes("x5t", sum[:])
+		e.SetBytes(jwa.X509CertificateSHA1Thumbprint, sum[:])
 	}
 	if x5t256 := h.x5tS256; x5t256 != nil {
-		e.SetBytes("x5t#S256", x5t256)
+		e.SetBytes(jwa.X509CertificateSHA256Thumbprint, x5t256)
 	} else if len(h.x5c) > 0 {
 		cert := h.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
-		e.SetBytes("x5t#S256", sum[:])
+		e.SetBytes(jwa.X509CertificateSHA256Thumbprint, sum[:])
 	}
 
 	if typ := h.typ; typ != "" {
-		e.Set("typ", typ)
+		e.Set(jwa.TypeKey, typ)
 	}
 
 	if cty := h.cty; cty != "" {
-		e.Set("cty", cty)
+		e.Set(jwa.ContentTypeKey, cty)
 	}
 
 	if crit := h.crit; len(crit) > 0 {
-		e.Set("crit", crit)
+		e.Set(jwa.CriticalKey, crit)
 	}
 
 	if err := e.Err(); err != nil {
