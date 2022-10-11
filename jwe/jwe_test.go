@@ -330,11 +330,7 @@ func TestEncrypt(t *testing.T) {
 		key := alg.NewKeyWrapper(k)
 
 		plaintext := "The true sign of intelligence is not knowledge but imagination."
-		msg1, err := NewMessage(jwa.A256GCM, header, []byte(plaintext))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = msg1.Encrypt(key, nil)
+		msg1, err := NewMessageWithKW(jwa.A256GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -401,11 +397,7 @@ func TestEncrypt(t *testing.T) {
 		header := &Header{}
 		header.SetAlgorithm(jwa.RSA1_5)
 		plaintext := "Live long and prosper."
-		msg1, err := NewMessage(jwa.A128CBC_HS256, header, []byte(plaintext))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = msg1.Encrypt(key, nil)
+		msg1, err := NewMessageWithKW(jwa.A128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -445,11 +437,7 @@ func TestEncrypt(t *testing.T) {
 		header := &Header{}
 		header.SetAlgorithm(jwa.A128KW)
 		plaintext := "Live long and prosper."
-		msg1, err := NewMessage(jwa.A128CBC_HS256, header, []byte(plaintext))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = msg1.Encrypt(key, nil)
+		msg1, err := NewMessageWithKW(jwa.A128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -497,10 +485,6 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = msg1.Encrypt(key, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
 
 		ciphertext, err := msg1.Compact()
 		if err != nil {
@@ -542,10 +526,6 @@ func TestEncrypt(t *testing.T) {
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello World!\n"
 		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = msg1.Encrypt(key, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -591,10 +571,6 @@ func TestEncrypt(t *testing.T) {
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
 		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = msg1.Encrypt(key, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -70,6 +70,9 @@ func (h *Header) Clone() *Header {
 // Algorithm returns the key management algorithm
 // defined in RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
 func (h *Header) Algorithm() jwa.KeyManagementAlgorithm {
+	if h == nil {
+		return ""
+	}
 	return h.alg
 }
 
@@ -80,6 +83,9 @@ func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
 // Encryption return the encryption algorithm
 // defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
 func (h *Header) EncryptionAlgorithm() jwa.EncryptionAlgorithm {
+	if h == nil {
+		return ""
+	}
 	return h.enc
 }
 
@@ -89,6 +95,9 @@ func (h *Header) SetEncryptionAlgorithm(enc jwa.EncryptionAlgorithm) {
 
 // Compression is RFC7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
 func (h *Header) CompressionAlgorithm() jwa.CompressionAlgorithm {
+	if h == nil {
+		return ""
+	}
 	return h.zip
 }
 
@@ -98,6 +107,9 @@ func (h *Header) SetCompressionAlgorithm(zip jwa.CompressionAlgorithm) {
 
 // JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
 func (h *Header) JWKSetURL() *url.URL {
+	if h == nil {
+		return nil
+	}
 	return h.jku
 }
 
@@ -107,6 +119,9 @@ func (h *Header) SetJWKSetURL(jku *url.URL) {
 
 // JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
 func (h *Header) JWK() *jwk.Key {
+	if h == nil {
+		return nil
+	}
 	return h.jwk
 }
 
@@ -116,6 +131,9 @@ func (h *Header) SetJWK(jwk *jwk.Key) {
 
 // KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
 func (h *Header) KeyID() string {
+	if h == nil {
+		return ""
+	}
 	return h.kid
 }
 
@@ -134,6 +152,9 @@ func (h *Header) SetX509URL(x5u *url.URL) {
 
 // X509CertificateChain is RFC7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
 func (h *Header) X509CertificateChain() []*x509.Certificate {
+	if h == nil {
+		return nil
+	}
 	return h.x5c
 }
 
@@ -143,6 +164,9 @@ func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
 
 // X509CertificateSHA1 is RFC7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA1() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.x5t
 }
 
@@ -152,6 +176,9 @@ func (h *Header) SetX509CertificateSHA1(x5t []byte) {
 
 // X509CertificateSHA256 is RFC7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA256() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.x5tS256
 }
 
@@ -161,6 +188,9 @@ func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 
 // Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
 func (h *Header) Type() string {
+	if h == nil {
+		return ""
+	}
 	return h.typ
 }
 
@@ -170,6 +200,9 @@ func (h *Header) SetType(typ string) {
 
 // ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
 func (h *Header) ContentType() string {
+	if h == nil {
+		return ""
+	}
 	return h.cty
 }
 
@@ -179,6 +212,9 @@ func (h *Header) SetContentType(cty string) {
 
 // Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
 func (h *Header) Critical() []string {
+	if h == nil {
+		return nil
+	}
 	return h.crit
 }
 
@@ -188,6 +224,9 @@ func (h *Header) SetCritical(crit []string) {
 
 // EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
 func (h *Header) EphemeralPublicKey() *jwk.Key {
+	if h == nil {
+		return nil
+	}
 	return h.epk
 }
 
@@ -197,6 +236,9 @@ func (h *Header) SetEphemeralPublicKey(epk *jwk.Key) {
 
 // AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
 func (h *Header) AgreementPartyUInfo() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.apu
 }
 
@@ -206,6 +248,9 @@ func (h *Header) SetAgreementPartyUInfo(apu []byte) {
 
 // AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
 func (h *Header) AgreementPartyVInfo() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.apv
 }
 
@@ -216,6 +261,9 @@ func (h *Header) SetAgreementPartyVInfo(apv []byte) {
 // InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
 // It is the 96-bit IV value used for the key encryption operation.
 func (h *Header) InitializationVector() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.iv
 }
 
@@ -225,6 +273,9 @@ func (h *Header) SetInitializationVector(iv []byte) {
 
 // AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
 func (h *Header) AuthenticationTag() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.tag
 }
 
@@ -235,6 +286,9 @@ func (h *Header) SetAuthenticationTag(tag []byte) {
 // PBES2SaltInput is the PBES2 salt input
 // defined in RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
 func (h *Header) PBES2SaltInput() []byte {
+	if h == nil {
+		return nil
+	}
 	return h.p2s
 }
 
@@ -245,6 +299,9 @@ func (h *Header) SetPBES2SaltInput(p2s []byte) {
 // PBES2Count is the PBES2 Count
 // defined in RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
 func (h *Header) PBES2Count() int {
+	if h == nil {
+		return 0
+	}
 	return h.p2c
 }
 
@@ -276,6 +333,271 @@ func (h *Header) UnmarshalJSON(data []byte) error {
 	}
 	*h = *header
 	return nil
+}
+
+type mergedHeader []*Header
+
+func (h mergedHeader) Algorithm() jwa.KeyManagementAlgorithm {
+	for _, item := range h {
+		if alg := item.alg; alg != "" {
+			return alg
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
+	h[0].alg = alg
+}
+
+func (h mergedHeader) EncryptionAlgorithm() jwa.EncryptionAlgorithm {
+	for _, item := range h {
+		if enc := item.EncryptionAlgorithm(); enc != "" {
+			return enc
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetEncryptionAlgorithm(enc jwa.EncryptionAlgorithm) {
+	h[0].enc = enc
+}
+
+func (h mergedHeader) CompressionAlgorithm() jwa.CompressionAlgorithm {
+	for _, item := range h {
+		if zip := item.CompressionAlgorithm(); zip != "" {
+			return zip
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetCompressionAlgorithm(zip jwa.CompressionAlgorithm) {
+	h[0].zip = zip
+}
+
+func (h mergedHeader) JWKSetURL() *url.URL {
+	for _, item := range h {
+		if jku := item.JWKSetURL(); jku != nil {
+			return jku
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetJWKSetURL(jku *url.URL) {
+	h[0].jku = jku
+}
+
+func (h mergedHeader) JWK() *jwk.Key {
+	for _, item := range h {
+		if jwk := item.JWK(); jwk != nil {
+			return jwk
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetJWK(jwk *jwk.Key) {
+	h[0].jwk = jwk
+}
+
+func (h mergedHeader) KeyID() string {
+	for _, item := range h {
+		if kid := item.KeyID(); kid != "" {
+			return kid
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetKeyID(kid string) {
+	h[0].kid = kid
+}
+
+func (h mergedHeader) X509URL() *url.URL {
+	for _, item := range h {
+		if x5u := item.X509URL(); x5u != nil {
+			return x5u
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetX509URL(x5u *url.URL) {
+	h[0].x5u = x5u
+}
+
+func (h mergedHeader) X509CertificateChain() []*x509.Certificate {
+	for _, item := range h {
+		if x5c := item.X509CertificateChain(); x5c != nil {
+			return x5c
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetX509CertificateChain(x5c []*x509.Certificate) {
+	h[0].x5c = x5c
+}
+
+func (h mergedHeader) X509CertificateSHA1() []byte {
+	for _, item := range h {
+		if x5t := item.X509CertificateSHA1(); x5t != nil {
+			return x5t
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetX509CertificateSHA1(x5t []byte) {
+	h[0].x5t = x5t
+}
+
+func (h mergedHeader) X509CertificateSHA256() []byte {
+	for _, item := range h {
+		if x5tS256 := item.X509CertificateSHA256(); x5tS256 != nil {
+			return x5tS256
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetX509CertificateSHA256(x5tS256 []byte) {
+	h[0].x5tS256 = x5tS256
+}
+
+func (h mergedHeader) Type() string {
+	for _, item := range h {
+		if typ := item.Type(); typ != "" {
+			return typ
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetType(typ string) {
+	h[0].typ = typ
+}
+
+func (h mergedHeader) ContentType() string {
+	for _, item := range h {
+		if cty := item.ContentType(); cty != "" {
+			return cty
+		}
+	}
+	return ""
+}
+
+func (h mergedHeader) SetContentType(cty string) {
+	h[0].cty = cty
+}
+
+func (h mergedHeader) Critical() []string {
+	for _, item := range h {
+		if crit := item.Critical(); crit != nil {
+			return crit
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetCritical(crit []string) {
+	h[0].crit = crit
+}
+
+func (h mergedHeader) EphemeralPublicKey() *jwk.Key {
+	for _, item := range h {
+		if epk := item.EphemeralPublicKey(); epk != nil {
+			return epk
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetEphemeralPublicKey(epk *jwk.Key) {
+	h[0].epk = epk
+}
+
+func (h mergedHeader) AgreementPartyUInfo() []byte {
+	for _, item := range h {
+		if apu := item.AgreementPartyUInfo(); apu != nil {
+			return apu
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetAgreementPartyUInfo(apu []byte) {
+	h[0].apu = apu
+}
+
+func (h mergedHeader) AgreementPartyVInfo() []byte {
+	for _, item := range h {
+		if apv := item.AgreementPartyVInfo(); apv != nil {
+			return apv
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetAgreementPartyVInfo(apv []byte) {
+	h[0].apv = apv
+}
+
+func (h mergedHeader) InitializationVector() []byte {
+	for _, item := range h {
+		if iv := item.InitializationVector(); iv != nil {
+			return iv
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetInitializationVector(iv []byte) {
+	h[0].iv = iv
+}
+
+func (h mergedHeader) AuthenticationTag() []byte {
+	for _, item := range h {
+		if tag := item.AuthenticationTag(); tag != nil {
+			return tag
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetAuthenticationTag(tag []byte) {
+	h[0].tag = tag
+}
+
+func (h mergedHeader) PBES2SaltInput() []byte {
+	for _, item := range h {
+		if p2s := item.PBES2SaltInput(); p2s != nil {
+			return p2s
+		}
+	}
+	return nil
+}
+
+func (h mergedHeader) SetPBES2SaltInput(p2s []byte) {
+	h[0].p2s = p2s
+}
+
+func (h mergedHeader) PBES2Count() int {
+	for _, item := range h {
+		if p2c := item.PBES2Count(); p2c != 0 {
+			return p2c
+		}
+	}
+	return 0
+}
+
+func (h mergedHeader) SetPBES2Count(p2c int) {
+	if p2c < 0 {
+		panic("jwe: p2c is out of range")
+	}
+	h[0].p2c = p2c
 }
 
 // Message is a decoded JWS.
@@ -484,7 +806,12 @@ func (msg *Message) Decrypt(finder KeyWrapperFinder) (plaintext []byte, err erro
 		if err != nil {
 			continue
 		}
-		cek, err := kw.UnwrapKey(r.encryptedKey, msg.header) // TODO: merge header
+		merged := mergedHeader{
+			msg.UnprotectedHeader,
+			msg.header,
+			r.header,
+		}
+		cek, err := kw.UnwrapKey(r.encryptedKey, merged)
 		if err != nil {
 			return nil, fmt.Errorf("jwe: failed to unwrap key: %w", err)
 		}
@@ -497,7 +824,7 @@ func (msg *Message) Decrypt(finder KeyWrapperFinder) (plaintext []byte, err erro
 		if err != nil {
 			return nil, fmt.Errorf("jwe: failed to decrypt: %w", err)
 		}
-		if msg.header.CompressionAlgorithm() == jwa.DEF { // TODO: merge header
+		if merged.CompressionAlgorithm() == jwa.DEF {
 			buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
 			r := flate.NewReader(bytes.NewReader(plaintext))
 			if _, err := buf.ReadFrom(r); err != nil {
@@ -606,9 +933,17 @@ func Parse(data []byte) (*Message, error) {
 }
 
 func (msg *Message) Compact() ([]byte, error) {
-	// TODO: validate header
-
+	if len(msg.Recipients) != 1 {
+		return nil, errors.New("jwe: invalid recipients number in compact serialization")
+	}
+	if msg.UnprotectedHeader != nil {
+		return nil, errors.New("jwe: unprotected header is not allowed in compact serialization")
+	}
 	r := msg.Recipients[0]
+	if r.header != nil {
+		return nil, errors.New("jwe: recipient header is not allowed in compact serialization")
+	}
+
 	data := make([]byte, 0)
 	data = append(data, msg.b64protected...)
 	data = append(data, '.')
@@ -764,19 +1099,19 @@ func encodeHeader(h *Header) (map[string]any, error) {
 	}
 	e := jsonutils.NewEncoder(raw)
 	if v := h.alg; v != "" {
-		e.Set("alg", string(v))
+		e.Set(jwa.AlgorithmKey, string(v))
 	}
 
 	if enc := h.enc; enc != "" {
-		e.Set("enc", string(enc))
+		e.Set(jwa.EncryptionAlgorithmKey, string(enc))
 	}
 
 	if zip := h.zip; zip != "" {
-		e.Set("zip", zip.String())
+		e.Set(jwa.CompressionAlgorithmKey, zip.String())
 	}
 
 	if u := h.jku; u != nil {
-		e.Set("jku", u.String())
+		e.Set(jwa.JWKSetURLKey, u.String())
 	}
 
 	if key := h.jwk; key != nil {
@@ -784,16 +1119,16 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		if err != nil {
 			e.SaveError(err)
 		} else {
-			e.Set("jwk", json.RawMessage(data))
+			e.Set(jwa.JSONWebKey, json.RawMessage(data))
 		}
 	}
 
 	if kid := h.kid; kid != "" {
-		e.Set("kid", kid)
+		e.Set(jwa.KeyIDKey, kid)
 	}
 
 	if x5u := h.x5u; x5u != nil {
-		e.Set("x5u", x5u.String())
+		e.Set(jwa.X509URLKey, x5u.String())
 	}
 
 	if x5c := h.x5c; x5c != nil {
@@ -801,33 +1136,33 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		for _, cert := range x5c {
 			chain = append(chain, cert.Raw)
 		}
-		e.Set("x5c", chain)
+		e.Set(jwa.X509CertificateChainKey, chain)
 	}
 	if x5t := h.x5t; x5t != nil {
-		e.SetBytes("x5t", x5t)
+		e.SetBytes(jwa.X509CertificateSHA1Thumbprint, x5t)
 	} else if len(h.x5c) > 0 {
 		cert := h.x5c[0]
 		sum := sha1.Sum(cert.Raw)
-		e.SetBytes("x5t", sum[:])
+		e.SetBytes(jwa.X509CertificateSHA1Thumbprint, sum[:])
 	}
 	if x5t256 := h.x5tS256; x5t256 != nil {
-		e.SetBytes("x5t#S256", x5t256)
+		e.SetBytes(jwa.X509CertificateSHA256Thumbprint, x5t256)
 	} else if len(h.x5c) > 0 {
 		cert := h.x5c[0]
 		sum := sha256.Sum256(cert.Raw)
-		e.SetBytes("x5t#S256", sum[:])
+		e.SetBytes(jwa.X509CertificateSHA256Thumbprint, sum[:])
 	}
 
 	if typ := h.typ; typ != "" {
-		e.Set("typ", typ)
+		e.Set(jwa.TypeKey, typ)
 	}
 
 	if cty := h.cty; cty != "" {
-		e.Set("cty", cty)
+		e.Set(jwa.ContentTypeKey, cty)
 	}
 
 	if crit := h.crit; len(crit) > 0 {
-		e.Set("crit", crit)
+		e.Set(jwa.CriticalKey, crit)
 	}
 
 	// Header Parameters Used for ECDH Key Agreement
@@ -864,6 +1199,14 @@ func encodeHeader(h *Header) (map[string]any, error) {
 }
 
 func (msg *Message) MarshalJSON() ([]byte, error) {
+	var unprotected map[string]any
+	if msg.UnprotectedHeader != nil {
+		var err error
+		unprotected, err = encodeHeader(msg.UnprotectedHeader)
+		if err != nil {
+			return nil, err
+		}
+	}
 	recipients := make([]jsonRecipient, 0, len(msg.Recipients))
 	for _, r := range msg.Recipients {
 		header, err := encodeHeader(r.header)
@@ -876,18 +1219,12 @@ func (msg *Message) MarshalJSON() ([]byte, error) {
 		})
 	}
 	raw := jsonJWE{
-		Protected:  string(msg.b64protected),
-		IV:         string(msg.b64iv),
-		Ciphertext: string(msg.b64ciphertext),
-		Tag:        string(msg.b64tag),
-		Recipients: recipients,
-	}
-	if msg.UnprotectedHeader != nil {
-		header, err := encodeHeader(msg.UnprotectedHeader)
-		if err != nil {
-			return nil, err
-		}
-		raw.Unprotected = header
+		Unprotected: unprotected,
+		Protected:   string(msg.b64protected),
+		IV:          string(msg.b64iv),
+		Ciphertext:  string(msg.b64ciphertext),
+		Tag:         string(msg.b64tag),
+		Recipients:  recipients,
 	}
 	return json.Marshal(raw)
 }
