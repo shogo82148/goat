@@ -402,7 +402,7 @@ const (
 	// Ed448 is Ed448 signature algorithm key pairs.
 	Ed448 EllipticCurve = "Ed448"
 
-	// X25519 is X25519 function key pairs
+	// X25519 is X25519 function key pairs.
 	X25519 EllipticCurve = "X25519"
 
 	// X448 is X448 function key pairs.
