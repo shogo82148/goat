@@ -7,7 +7,12 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
+
+	"github.com/shogo82148/goat/internal/jsonutils"
 )
+
+var timeType = reflect.TypeOf(new(time.Time)).Elem()
 
 // DecodeCustom decodes custom claims into v.
 // v must be a pointer.
@@ -116,6 +121,17 @@ func decode(in any, out reflect.Value) error {
 				return fmt.Errorf("jwt: failed to convert number: overflow")
 			}
 			out.SetUint(uint64(i))
+		case reflect.Struct:
+			switch out.Type() {
+			case timeType:
+				var t jsonutils.NumericDate
+				if err := t.UnmarshalJSON([]byte(in)); err != nil {
+					return fmt.Errorf("jwt: failed to parse date time: %w", err)
+				}
+				out.Set(reflect.ValueOf(t.Time))
+			default:
+				return fmt.Errorf("jwt: can't covert number to %s", out.Type().String())
+			}
 		default:
 			return fmt.Errorf("jwt: can't covert number to %s", out.Type().String())
 		}

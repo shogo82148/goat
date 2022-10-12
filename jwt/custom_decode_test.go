@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/shogo82148/pointer"
 )
@@ -226,6 +227,21 @@ func TestDecodeCustom(t *testing.T) {
 				Bytes: []byte(`{"iss":"joe",` + "\r\n" +
 					` "exp":1300819380,` + "\r\n" +
 					` "http://example.com/is_root":true}`),
+			},
+		},
+
+		// time
+		{
+			in: map[string]any{
+				"time": json.Number("1300819380"),
+			},
+			out: new(struct {
+				Time time.Time `jwt:"time"`
+			}),
+			want: &struct {
+				Time time.Time `jwt:"time"`
+			}{
+				Time: time.Unix(1300819380, 0),
 			},
 		},
 	}
