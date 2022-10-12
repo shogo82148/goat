@@ -45,6 +45,15 @@ func TestDecodeCustom(t *testing.T) {
 		*Loop
 	}
 
+	type Interface struct {
+		String  any `jwt:"string"`
+		Number  any `jwt:"number"`
+		Object  any `jwt:"object"`
+		Array   any `jwt:"array"`
+		Boolean any `jwt:"boolean"`
+		Null    any `jwt:"null"`
+	}
+
 	cases := []struct {
 		in   map[string]any
 		out  any
@@ -154,6 +163,31 @@ func TestDecodeCustom(t *testing.T) {
 			want: &Loop{
 				Loop1: 1,
 				Loop2: 2,
+			},
+		},
+
+		// Reference
+		{
+			in: map[string]any{
+				"string": "string",
+				"number": json.Number("123"),
+				"object": map[string]any{
+					"foo": "bar",
+				},
+				"array":   []any{"1", "2", "3"},
+				"boolean": true,
+				"null":    nil,
+			},
+			out: new(Interface),
+			want: &Interface{
+				String: "string",
+				Number: json.Number("123"),
+				Object: map[string]any{
+					"foo": "bar",
+				},
+				Array:   []any{"1", "2", "3"},
+				Boolean: true,
+				Null:    nil,
 			},
 		},
 	}

@@ -33,13 +33,24 @@ func decode(in any, out reflect.Value) error {
 	out = indirect(out)
 	switch in := in.(type) {
 	case string:
-		if out.Kind() == reflect.String {
+		switch out.Kind() {
+		case reflect.String:
 			out.SetString(in)
-		} else {
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
+		default:
 			return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
 		}
 	case float64:
 		switch out.Kind() {
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert number to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
 		case reflect.Float32, reflect.Float64:
 			if out.OverflowFloat(in) {
 				return fmt.Errorf("jwt: failed to convert number: overflow")
@@ -62,6 +73,11 @@ func decode(in any, out reflect.Value) error {
 		}
 	case json.Number:
 		switch out.Kind() {
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
 		case reflect.Float32, reflect.Float64:
 			f, err := in.Float64()
 			if err != nil || out.OverflowFloat(f) {
@@ -93,6 +109,11 @@ func decode(in any, out reflect.Value) error {
 		switch out.Kind() {
 		case reflect.Bool:
 			out.SetBool(in)
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert boolean to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
 		default:
 			return fmt.Errorf("jwt: can't covert boolean to %s", out.Type().String())
 		}
@@ -128,6 +149,32 @@ func decode(in any, out reflect.Value) error {
 					}
 				}
 			}
+		case reflect.Map:
+			t := out.Type()
+			kt := t.Key()
+			if out.IsNil() {
+				out.Set(reflect.MakeMapWithSize(t, len(in)))
+			}
+			elemType := out.Type().Elem()
+			for k, v := range in {
+				subv := reflect.New(elemType).Elem()
+				if err := decode(v, subv); err != nil {
+					return err
+				}
+				var kv reflect.Value
+				switch {
+				case kt.Kind() == reflect.String:
+					kv = reflect.ValueOf(k).Convert(kt)
+				}
+				out.SetMapIndex(kv, subv)
+			}
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert object to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
+		default:
+			return fmt.Errorf("jwt: can't covert object to %s", out.Type().String())
 		}
 	case []any:
 		switch out.Kind() {
@@ -143,6 +190,13 @@ func decode(in any, out reflect.Value) error {
 					return err
 				}
 			}
+		case reflect.Interface:
+			if out.NumMethod() != 0 {
+				return fmt.Errorf("jwt: can't covert object to %s", out.Type().String())
+			}
+			out.Set(reflect.ValueOf(in))
+		default:
+			return fmt.Errorf("jwt: can't covert array to %s", out.Type().String())
 		}
 	default:
 		return fmt.Errorf("jwt: invalid decode type: %s", reflect.TypeOf(in).String())
