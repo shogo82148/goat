@@ -10,21 +10,22 @@ import (
 
 func TestDecodeCustom(t *testing.T) {
 	type MyClaims struct {
-		String    string  `jwt:"string"`
-		Int       int     `jwt:"int"`
-		Int8      int8    `jwt:"int8"`
-		Int16     int16   `jwt:"int16"`
-		Int32     int32   `jwt:"int32"`
-		Int64     int64   `jwt:"int64"`
-		Uint      int     `jwt:"uint"`
-		Uint8     int8    `jwt:"uint8"`
-		Uint16    int16   `jwt:"uint16"`
-		Uint32    int32   `jwt:"uint32"`
-		Uint64    int64   `jwt:"uint64"`
-		Float32   float32 `jwt:"float32"`
-		Float64   float64 `jwt:"float64"`
-		True      bool    `jwt:"true"`
-		False     bool    `jwt:"false"`
+		String    string   `jwt:"string"`
+		Strings   []string `jwt:"strings"`
+		Int       int      `jwt:"int"`
+		Int8      int8     `jwt:"int8"`
+		Int16     int16    `jwt:"int16"`
+		Int32     int32    `jwt:"int32"`
+		Int64     int64    `jwt:"int64"`
+		Uint      int      `jwt:"uint"`
+		Uint8     int8     `jwt:"uint8"`
+		Uint16    int16    `jwt:"uint16"`
+		Uint32    int32    `jwt:"uint32"`
+		Uint64    int64    `jwt:"uint64"`
+		Float32   float32  `jwt:"float32"`
+		Float64   float64  `jwt:"float64"`
+		True      bool     `jwt:"true"`
+		False     bool     `jwt:"false"`
 		NotTagged string
 		private   string
 	}
@@ -64,6 +65,7 @@ func TestDecodeCustom(t *testing.T) {
 		{
 			in: map[string]any{
 				"string":    "foobar",
+				"strings":   "strings",
 				"int":       1.0,
 				"int8":      8.0,
 				"int16":     16.0,
@@ -84,6 +86,7 @@ func TestDecodeCustom(t *testing.T) {
 			out: new(MyClaims),
 			want: &MyClaims{
 				String:    "foobar",
+				Strings:   []string{"strings"},
 				Int:       1,
 				Int8:      8,
 				Int16:     16,
@@ -205,6 +208,24 @@ func TestDecodeCustom(t *testing.T) {
 				Ptr *****string `jwt:"ptr"`
 			}{
 				Ptr: pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr("value"))))),
+			},
+		},
+
+		// byte sequence
+		{
+			in: map[string]any{
+				"bytes": "eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+					"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ",
+			},
+			out: new(struct {
+				Bytes []byte `jwt:"bytes"`
+			}),
+			want: &struct {
+				Bytes []byte `jwt:"bytes"`
+			}{
+				Bytes: []byte(`{"iss":"joe",` + "\r\n" +
+					` "exp":1300819380,` + "\r\n" +
+					` "http://example.com/is_root":true}`),
 			},
 		},
 	}

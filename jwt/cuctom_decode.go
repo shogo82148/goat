@@ -39,6 +39,23 @@ func decode(in any, out reflect.Value) error {
 		switch out.Kind() {
 		case reflect.String:
 			out.SetString(in)
+		case reflect.Slice:
+			switch out.Type().Elem().Kind() {
+			case reflect.Uint8:
+				b, err := b64.DecodeString(in)
+				if err != nil {
+					return fmt.Errorf("jwt: failed to decode base64url string")
+				}
+				out.SetBytes(b)
+			case reflect.String:
+				if out.Cap() == 0 {
+					out.Set(reflect.MakeSlice(out.Type(), 1, 1))
+				}
+				out.SetLen(1)
+				out.Index(0).SetString(in)
+			default:
+				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
+			}
 		case reflect.Interface:
 			if out.NumMethod() != 0 {
 				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
