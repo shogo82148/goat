@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -41,6 +42,21 @@ type Claims struct {
 
 	// Raw is a JSON-decoded data of the claims.
 	Raw map[string]any
+}
+
+// DecodeCustom decodes custom claims into v.
+// v must be a pointer.
+func (c *Claims) DecodeCustom(v any) error {
+	return nil
+}
+
+func decode(in any, out reflect.Value) error {
+	return nil
+}
+
+// EncodeCustom encodes custom claims from v.
+func (c *Claims) EncodeCustom(v any) error {
+	return nil
 }
 
 // KeyFinder is a wrapper for the FindKey method.

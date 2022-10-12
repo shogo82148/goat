@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"encoding/base64"
+	"reflect"
 	"testing"
 	"time"
 
@@ -210,4 +211,38 @@ func TestSign(t *testing.T) {
 			t.Errorf("unexpected payload: want %s, got %s", want, got)
 		}
 	})
+}
+
+func TestDecodeCustom(t *testing.T) {
+	type MyClaims struct {
+		String string `jwt:"string"`
+	}
+	cases := []struct {
+		in   map[string]any
+		out  any
+		want any
+	}{
+		{
+			in: map[string]any{
+				"string": "foobar",
+			},
+			out: new(MyClaims),
+			want: &MyClaims{
+				String: "foobar",
+			},
+		},
+	}
+
+	for i, tc := range cases {
+		claims := &Claims{
+			Raw: tc.in,
+		}
+		if err := claims.DecodeCustom(tc.out); err != nil {
+			t.Errorf("%d: error: %v", i, err)
+			continue
+		}
+		if !reflect.DeepEqual(tc.out, tc.want) {
+			t.Errorf("%d: want %#v, got %#v", i, tc.want, tc.out)
+		}
+	}
 }
