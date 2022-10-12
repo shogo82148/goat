@@ -47,11 +47,147 @@ type Claims struct {
 // DecodeCustom decodes custom claims into v.
 // v must be a pointer.
 func (c *Claims) DecodeCustom(v any) error {
-	return nil
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return fmt.Errorf("jwt: invalid decode type: %s", reflect.TypeOf(v))
+	}
+	return decode(c.Raw, rv)
+}
+
+func indirect(v reflect.Value) reflect.Value {
+	for {
+		if v.Kind() != reflect.Ptr {
+			break
+		}
+		v = v.Elem()
+	}
+	return v
 }
 
 func decode(in any, out reflect.Value) error {
+	out = indirect(out)
+	switch in := in.(type) {
+	case string:
+		if out.Kind() == reflect.String {
+			out.SetString(in)
+		}
+	case map[string]any:
+		if out.Kind() == reflect.Struct {
+			for key, value := range in {
+				fields := typeFields(out.Type())
+				var f *field
+				for i := range fields {
+					ff := &fields[i]
+					if ff.name == key {
+						f = ff
+						break
+					}
+				}
+				if f != nil {
+					subv := out
+					for _, i := range f.index {
+						subv = subv.Field(i)
+					}
+					if err := decode(value, subv); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	default:
+		_ = in
+	}
 	return nil
+}
+
+// A field represents a single field found in a struct.
+type field struct {
+	name  string
+	index []int
+	typ   reflect.Type
+}
+
+func typeFields(t reflect.Type) []field {
+	// Anonymous fields to explore at the current level and the next.
+	current := []field{}
+	next := []field{{typ: t}}
+
+	// Count of queued names for current level and the next.
+	var count map[reflect.Type]int
+	nextCount := map[reflect.Type]int{}
+
+	// Types already visited at an earlier level.
+	visited := map[reflect.Type]bool{}
+
+	// Fields found.
+	var fields []field
+
+	for len(next) > 0 {
+		current, next = next, current[:0]
+		count, nextCount = nextCount, map[reflect.Type]int{}
+
+		for _, f := range current {
+			if visited[f.typ] {
+				continue
+			}
+			visited[f.typ] = true
+
+			// Scan f.typ for fields to include.
+			for i := 0; i < f.typ.NumField(); i++ {
+				sf := f.typ.Field(i)
+				isUnexported := sf.PkgPath != ""
+				if sf.Anonymous {
+					t := sf.Type
+					if t.Kind() == reflect.Ptr {
+						t = t.Elem()
+					}
+					if isUnexported && t.Kind() != reflect.Struct {
+						// Ignore embedded fields of unexported non-struct types.
+						continue
+					}
+					// Do not ignore embedded fields of unexported struct types
+					// since they may have exported fields.
+				} else if isUnexported {
+					// Ignore unexported non-embedded fields.
+					continue
+				}
+
+				tag := sf.Tag.Get("jwt")
+				if tag == "" {
+					continue
+				}
+
+				index := make([]int, len(f.index)+1)
+				copy(index, f.index)
+				index[len(f.index)] = i
+
+				ft := sf.Type
+				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+					// Follow pointer.
+					ft = ft.Elem()
+				}
+
+				if !sf.Anonymous || ft.Kind() != reflect.Struct {
+					fields = append(fields, field{
+						name:  tag,
+						index: index,
+						typ:   sf.Type,
+					})
+					if count[f.typ] > 1 {
+						fields = append(fields, fields[len(fields)-1])
+					}
+					continue
+				}
+
+				// Record new anonymous struct to explore in next round.
+				nextCount[ft]++
+				if nextCount[ft] == 1 {
+					next = append(next, field{name: ft.Name(), typ: ft})
+				}
+			}
+		}
+	}
+	return fields
 }
 
 // EncodeCustom encodes custom claims from v.
