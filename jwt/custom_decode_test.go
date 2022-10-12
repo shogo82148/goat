@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"encoding/json"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -242,6 +243,25 @@ func TestDecodeCustom(t *testing.T) {
 				Time time.Time `jwt:"time"`
 			}{
 				Time: time.Unix(1300819380, 0),
+			},
+		},
+
+		// url
+		{
+			in: map[string]any{
+				"url": "http://example.com/is_root",
+			},
+			out: new(struct {
+				URL *url.URL `jwt:"url"`
+			}),
+			want: &struct {
+				URL *url.URL `jwt:"url"`
+			}{
+				URL: &url.URL{
+					Scheme: "http",
+					Host:   "example.com",
+					Path:   "/is_root",
+				},
 			},
 		},
 	}

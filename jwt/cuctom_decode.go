@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net/url"
 	"reflect"
 	"strconv"
 	"sync"
@@ -12,7 +13,8 @@ import (
 	"github.com/shogo82148/goat/internal/jsonutils"
 )
 
-var timeType = reflect.TypeOf(new(time.Time)).Elem()
+var timeType = reflect.TypeOf(time.Time{})
+var urlType = reflect.TypeOf(url.URL{})
 
 // DecodeCustom decodes custom claims into v.
 // v must be a pointer.
@@ -66,6 +68,17 @@ func decode(in any, out reflect.Value) error {
 				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
 			}
 			out.Set(reflect.ValueOf(in))
+		case reflect.Struct:
+			switch out.Type() {
+			case urlType:
+				u, err := url.Parse(in)
+				if err != nil {
+					return fmt.Errorf("jwt: failed to parse url: %w", err)
+				}
+				out.Set(reflect.ValueOf(*u))
+			default:
+				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
+			}
 		default:
 			return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
 		}
