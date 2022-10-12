@@ -216,21 +216,23 @@ func TestSign(t *testing.T) {
 
 func TestDecodeCustom(t *testing.T) {
 	type MyClaims struct {
-		String  string  `jwt:"string"`
-		Int     int     `jwt:"int"`
-		Int8    int8    `jwt:"int8"`
-		Int16   int16   `jwt:"int16"`
-		Int32   int32   `jwt:"int32"`
-		Int64   int64   `jwt:"int64"`
-		Uint    int     `jwt:"uint"`
-		Uint8   int8    `jwt:"uint8"`
-		Uint16  int16   `jwt:"uint16"`
-		Uint32  int32   `jwt:"uint32"`
-		Uint64  int64   `jwt:"uint64"`
-		Float32 float32 `jwt:"float32"`
-		Float64 float64 `jwt:"float64"`
-		True    bool    `jwt:"true"`
-		False   bool    `jwt:"false"`
+		String    string  `jwt:"string"`
+		Int       int     `jwt:"int"`
+		Int8      int8    `jwt:"int8"`
+		Int16     int16   `jwt:"int16"`
+		Int32     int32   `jwt:"int32"`
+		Int64     int64   `jwt:"int64"`
+		Uint      int     `jwt:"uint"`
+		Uint8     int8    `jwt:"uint8"`
+		Uint16    int16   `jwt:"uint16"`
+		Uint32    int32   `jwt:"uint32"`
+		Uint64    int64   `jwt:"uint64"`
+		Float32   float32 `jwt:"float32"`
+		Float64   float64 `jwt:"float64"`
+		True      bool    `jwt:"true"`
+		False     bool    `jwt:"false"`
+		NotTagged string
+		private   string
 	}
 	cases := []struct {
 		in   map[string]any
@@ -239,39 +241,43 @@ func TestDecodeCustom(t *testing.T) {
 	}{
 		{
 			in: map[string]any{
-				"string":  "foobar",
-				"int":     1.0,
-				"int8":    8.0,
-				"int16":   16.0,
-				"int32":   32.0,
-				"int64":   64.0,
-				"uint":    1.0,
-				"uint8":   8.0,
-				"uint16":  16.0,
-				"uint32":  32.0,
-				"uint64":  64.0,
-				"float32": 0.5,
-				"float64": 0.5,
-				"true":    true,
-				"false":   false,
+				"string":    "foobar",
+				"int":       1.0,
+				"int8":      8.0,
+				"int16":     16.0,
+				"int32":     32.0,
+				"int64":     64.0,
+				"uint":      1.0,
+				"uint8":     8.0,
+				"uint16":    16.0,
+				"uint32":    32.0,
+				"uint64":    64.0,
+				"float32":   0.5,
+				"float64":   0.5,
+				"true":      true,
+				"false":     false,
+				"NotTagged": "NotTagged",
+				"private":   "private",
 			},
 			out: new(MyClaims),
 			want: &MyClaims{
-				String:  "foobar",
-				Int:     1,
-				Int8:    8,
-				Int16:   16,
-				Int32:   32,
-				Int64:   64,
-				Uint:    1,
-				Uint8:   8,
-				Uint16:  16,
-				Uint32:  32,
-				Uint64:  64,
-				Float32: 0.5,
-				Float64: 0.5,
-				True:    true,
-				False:   false,
+				String:    "foobar",
+				Int:       1,
+				Int8:      8,
+				Int16:     16,
+				Int32:     32,
+				Int64:     64,
+				Uint:      1,
+				Uint8:     8,
+				Uint16:    16,
+				Uint32:    32,
+				Uint64:    64,
+				Float32:   0.5,
+				Float64:   0.5,
+				True:      true,
+				False:     false,
+				NotTagged: "",
+				private:   "",
 			},
 		},
 		{
