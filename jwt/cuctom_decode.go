@@ -112,6 +112,15 @@ func decode(in any, out reflect.Value) error {
 				if f != nil {
 					subv := out
 					for _, i := range f.index {
+						if subv.Kind() == reflect.Ptr {
+							if subv.IsNil() {
+								if !subv.CanSet() {
+									return fmt.Errorf("jwt: cannot set pointer to unexported struct: %v", subv.Type().Elem())
+								}
+								subv.Set(reflect.New(subv.Type().Elem()))
+							}
+							subv = subv.Elem()
+						}
 						subv = subv.Field(i)
 					}
 					if err := decode(value, subv); err != nil {
@@ -194,9 +203,6 @@ func typeFields(t reflect.Type) []field {
 				}
 
 				tag := sf.Tag.Get("jwt")
-				if tag == "" {
-					continue
-				}
 
 				index := make([]int, len(f.index)+1)
 				copy(index, f.index)
@@ -209,6 +215,9 @@ func typeFields(t reflect.Type) []field {
 				}
 
 				if !sf.Anonymous || ft.Kind() != reflect.Struct {
+					if tag == "" {
+						continue
+					}
 					fields = append(fields, field{
 						name:  tag,
 						index: index,
@@ -223,7 +232,11 @@ func typeFields(t reflect.Type) []field {
 				// Record new anonymous struct to explore in next round.
 				nextCount[ft]++
 				if nextCount[ft] == 1 {
-					next = append(next, field{name: ft.Name(), typ: ft})
+					next = append(next, field{
+						name:  ft.Name(),
+						index: index,
+						typ:   ft,
+					})
 				}
 			}
 		}

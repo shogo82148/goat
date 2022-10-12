@@ -26,6 +26,19 @@ func TestDecodeCustom(t *testing.T) {
 		NotTagged string
 		private   string
 	}
+
+	type Embed0 struct {
+		Foo string `jwt:"foo"`
+	}
+	type Embed0a struct {
+		Foo1a string `jwt:"foo1a"`
+	}
+	type Parent struct {
+		Embed0
+		*Embed0a
+		Bar string `jwt:"bar"`
+	}
+
 	cases := []struct {
 		in   map[string]any
 		out  any
@@ -72,6 +85,8 @@ func TestDecodeCustom(t *testing.T) {
 				private:   "",
 			},
 		},
+
+		// test for json.Number
 		{
 			in: map[string]any{
 				"int":     json.Number("1"),
@@ -101,6 +116,25 @@ func TestDecodeCustom(t *testing.T) {
 				Uint64:  64,
 				Float32: 0.5,
 				Float64: 0.5,
+			},
+		},
+
+		// embed struct
+		{
+			in: map[string]any{
+				"foo":   "foo",
+				"foo1a": "foo1a",
+				"bar":   "bar",
+			},
+			out: new(Parent),
+			want: &Parent{
+				Embed0: Embed0{
+					Foo: "foo",
+				},
+				Embed0a: &Embed0a{
+					Foo1a: "foo1a",
+				},
+				Bar: "bar",
 			},
 		},
 	}
