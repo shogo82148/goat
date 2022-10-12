@@ -24,6 +24,9 @@ func indirect(v reflect.Value) reflect.Value {
 		if v.Kind() != reflect.Ptr {
 			break
 		}
+		if v.IsNil() {
+			v.Set(reflect.New(v.Type().Elem()))
+		}
 		v = v.Elem()
 	}
 	return v

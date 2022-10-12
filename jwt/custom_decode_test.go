@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	"github.com/shogo82148/pointer"
 )
 
 func TestDecodeCustom(t *testing.T) {
@@ -188,6 +190,21 @@ func TestDecodeCustom(t *testing.T) {
 				Array:   []any{"1", "2", "3"},
 				Boolean: true,
 				Null:    nil,
+			},
+		},
+
+		// pointers
+		{
+			in: map[string]any{
+				"ptr": "value",
+			},
+			out: new(struct {
+				Ptr *****string `jwt:"ptr"`
+			}),
+			want: &struct {
+				Ptr *****string `jwt:"ptr"`
+			}{
+				Ptr: pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr("value"))))),
 			},
 		},
 	}
