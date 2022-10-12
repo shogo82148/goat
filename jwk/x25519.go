@@ -43,7 +43,7 @@ func parseX25519Key(d *jsonutils.Decoder, key *Key) {
 	}
 }
 
-func encodex25519Key(e *jsonutils.Encoder, priv x25519.PrivateKey, pub x25519.PublicKey) {
+func encodeX25519Key(e *jsonutils.Encoder, priv x25519.PrivateKey, pub x25519.PublicKey) {
 	e.Set("kty", jwa.OKP.String())
 	e.Set("crv", jwa.X25519.String())
 	e.SetBytes("x", []byte(pub))
