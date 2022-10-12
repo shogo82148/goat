@@ -6,6 +6,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"sync"
 )
 
 // DecodeCustom decodes custom claims into v.
@@ -99,7 +100,7 @@ func decode(in any, out reflect.Value) error {
 		switch out.Kind() {
 		case reflect.Struct:
 			for key, value := range in {
-				fields := typeFields(out.Type())
+				fields := cachedTypeFields(out.Type())
 				var f *field
 				for i := range fields {
 					ff := &fields[i]
@@ -228,4 +229,15 @@ func typeFields(t reflect.Type) []field {
 		}
 	}
 	return fields
+}
+
+var fieldCache sync.Map // map[reflect.Type][]field
+
+// cachedTypeFields is like typeFields but uses a cache to avoid repeated work.
+func cachedTypeFields(t reflect.Type) []field {
+	if f, ok := fieldCache.Load(t); ok {
+		return f.([]field)
+	}
+	f, _ := fieldCache.LoadOrStore(t, typeFields(t))
+	return f.([]field)
 }
