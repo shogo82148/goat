@@ -39,6 +39,12 @@ func TestDecodeCustom(t *testing.T) {
 		Bar string `jwt:"bar"`
 	}
 
+	type Loop struct {
+		Loop1 int `jwt:"loop1"`
+		Loop2 int `jwt:"loop2"`
+		*Loop
+	}
+
 	cases := []struct {
 		in   map[string]any
 		out  any
@@ -135,6 +141,19 @@ func TestDecodeCustom(t *testing.T) {
 					Foo1a: "foo1a",
 				},
 				Bar: "bar",
+			},
+		},
+
+		// Loop
+		{
+			in: map[string]any{
+				"loop1": 1.0,
+				"loop2": 2.0,
+			},
+			out: new(Loop),
+			want: &Loop{
+				Loop1: 1,
+				Loop2: 2,
 			},
 		},
 	}
