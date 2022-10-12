@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/big"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 
 var timeType = reflect.TypeOf(time.Time{})
 var urlType = reflect.TypeOf(url.URL{})
+var bigIntType = reflect.TypeOf(big.Int{})
 
 // DecodeCustom decodes custom claims into v.
 // v must be a pointer.
@@ -51,7 +53,7 @@ func decode(in any, out reflect.Value) error {
 			case reflect.Uint8:
 				b, err := b64.DecodeString(in)
 				if err != nil {
-					return fmt.Errorf("jwt: failed to decode base64url string")
+					return fmt.Errorf("jwt: failed to decode base64url string: %w", err)
 				}
 				out.SetBytes(b)
 			case reflect.String:
@@ -76,6 +78,14 @@ func decode(in any, out reflect.Value) error {
 					return fmt.Errorf("jwt: failed to parse url: %w", err)
 				}
 				out.Set(reflect.ValueOf(*u))
+			case bigIntType:
+				b, err := b64.DecodeString(in)
+				if err != nil {
+					return fmt.Errorf("jwt: failed to decode base64url string: %w", err)
+				}
+				var bi big.Int
+				bi.SetBytes(b)
+				out.Set(reflect.ValueOf(bi))
 			default:
 				return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
 			}
