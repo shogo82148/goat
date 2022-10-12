@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -70,9 +72,70 @@ func decode(in any, out reflect.Value) error {
 	case string:
 		if out.Kind() == reflect.String {
 			out.SetString(in)
+		} else {
+			return fmt.Errorf("jwt: can't covert string to %s", out.Type().String())
+		}
+	case float64:
+		switch out.Kind() {
+		case reflect.Float32, reflect.Float64:
+			if out.OverflowFloat(in) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetFloat(in)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			i, f := math.Modf(in)
+			if f != 0 || i > math.MaxInt64 || i < math.MinInt64 || out.OverflowInt(int64(i)) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetInt(int64(i))
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			i, f := math.Modf(in)
+			if f != 0 || i > math.MaxUint64 || i < 0 || out.OverflowUint(uint64(i)) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetUint(uint64(i))
+		default:
+			return fmt.Errorf("jwt: can't covert number to %s", out.Type().String())
+		}
+	case json.Number:
+		switch out.Kind() {
+		case reflect.Float32, reflect.Float64:
+			f, err := in.Float64()
+			if err != nil || out.OverflowFloat(f) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetFloat(f)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			i, err := in.Int64()
+			if err != nil || out.OverflowInt(int64(i)) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetInt(int64(i))
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			i, err := strconv.ParseUint(string(in), 10, 64)
+			if err == nil || out.OverflowUint(uint64(i)) {
+				return fmt.Errorf("jwt: failed to convert number: overflow")
+			}
+			out.SetUint(uint64(i))
+		default:
+			return fmt.Errorf("jwt: can't covert number to %s", out.Type().String())
+		}
+	case nil:
+		switch out.Kind() {
+		case reflect.Interface, reflect.Ptr, reflect.Map, reflect.Slice:
+			out.Set(reflect.Zero(out.Type()))
+			// otherwise, ignore null for primitives
+		}
+	case bool:
+		switch out.Kind() {
+		case reflect.Bool:
+			out.SetBool(in)
+		default:
+			return fmt.Errorf("jwt: can't covert boolean to %s", out.Type().String())
 		}
 	case map[string]any:
-		if out.Kind() == reflect.Struct {
+		switch out.Kind() {
+		case reflect.Struct:
 			for key, value := range in {
 				fields := typeFields(out.Type())
 				var f *field
@@ -94,8 +157,23 @@ func decode(in any, out reflect.Value) error {
 				}
 			}
 		}
+	case []any:
+		switch out.Kind() {
+		case reflect.Slice:
+			// Grow slice if necessary
+			if len(in) > out.Cap() {
+				newout := reflect.MakeSlice(out.Type(), len(in), len(in))
+				out.Set(newout)
+			}
+			out.SetLen(len(in))
+			for i, v := range in {
+				if err := decode(v, out.Index(i)); err != nil {
+					return err
+				}
+			}
+		}
 	default:
-		_ = in
+		return fmt.Errorf("jwt: invalid decode type: %s", reflect.TypeOf(in).String())
 	}
 	return nil
 }
