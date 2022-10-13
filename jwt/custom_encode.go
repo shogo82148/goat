@@ -3,8 +3,13 @@ package jwt
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"net/url"
 	"reflect"
 	"strconv"
+	"time"
+
+	"github.com/shogo82148/goat/internal/jsonutils"
 )
 
 // EncodeCustom encodes custom claims from v.
@@ -52,6 +57,24 @@ func encode(in reflect.Value) (any, error) {
 		str := strconv.FormatUint(in.Uint(), 10)
 		return json.Number(str), nil
 	case reflect.Struct:
+		switch typ {
+		case timeType:
+			t := jsonutils.NumericDate{
+				Time: in.Interface().(time.Time),
+			}
+			data, err := t.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			return json.Number(data), nil
+		case urlType:
+			u := in.Interface().(url.URL)
+			return u.String(), nil
+		case bigIntType:
+			i := in.Interface().(big.Int)
+			data := b64.EncodeToString(i.Bytes())
+			return data, nil
+		}
 		fields := cachedTypeFields(typ)
 		ret := make(map[string]any, len(fields))
 		for _, f := range fields {
