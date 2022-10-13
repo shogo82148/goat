@@ -1,5 +1,5 @@
 // Package x25519 implements the X25519 Elliptic Curve Diffie-Hellman algorithm.
-// See https://ed25519.cr.yp.to/.
+// See RFC 8032.
 package x25519
 
 import (
@@ -19,7 +19,7 @@ const (
 	PrivateKeySize = 64
 	// SignatureSize is the size, in bytes, of signatures generated and verified by this package.
 	SignatureSize = 64
-	// SeedSize is the size, in bytes, of private key seeds. These are the private key representations used by RFC 8031.
+	// SeedSize is the size, in bytes, of private key seeds. These are the private key representations used by RFC 8032.
 	SeedSize = 32
 )
 
@@ -58,7 +58,7 @@ func (priv PrivateKey) Equal(x crypto.PrivateKey) bool {
 }
 
 // Seed returns the private key seed corresponding to priv. It is provided for
-// interoperability with RFC 8031. RFC 8031's private keys correspond to seeds
+// interoperability with RFC 8032. RFC 8032's private keys correspond to seeds
 // in this package.
 func (priv PrivateKey) Seed() []byte {
 	seed := make([]byte, SeedSize)
@@ -90,7 +90,7 @@ func GenerateKey(rand io.Reader) (PublicKey, PrivateKey, error) {
 
 // NewKeyFromSeed calculates a private key from a seed. It will panic if
 // len(seed) is not SeedSize. This function is provided for interoperability
-// with RFC 8031. RFC 8031's private keys correspond to seeds in this
+// with RFC 8032. RFC 8032's private keys correspond to seeds in this
 // package.
 func NewKeyFromSeed(seed []byte) PrivateKey {
 	if l := len(seed); l != SeedSize {
@@ -105,4 +105,10 @@ func NewKeyFromSeed(seed []byte) PrivateKey {
 	copy(privateKey, seed)
 	copy(privateKey[32:], publicKey)
 	return privateKey
+}
+
+// X25519 returns the result of the scalar multiplication (scalar * point),
+// according to RFC 7748, Section 5. scalar, point and the return value are slices of 32 bytes.
+func X25519(scalar, point []byte) ([]byte, error) {
+	return curve25519.X25519(scalar, point)
 }
