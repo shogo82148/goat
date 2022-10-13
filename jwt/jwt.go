@@ -43,11 +43,6 @@ type Claims struct {
 	Raw map[string]any
 }
 
-// EncodeCustom encodes custom claims from v.
-func (c *Claims) EncodeCustom(v any) error {
-	return nil
-}
-
 // KeyFinder is a wrapper for the FindKey method.
 type KeyFinder interface {
 	FindKey(header *jws.Header) (key sig.SigningKey, err error)
