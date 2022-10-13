@@ -69,7 +69,7 @@ func TestX25519(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if bytes.Equal(want, got) {
+			if !bytes.Equal(want, got) {
 				t.Errorf("want %x, got %x", want, got)
 			}
 		})
@@ -82,7 +82,7 @@ func TestX25519(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if bytes.Equal(want, got) {
+			if !bytes.Equal(want, got) {
 				t.Errorf("want %x, got %x", want, got)
 			}
 		})
@@ -95,7 +95,7 @@ func TestX25519(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := decodeHex("422c8e7a6227d7bca1350b3e2bb7279f7897b87bb6854b783c60e80311ae3079")
-			if bytes.Equal(want, got) {
+			if !bytes.Equal(want, got) {
 				t.Errorf("want %x, got %x", want, got)
 			}
 		})
@@ -111,7 +111,7 @@ func TestX25519(t *testing.T) {
 				k, u = v, k
 			}
 			want := decodeHex("684cf59ba83309552800ef566f2f4d3c1c3887c49360e3875f2eb94d99532c51")
-			if bytes.Equal(want, k) {
+			if !bytes.Equal(want, k) {
 				t.Errorf("want %x, got %x", want, k)
 			}
 		})
