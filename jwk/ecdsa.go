@@ -119,7 +119,7 @@ func validateEcdsaPublicKey(key *ecdsa.PublicKey) error {
 	default:
 		return errors.New("jwk: unknown elliptic curve of ecdsa public key")
 	}
-	if !key.Curve.IsOnCurve(key.X, key.Y) {
+	if key.X.Sign() == 0 || key.Y.Sign() == 0 || !key.Curve.IsOnCurve(key.X, key.Y) {
 		return fmt.Errorf("jwk: invalid parameter of ecdsa public key")
 	}
 	return nil
