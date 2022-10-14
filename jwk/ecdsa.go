@@ -10,7 +10,7 @@ import (
 	"github.com/shogo82148/goat/jwa"
 )
 
-// RFC7518 6.2.2. Parameters for Elliptic Curve Private Keys
+// RFC 7518 6.2.2. Parameters for Elliptic Curve Private Keys
 func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	var curve elliptic.Curve
 	crv := jwa.EllipticCurve(d.MustString("crv"))
@@ -38,8 +38,9 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		Y:     y,
 	}
 	key.pub = &pub
-	if !curve.IsOnCurve(x, y) {
-		d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s public key", crv))
+	if err := validateEcdsaPublicKey(&pub); err != nil {
+		d.SaveError(err)
+		return
 	}
 
 	// parameters for private key
@@ -48,13 +49,11 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 			PublicKey: pub,
 			D:         dd,
 		}
-		key.priv = &priv
-
-		// sanity check of private key
-		xx, yy := priv.ScalarBaseMult(dd.Bytes())
-		if xx.Cmp(x) != 0 || yy.Cmp(y) != 0 {
-			d.SaveError(fmt.Errorf("jwk: invalid ecdsa %s private key", crv))
+		if err := validateEcdsaPrivateKey(&priv); err != nil {
+			d.SaveError(err)
+			return
 		}
+		key.priv = &priv
 	}
 
 	// sanity check of the certificate
@@ -66,8 +65,12 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	}
 }
 
-// RFC7518 6.2.2. Parameters for Elliptic Curve Private Keys
+// RFC 7518 6.2.2. Parameters for Elliptic Curve Private Keys
 func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
+	if err := validateEcdsaPublicKey(pub); err != nil {
+		e.SaveError(err)
+		return
+	}
 	e.Set("kty", jwa.EC.String())
 	switch pub.Curve {
 	case elliptic.P256():
@@ -77,12 +80,47 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 	case elliptic.P521():
 		e.Set("crv", jwa.P521.String())
 	default:
-		e.SaveError(fmt.Errorf("jwk: unknown elliptic curve %v", pub.Curve))
+		panic("not reach")
 	}
 	size := (pub.Curve.Params().BitSize + 7) / 8
 	e.SetFixedBigInt("x", pub.X, size)
 	e.SetFixedBigInt("y", pub.Y, size)
 	if priv != nil {
+		if !priv.PublicKey.Equal(pub) {
+			e.SaveError(errors.New("jwk: invalid ecdsa key pair"))
+			return
+		}
+		if err := validateEcdsaPrivateKey(priv); err != nil {
+			e.SaveError(err)
+			return
+		}
 		e.SetFixedBigInt("d", priv.D, size)
 	}
+}
+
+// sanity check of private key
+func validateEcdsaPrivateKey(key *ecdsa.PrivateKey) error {
+	if err := validateEcdsaPublicKey(&key.PublicKey); err != nil {
+		return err
+	}
+	xx, yy := key.ScalarBaseMult(key.D.Bytes())
+	if xx.Cmp(key.X) != 0 || yy.Cmp(key.Y) != 0 {
+		return errors.New("jwk: invalid ecdsa key pair")
+	}
+	return nil
+}
+
+// sanity check of public key
+func validateEcdsaPublicKey(key *ecdsa.PublicKey) error {
+	switch key.Curve {
+	case elliptic.P256():
+	case elliptic.P384():
+	case elliptic.P521():
+	default:
+		return errors.New("jwk: unknown elliptic curve of ecdsa public key")
+	}
+	if key.X.Sign() == 0 || key.Y.Sign() == 0 || !key.Curve.IsOnCurve(key.X, key.Y) {
+		return fmt.Errorf("jwk: invalid parameter of ecdsa public key")
+	}
+	return nil
 }

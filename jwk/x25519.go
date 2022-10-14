@@ -11,22 +11,17 @@ import (
 
 func parseX25519Key(d *jsonutils.Decoder, key *Key) {
 	x := d.MustBytes("x")
-	if len(x) != x25519.PublicKeySize {
-		d.SaveError(errors.New("jwk: the parameter x has invalid size"))
+	pub := x25519.PublicKey(x)
+	if err := validateX25519PublicKey(pub); err != nil {
+		d.SaveError(err)
 		return
 	}
-	pub := make(x25519.PublicKey, x25519.PublicKeySize)
-	copy(pub, x)
 	key.pub = pub
 
 	if param, ok := d.GetBytes("d"); ok {
-		if len(param) != x25519.SeedSize {
-			d.SaveError(errors.New("jwk: the parameter d has invalid size"))
-			return
-		}
-		priv := x25519.NewKeyFromSeed(param)
-		if !bytes.Equal([]byte(priv[x25519.SeedSize:]), []byte(pub)) {
-			d.SaveError(errors.New("jwk: invalid key pair"))
+		priv := x25519.PrivateKey(append(param[:len(param):len(param)], pub...))
+		if err := validateX25519PrivateKey(priv); err != nil {
+			d.SaveError(err)
 			return
 		}
 		key.priv = priv
@@ -44,10 +39,36 @@ func parseX25519Key(d *jsonutils.Decoder, key *Key) {
 }
 
 func encodeX25519Key(e *jsonutils.Encoder, priv x25519.PrivateKey, pub x25519.PublicKey) {
+	if err := validateX25519PublicKey(pub); err != nil {
+		e.SaveError(err)
+		return
+	}
 	e.Set("kty", jwa.OKP.String())
 	e.Set("crv", jwa.X25519.String())
 	e.SetBytes("x", []byte(pub))
 	if priv != nil {
+		if err := validateX25519PrivateKey(priv); err != nil {
+			e.SaveError(err)
+			return
+		}
 		e.SetBytes("d", []byte(priv[:x25519.SeedSize]))
 	}
+}
+
+func validateX25519PrivateKey(key x25519.PrivateKey) error {
+	if len(key) != x25519.PrivateKeySize {
+		return errors.New("jwk: invalid x25519 private key size")
+	}
+	want := x25519.NewKeyFromSeed(key[:x25519.SeedSize])
+	if !bytes.Equal(want, key) {
+		return errors.New("jwk: invalid x25519 key pair")
+	}
+	return nil
+}
+
+func validateX25519PublicKey(key x25519.PublicKey) error {
+	if len(key) != x25519.PublicKeySize {
+		return errors.New("jwk: invalid x25519 public key size")
+	}
+	return nil
 }
