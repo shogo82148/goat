@@ -265,7 +265,7 @@ func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 		if cert0 != nil {
 			sum := sha256.Sum256(cert0)
 			if subtle.ConstantTimeCompare(sum[:], x5t256) == 0 {
-				d.SaveError(errors.New("jwk: sha-1 thumbprint of certificate is mismatch"))
+				d.SaveError(errors.New("jwk: sha-256 thumbprint of certificate is mismatch"))
 			}
 		}
 	}
