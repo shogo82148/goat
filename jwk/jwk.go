@@ -22,6 +22,7 @@ import (
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
+	"github.com/shogo82148/goat/x25519"
 )
 
 // Key is a JSON Web Key.
@@ -280,6 +281,15 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, errors.New("jwk: public key is mismatch for ed25519")
 		}
 		encodeEd25519Key(e, priv, pub)
+	case x25519.PrivateKey:
+		if len(priv) != x25519.PrivateKeySize {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		pub := x25519.PublicKey(priv[x25519.SeedSize:])
+		if k := key.pub; k != nil && !pub.Equal(k) {
+			return nil, errors.New("jwk: public key is mismatch for x25519")
+		}
+		encodeX25519Key(e, priv, pub)
 	case []byte:
 		if key.pub != nil {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
@@ -294,6 +304,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeRSAKey(e, nil, pub)
 		case ed25519.PublicKey:
 			encodeEd25519Key(e, nil, pub)
+		case x25519.PublicKey:
+			encodeX25519Key(e, nil, pub)
 		default:
 			return nil, newUnknownKeyTypeError(key)
 		}

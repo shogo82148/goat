@@ -2,11 +2,13 @@ package ecdhes
 
 import (
 	"crypto/subtle"
+	"encoding/hex"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/agcm"
 	"github.com/shogo82148/goat/jwk"
+	"github.com/shogo82148/goat/x25519"
 )
 
 type options struct {
@@ -74,5 +76,47 @@ func TestUnwrap(t *testing.T) {
 	}
 	if subtle.ConstantTimeCompare(want, got) == 0 {
 		t.Errorf("want %#v, got %#v", want, got)
+	}
+}
+
+func decodeHex(s string) []byte {
+	ret, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+func TestX25519(t *testing.T) {
+	alicePrivate := x25519.PrivateKey(decodeHex(
+		"77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a" +
+			"8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+	))
+	alicePublic := x25519.PublicKey(decodeHex(
+		"8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+	))
+	bobPrivate := x25519.PrivateKey(decodeHex(
+		"5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb" +
+			"de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+	))
+	bobPublic := x25519.PublicKey(decodeHex(
+		"de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+	))
+	want := decodeHex("4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742")
+
+	got1, err := deriveZ(alicePrivate, bobPublic)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subtle.ConstantTimeCompare(want, got1) == 0 {
+		t.Errorf("invalid secret: want %x, got %x", want, got1)
+	}
+
+	got2, err := deriveZ(bobPrivate, alicePublic)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if subtle.ConstantTimeCompare(want, got2) == 0 {
+		t.Errorf("invalid secret: want %x, got %x", want, got2)
 	}
 }

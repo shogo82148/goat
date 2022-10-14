@@ -18,6 +18,7 @@ import (
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
+	"github.com/shogo82148/goat/x25519"
 )
 
 var alg = &Algorithm{
@@ -236,6 +237,12 @@ func deriveECDHES(alg, apu, apv []byte, priv, pub any, keySize int) ([]byte, err
 
 func deriveZ(priv, pub any) ([]byte, error) {
 	switch priv := priv.(type) {
+	case x25519.PrivateKey:
+		pubkey, ok := pub.(x25519.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want x25519.PublicKey but got %T", pub)
+		}
+		return x25519.X25519(priv[:x25519.SeedSize], pubkey)
 	case *ecdsa.PrivateKey:
 		pubkey, ok := pub.(*ecdsa.PublicKey)
 		if !ok {

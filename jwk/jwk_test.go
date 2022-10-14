@@ -3,6 +3,7 @@ package jwk
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"math/big"
 	"testing"
 )
@@ -45,5 +46,41 @@ func TestThumbprint(t *testing.T) {
 		if subtle.ConstantTimeCompare(thumb, want) == 0 {
 			t.Errorf("thumbprint mismatch: want %#v, got %#v", want, thumb)
 		}
+	})
+
+	t.Run("RFC 8037 Appendix A.3. JWK Thumbprint Canonicalization", func(t *testing.T) {
+		t.Run("private key", func(t *testing.T) {
+			raw := `{"kty":"OKP","crv":"Ed25519",` +
+				`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",` +
+				`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
+			key, err := ParseKey([]byte(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			thumb, err := key.Thumbprint(sha256.New())
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, _ := hex.DecodeString("90facafea9b1556698540f70c0117a22ea37bd5cf3ed3c47093c1707282b4b89")
+			if subtle.ConstantTimeCompare(thumb, want) == 0 {
+				t.Errorf("thumbprint mismatch: want %#v, got %#v", want, thumb)
+			}
+		})
+		t.Run("public key", func(t *testing.T) {
+			raw := ` {"kty":"OKP","crv":"Ed25519",` +
+				`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
+			key, err := ParseKey([]byte(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			thumb, err := key.Thumbprint(sha256.New())
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, _ := hex.DecodeString("90facafea9b1556698540f70c0117a22ea37bd5cf3ed3c47093c1707282b4b89")
+			if subtle.ConstantTimeCompare(thumb, want) == 0 {
+				t.Errorf("thumbprint mismatch: want %#v, got %#v", want, thumb)
+			}
+		})
 	})
 }

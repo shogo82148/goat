@@ -172,6 +172,10 @@ func FuzzJWK(f *testing.F) {
 	f.Add(`{"kty":"OKP","crv":"Ed25519",` +
 		`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`)
 
+	// RFC 8037 Appendix A.6. ECDH-ES with X25519
+	f.Add(`{"kty":"OKP","crv":"X25519","kid":"Bob",` +
+		`"x":"3p7bfXt9wbTTW2HC7OQ1Nz-DQ8hbeGdNrfx-FG-IK08"}`)
+
 	f.Fuzz(func(t *testing.T, data string) {
 		key1, err := ParseKey([]byte(data))
 		if err != nil {
