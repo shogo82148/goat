@@ -57,7 +57,7 @@ func validateEd25519PrivateKey(key ed25519.PrivateKey) error {
 		return errors.New("jwk: invalid ed25519 private key size")
 	}
 	want := ed25519.NewKeyFromSeed(key[:ed25519.SeedSize])
-	if !bytes.Equal(want, key[ed25519.SeedSize:]) {
+	if !bytes.Equal(want, key) {
 		return errors.New("jwk: invalid ed25519 key pair")
 	}
 	return nil

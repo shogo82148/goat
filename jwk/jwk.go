@@ -130,7 +130,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 		return &Key{
 			kty:  jwa.EC,
 			priv: key,
-			pub:  key.PublicKey,
+			pub:  key.Public(),
 		}, nil
 	case *rsa.PrivateKey:
 		if err := validateRSAPrivateKey(key); err != nil {
@@ -139,7 +139,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 		return &Key{
 			kty:  jwa.RSA,
 			priv: key,
-			pub:  key.PublicKey,
+			pub:  key.Public(),
 		}, nil
 	case ed25519.PrivateKey:
 		if err := validateEd25519PrivateKey(key); err != nil {

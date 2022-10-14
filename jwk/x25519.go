@@ -60,7 +60,7 @@ func validateX25519PrivateKey(key x25519.PrivateKey) error {
 		return errors.New("jwk: invalid x25519 private key size")
 	}
 	want := x25519.NewKeyFromSeed(key[:x25519.SeedSize])
-	if !bytes.Equal(want, key[x25519.SeedSize:]) {
+	if !bytes.Equal(want, key) {
 		return errors.New("jwk: invalid x25519 key pair")
 	}
 	return nil

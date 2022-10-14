@@ -1,11 +1,19 @@
 package jwk
 
 import (
+	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"math/big"
 	"testing"
+
+	"github.com/shogo82148/goat/x25519"
+	"golang.org/x/crypto/ed25519"
 )
 
 func newBigInt(s string) *big.Int {
@@ -82,5 +90,90 @@ func TestThumbprint(t *testing.T) {
 				t.Errorf("thumbprint mismatch: want %#v, got %#v", want, thumb)
 			}
 		})
+	})
+}
+
+func TestNewPrivateKey(t *testing.T) {
+	t.Run("ecdsa", func(t *testing.T) {
+		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv, key.PrivateKey())
+		}
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv.PublicKey, key.PublicKey())
+		}
+	})
+
+	t.Run("rsa", func(t *testing.T) {
+		priv, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv, key.PrivateKey())
+		}
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv.PublicKey, key.PublicKey())
+		}
+	})
+
+	t.Run("ed25519", func(t *testing.T) {
+		pub, priv, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv, key.PrivateKey())
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
+	t.Run("x25519", func(t *testing.T) {
+		pub, priv, err := x25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv, key.PrivateKey())
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
+	t.Run("oct", func(t *testing.T) {
+		buf := make([]byte, 32)
+		if _, err := rand.Read(buf); err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := key.PrivateKey().([]byte)
+		if !bytes.Equal(buf, got) {
+			t.Errorf("unexpected PrivateKey: want %#v, got %#v", buf, got)
+		}
 	})
 }
