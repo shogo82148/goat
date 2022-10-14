@@ -16,6 +16,7 @@ func parseX25519Key(d *jsonutils.Decoder, key *Key) {
 		d.SaveError(err)
 		return
 	}
+	key.pub = pub
 
 	if param, ok := d.GetBytes("d"); ok {
 		priv := x25519.PrivateKey(append(param[:len(param):len(param)], pub...))
