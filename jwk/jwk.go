@@ -121,6 +121,93 @@ func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
 	key.x5tS256 = x5tS256
 }
 
+func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
+	switch key := key.(type) {
+	case *ecdsa.PrivateKey:
+		if err := validateEcdsaPrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.EC,
+			priv: key,
+			pub:  key.PublicKey,
+		}, nil
+	case *rsa.PrivateKey:
+		if err := validateRSAPrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.RSA,
+			priv: key,
+			pub:  key.PublicKey,
+		}, nil
+	case ed25519.PrivateKey:
+		if err := validateEd25519PrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.OKP,
+			priv: key,
+			pub:  key.Public(),
+		}, nil
+	case x25519.PrivateKey:
+		if err := validateX25519PrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.OKP,
+			priv: key,
+			pub:  key.Public(),
+		}, nil
+	case []byte:
+		return &Key{
+			kty:  jwa.Oct,
+			priv: append([]byte(nil), key...),
+		}, nil
+	default:
+		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
+	}
+}
+
+func NewPublicKey(key crypto.PublicKey) (*Key, error) {
+	switch key := key.(type) {
+	case *ecdsa.PublicKey:
+		if err := validateEcdsaPublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.EC,
+			pub: key,
+		}, nil
+	case *rsa.PublicKey:
+		if err := validateRSAPublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.RSA,
+			pub: key,
+		}, nil
+	case ed25519.PublicKey:
+		if err := validateEd25519PublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.OKP,
+			pub: key,
+		}, nil
+	case x25519.PublicKey:
+		if err := validateX25519PublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.OKP,
+			pub: key,
+		}, nil
+	default:
+		return nil, fmt.Errorf("jwk: unknown public key type: %T", key)
+	}
+}
+
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
@@ -263,31 +350,27 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 
 	switch priv := key.priv.(type) {
 	case *ecdsa.PrivateKey:
-		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
-			return nil, errors.New("jwk: public key is mismatch for ecdsa")
+		pub, ok := key.pub.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for ecdsa: %T", key.pub)
 		}
-		encodeEcdsaKey(e, priv, &priv.PublicKey)
+		encodeEcdsaKey(e, priv, pub)
 	case *rsa.PrivateKey:
-		if k := key.pub; k != nil && !priv.PublicKey.Equal(k) {
-			return nil, errors.New("jwk: public key is mismatch for rsa")
+		pub, ok := key.pub.(*rsa.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for rsa: %T", key.pub)
 		}
-		encodeRSAKey(e, priv, &priv.PublicKey)
+		encodeRSAKey(e, priv, pub)
 	case ed25519.PrivateKey:
-		if len(priv) != ed25519.PrivateKeySize {
-			return nil, newUnknownKeyTypeError(key)
-		}
-		pub := ed25519.PublicKey(priv[ed25519.SeedSize:])
-		if k := key.pub; k != nil && !pub.Equal(k) {
-			return nil, errors.New("jwk: public key is mismatch for ed25519")
+		pub, ok := key.pub.(ed25519.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for ed25519: %T", key.pub)
 		}
 		encodeEd25519Key(e, priv, pub)
 	case x25519.PrivateKey:
-		if len(priv) != x25519.PrivateKeySize {
-			return nil, newUnknownKeyTypeError(key)
-		}
-		pub := x25519.PublicKey(priv[x25519.SeedSize:])
-		if k := key.pub; k != nil && !pub.Equal(k) {
-			return nil, errors.New("jwk: public key is mismatch for x25519")
+		pub, ok := key.pub.(x25519.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for x25519: %T", key.pub)
 		}
 		encodeX25519Key(e, priv, pub)
 	case []byte:
@@ -334,11 +417,6 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 		return nil, err
 	}
 	return h.Sum(nil), nil
-}
-
-// KeyPair returns a pair of private key and public key.
-func (key *Key) KeyPair() (crypto.PrivateKey, crypto.PublicKey) {
-	return key.priv, key.pub
 }
 
 // PrivateKey returns the private key.

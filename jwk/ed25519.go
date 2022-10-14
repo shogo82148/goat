@@ -51,3 +51,21 @@ func encodeEd25519Key(e *jsonutils.Encoder, priv ed25519.PrivateKey, pub ed25519
 		e.SetBytes("d", []byte(priv[:ed25519.SeedSize]))
 	}
 }
+
+func validateEd25519PrivateKey(key ed25519.PrivateKey) error {
+	if len(key) != ed25519.PrivateKeySize {
+		return errors.New("jwk: invalid ed25519 private key size")
+	}
+	want := ed25519.NewKeyFromSeed(key[:ed25519.SeedSize])
+	if !bytes.Equal(want, key[ed25519.SeedSize:]) {
+		return errors.New("jwk: invalid ed25519 key pair")
+	}
+	return nil
+}
+
+func validateEd25519PublicKey(key ed25519.PublicKey) error {
+	if len(key) != ed25519.PublicKeySize {
+		return errors.New("jwk: invalid ed25519 public key size")
+	}
+	return nil
+}

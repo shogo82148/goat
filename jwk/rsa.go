@@ -20,7 +20,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		return
 	}
 	if !e.IsInt64() || e.Int64() > math.MaxInt || e.Int64() <= 0 {
-		d.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", e))
+		d.SaveError(errors.New("jwk: invalid rsa parameter e"))
 		return
 	}
 	privateKey.PublicKey.E = int(e.Int64())
@@ -31,6 +31,10 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	}
 	key.pub = &pub
 	if err := d.Err(); err != nil {
+		return
+	}
+	if err := validateRSAPublicKey(&pub); err != nil {
+		d.SaveError(err)
 		return
 	}
 
@@ -76,7 +80,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 			return
 		}
 
-		if err := priv.Validate(); err != nil {
+		if err := validateRSAPrivateKey(&priv); err != nil {
 			d.SaveError(err)
 			return
 		}
@@ -108,10 +112,11 @@ func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
 	e.Set("kty", jwa.RSA.String())
 
-	if pub.E <= 0 {
-		e.SaveError(fmt.Errorf("jwk: parameter e out of range: %d", pub.E))
+	if err := validateRSAPublicKey(pub); err != nil {
+		e.SaveError(err)
 		return
 	}
+
 	var buf [8]byte
 	i := 8
 	for v := pub.E; v != 0; v >>= 8 {
@@ -122,6 +127,10 @@ func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey
 	e.SetBigInt("n", pub.N)
 
 	if priv != nil {
+		if err := validateRSAPrivateKey(priv); err != nil {
+			e.SaveError(err)
+			return
+		}
 		e.SetBigInt("d", priv.D)
 		e.SetBigInt("p", priv.Primes[0])
 		e.SetBigInt("q", priv.Primes[1])
@@ -144,4 +153,17 @@ func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey
 			}
 		}
 	}
+}
+
+// sanity check of private key
+func validateRSAPrivateKey(key *rsa.PrivateKey) error {
+	return key.Validate()
+}
+
+// sanity check of public key
+func validateRSAPublicKey(key *rsa.PublicKey) error {
+	if key.E <= 0 {
+		return errors.New("jwk: invalid rsa parameter e")
+	}
+	return nil
 }
