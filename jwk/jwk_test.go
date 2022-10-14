@@ -177,3 +177,71 @@ func TestNewPrivateKey(t *testing.T) {
 		}
 	})
 }
+
+func TestNewPublicKey(t *testing.T) {
+	t.Run("ecdsa", func(t *testing.T) {
+		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPublicKey(priv.Public())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv.PublicKey, key.PublicKey())
+		}
+	})
+
+	t.Run("rsa", func(t *testing.T) {
+		priv, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPublicKey(priv.Public())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv.PublicKey, key.PublicKey())
+		}
+	})
+
+	t.Run("ed25519", func(t *testing.T) {
+		pub, _, err := ed25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPublicKey(pub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
+	t.Run("x25519", func(t *testing.T) {
+		pub, _, err := x25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPublicKey(pub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
+	t.Run("oct", func(t *testing.T) {
+		buf := make([]byte, 32)
+		if _, err := rand.Read(buf); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := NewPublicKey(buf); err == nil {
+			t.Error("want error, got nil")
+		}
+	})
+}
