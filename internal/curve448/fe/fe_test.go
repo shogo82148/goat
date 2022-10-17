@@ -371,6 +371,58 @@ func newP() *big.Int {
 	return p
 }
 
+func TestSquare(t *testing.T) {
+	tests := []struct {
+		x Element
+		r Element
+	}{
+		{
+			x: Element{0, 0, 0, 0, 0, 0, 0, 0},
+			r: Element{0, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			x: Element{1, 0, 0, 0, 0, 0, 0, 0},
+			r: Element{1, 0, 0, 0, 0, 0, 0, 0},
+		},
+		{
+			x: Element{0, 1, 0, 0, 0, 0, 0, 0},
+			r: Element{0, 0, 1, 0, 0, 0, 0, 0},
+		},
+		{
+			x: Element{0, 0, 1, 0, 0, 0, 0, 0},
+			r: Element{0, 0, 0, 0, 1, 0, 0, 0},
+		},
+		{
+			x: Element{0, 0, 0, 1, 0, 0, 0, 0},
+			r: Element{0, 0, 0, 0, 0, 0, 1, 0},
+		},
+		{
+			x: Element{0, 0, 0, 0, 1, 0, 0, 0},
+			r: Element{1, 0, 0, 0, 1, 0, 0, 0},
+		},
+		{
+			x: Element{0, 0, 0, 0, 0, 1, 0, 0},
+			r: Element{0, 0, 1, 0, 0, 0, 1, 0},
+		},
+		{
+			x: Element{0, 0, 0, 0, 0, 0, 1, 0},
+			r: Element{1, 0, 0, 0, 2, 0, 0, 0},
+		},
+		{
+			x: Element{0, 0, 0, 0, 0, 0, 0, 1},
+			r: Element{0, 0, 1, 0, 0, 0, 2, 0},
+		},
+	}
+	for _, test := range tests {
+		var r Element
+		r.Square(&test.x)
+		r.reduce()
+		if r != test.r {
+			t.Errorf("got %#v, want %#v", r, test.r)
+		}
+	}
+}
+
 func TestSelectSwap(t *testing.T) {
 	a := Element{
 		0xbeee3fe4f8720f, 0xaf4abe14cdfa87, 0x743db59a7609ca, 0xa305baf38087e1,

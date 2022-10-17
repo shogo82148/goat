@@ -553,7 +553,7 @@ func (v *Element) Mul(a, b *Element) *Element {
 	r2 = add128(r2, a3b7)
 	r2 = add128(r2, a7b7)
 
-	// r3 = a3b0 + a2b1 + a1b2 + a0b3 + a6b5 + a5b6 + a4b7
+	// r3 = a3b0 + a2b1 + a1b2 + a0b3 + a7b4 + a6b5 + a5b6 + a4b7
 	r3 := mul64(a3, b0)
 	r3 = addMul64(r3, a2, b1)
 	r3 = addMul64(r3, a1, b2)
@@ -645,8 +645,170 @@ func (v *Element) Mul(a, b *Element) *Element {
 	return v.carryPropagate()
 }
 
-func (v *Element) Square(z *Element) *Element {
-	return v.Mul(z, z)
+//                                      a7   a6   a5   a4   a3   a2   a1   a0  =
+//                                      a7   a6   a5   a4   a3   a2   a1   a0  x
+//                                    ----------------------------------------
+//                                    a7a0 a6a0 a5a0 a4a0 a3a0 a2a0 a1a0 a0a0  +
+//                               a7a1 a6a1 a5a1 a4a1 a3a1 a2a1 a1a1 a0a1       +
+//                          a7a2 a6a2 a5a2 a4a2 a3a2 a2a2 a1a2 a0a2            +
+//                     a7a3 a6a3 a5a3 a4a3 a3a3 a2a3 a1a3 a0a3                 +
+//                a7a4 a6a4 a5a4 a4a4 a3a4 a2a4 a1a4 a0a4                      +
+//           a7a5 a6a5 a5a5 a4a5 a3a5 a2a5 a1a5 a0a5                           +
+//      a7a6 a6a6 a5a6 a4a6 a3a6 a2a6 a1a6 a0a6                                +
+// a7a7 a6a7 a5a7 a4a7 a3a7 a2a7 a1a7 a0a7                                     =
+// -----------------------------------------------------------------------------
+//  r14  r13  r12  r11  r10   r9   r8   r7   r6   r5   r4   r3   r2   r1   r0
+//
+// We can then use the reduction identity (a * 2^448 + b = a * 2^224 + a + b) to
+// reduce the limbs that would overflow 448 bits. r8 * 2^448 becomes r8 * 2^224 + r8,
+// r9 * 2^504 becomes r9 * 2^56 + r9, etc.
+//
+// r12 * 2^672 = r12 * 2^448 + r12 * 2^224
+//   = r12 * 2^224 + r12 + r14 * 2^224
+//   = 2 * r12 * 2^224 + r14
+//
+//   a7        a6          a5          a4          a3   a2        a1        a0  =
+//   a7        a6          a5          a4          a3   a2        a1        a0  x
+// -------------------  ----------  ----------  ----------     -----     -----
+// a0a7      a0a6        a0a5        a0a4        a0a3 a0a2      a0a1      a0a0       +
+// a1a6      a1a5        a1a4        a1a3+a1a7   a1a2 a1a1      a0a1      a1a7       +
+// a2a5      a2a4        a2a3+a2a7   a2a2+a2a6   a1a2 a0a2      a2a7      a2a6       +
+// a3a4      a3a3+a3a7   a2a3+a3a6   a1a3+a3a5   a0a3 a3a7      a3a6      a3a5       +
+// a3a4+a4a7 a2a4+a4a6   a1a4+a4a5   a0a4+a4a4   a4a7 a4a6      a4a5      a4a4       +
+// a2a5+a5a6 a1a5+a5a5   a0a5+a4a5   a3a5+a5a7*2 a5a6 a5a5      a4a5      a3a5+a5a7  +
+// a1a6+a5a6 a0a6+a4a6   a3a6+a6a7*2 a2a6+a6a6*2 a5a6 a4a6      a3a6+a6a7 a2a6+a6a6  +
+// a0a7+a4a7 a3a7+a7a7*2 a2a7+a6a7*2 a1a7+a5a7*2 a4a7 a3a7+a7a7 a2a7+a6a7 a1a7+a5a7  =
+// --------------------------------------------------------------------------------
+//        r7          r6          r5          r4   r3        r2        r1        r0
+
+func (v *Element) Square(a *Element) *Element {
+	a0 := a.l0
+	a1 := a.l1
+	a2 := a.l2
+	a3 := a.l3
+	a4 := a.l4
+	a5 := a.l5
+	a6 := a.l6
+	a7 := a.l7
+
+	a1a7 := mul64(a1, a7)
+
+	a2a6 := mul64(a2, a6)
+	a2a7 := mul64(a2, a7)
+
+	a3a5 := mul64(a3, a5)
+	a3a6 := mul64(a3, a6)
+	a3a7 := mul64(a3, a7)
+
+	a4a4 := mul64(a4, a4)
+	a4a5 := mul64(a4, a5)
+	a4a6 := mul64(a4, a6)
+	a4a7 := mul64(a4, a7)
+
+	a5a5 := mul64(a5, a5)
+	a5a6 := mul64(a5, a6)
+	a5a7 := mul64(a5, a7)
+
+	a6a6 := mul64(a6, a6)
+	a6a7 := mul64(a6, a7)
+
+	a7a7 := mul64(a7, a7)
+
+	// r0 = a0a0 + a1a7 + a2a6 + a3a5 + a4a4 + a3a5+a5a7 + a2a6+a6a6 + a1a7+a5a7
+	r0 := a1a7
+	r0 = add128(r0, a2a6)
+	r0 = add128(r0, a3a5)
+	r0 = add128(r0, a5a7)
+	r0 = lsh128(r0)
+	r0 = addMul64(r0, a0, a0)
+	r0 = add128(r0, a4a4)
+	r0 = add128(r0, a6a6)
+
+	// r1 = a0a1 + a0a1 + a2a7 + a3a6 + a4a5 + a4a5 + a3a6+a6a7 + a2a7+a6a7
+	r1 := mul64(a0, a1)
+	r1 = add128(r1, a2a7)
+	r1 = add128(r1, a3a6)
+	r1 = add128(r1, a4a5)
+	r1 = add128(r1, a6a7)
+	r1 = lsh128(r1)
+
+	// r2 = a0a2 + a1a1 + a0a2 + a3a7 + a4a6 + a5a5 + a4a6 + a3a7+a7a7
+	r2 := mul64(a0, a2)
+	r2 = add128(r2, a3a7)
+	r2 = add128(r2, a4a6)
+	r2 = lsh128(r2)
+	r2 = addMul64(r2, a1, a1)
+	r2 = add128(r2, a5a5)
+	r2 = addMul64(r2, a7, a7)
+
+	// r3 = a0a3 + a1a2 + a1a2 + a0a3 + a4a7 + a5a6 + a5a6 + a4a7
+	r3 := mul64(a0, a3)
+	r3 = addMul64(r3, a1, a2)
+	r3 = add128(r3, a4a7)
+	r3 = add128(r3, a5a6)
+	r3 = lsh128(r3)
+
+	// r4 = a0a4 + a1a3+a1a7 + a2a2+a2a6 + a1a3+a3a5 + a0a4+a4a4 + a3a5+a5a7*2 + a2a6+a6a6*2 + a1a7+a5a7*2
+	r4 := lsh128(a5a7)
+	r4 = add128(r4, a6a6)
+	r4 = addMul64(r4, a0, a4)
+	r4 = addMul64(r4, a1, a3)
+	r4 = add128(r4, a1a7)
+	r4 = add128(r4, a2a6)
+	r4 = add128(r4, a3a5)
+	r4 = lsh128(r4)
+	r4 = addMul64(r4, a2, a2)
+	r4 = add128(r4, a4a4)
+
+	// r5 = a0a5 + a1a4 + a2a3+a2a7 + a2a3+a3a6 + a1a4+a4a5 + a0a5+a4a5 + a3a6+a6a7*2 + a2a7+a6a7*2
+	r5 := lsh128(a6a7)
+	r5 = addMul64(r5, a0, a5)
+	r5 = addMul64(r5, a1, a4)
+	r5 = addMul64(r5, a2, a3)
+	r5 = add128(r5, a2a7)
+	r5 = add128(r5, a3a6)
+	r5 = add128(r5, a4a5)
+	r5 = lsh128(r5)
+
+	// r6 = a0a6 + a1a5 + a2a4 + a3a3+a3a7 + a2a4+a4a6 + a1a5+a5a5 + a0a6+a4a6 + a3a7+a7a7*2
+	r6 := a7a7
+	r6 = addMul64(r6, a0, a6)
+	r6 = addMul64(r6, a1, a5)
+	r6 = addMul64(r6, a2, a4)
+	r6 = add128(r6, a3a7)
+	r6 = add128(r6, a4a6)
+	r6 = lsh128(r6)
+	r6 = addMul64(r6, a3, a3)
+	r6 = add128(r6, a5a5)
+
+	// r7 = a0a7 + a1a6 + a2a5 + a3a4 + a3a4+a4a7 + a2a5+a5a6 + a1a6+a5a6 + a0a7+a4a7
+	r7 := mul64(a0, a7)
+	r7 = addMul64(r7, a1, a6)
+	r7 = addMul64(r7, a2, a5)
+	r7 = addMul64(r7, a3, a4)
+	r7 = add128(r7, a4a7)
+	r7 = add128(r7, a5a6)
+	r7 = lsh128(r7)
+
+	c0 := shiftRightBy56(r0)
+	c1 := shiftRightBy56(r1)
+	c2 := shiftRightBy56(r2)
+	c3 := shiftRightBy56(r3)
+	c4 := shiftRightBy56(r4)
+	c5 := shiftRightBy56(r5)
+	c6 := shiftRightBy56(r6)
+	c7 := shiftRightBy56(r7)
+
+	rr0 := r0.lo&maskLow56Bits + c7
+	rr1 := r1.lo&maskLow56Bits + c0
+	rr2 := r2.lo&maskLow56Bits + c1
+	rr3 := r3.lo&maskLow56Bits + c2
+	rr4 := r4.lo&maskLow56Bits + c3 + c7
+	rr5 := r5.lo&maskLow56Bits + c4
+	rr6 := r6.lo&maskLow56Bits + c5
+	rr7 := r7.lo&maskLow56Bits + c6
+	*v = Element{rr0, rr1, rr2, rr3, rr4, rr5, rr6, rr7}
+	return v.carryPropagate()
 }
 
 // Inv sets v = 1/z mod p, and returns v.
