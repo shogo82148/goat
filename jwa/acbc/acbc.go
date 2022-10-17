@@ -186,11 +186,8 @@ func padding(data []byte, size int) []byte {
 
 	// fill pad
 	copy(ret, data)
-	for i := 1; i <= size; i++ {
-		t := uint(paddingLen) - uint(i)
-		// if i <= paddingLen then the MSB of t is zero
-		mask := byte(int32(^t) >> 31)
-		ret[l-i] = ^mask&ret[l-i] | mask&pad
+	for i := len(data); i < l; i++ {
+		ret[i] = pad
 	}
 	return ret
 }
