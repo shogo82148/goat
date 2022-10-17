@@ -275,7 +275,7 @@ func (v *Element) bytes(out *[56]byte) []byte {
 // Equal returns 1 if v and u are equal, and 0 otherwise.
 func (v *Element) Equal(u *Element) int {
 	u0 := *u // shallow copy
-	v0 := *u // shallow copy
+	v0 := *v // shallow copy
 	u0.reduce()
 	v0.reduce()
 
