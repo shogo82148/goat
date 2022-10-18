@@ -814,14 +814,73 @@ func (v *Element) Square(a *Element) *Element {
 // Inv sets v = 1/z mod p, and returns v.
 func (v *Element) Inv(z *Element) *Element {
 	// Inversion is implemented as exponentiation with exponent p − 2.
-	var t Element
-	t.Set(z)
-	v.One()
-	for i := 0; i < 448; i++ {
-		if i != 1 && i != 224 {
-			v.Mul(v, &t)
-		}
-		t.Mul(&t, &t)
+
+	var z1, z2, z3 Element
+	z1.Square(z)   // 2^1
+	z2.Square(&z1) // 2^2
+	z3.Mul(z, &z1)
+	z3.Mul(&z3, &z2) // 2^3 - 1
+
+	var z6 Element
+	z6.Square(&z3)
+	z6.Square(&z6)
+	z6.Square(&z6)
+	z6.Mul(&z6, &z3) // 2^6 - 1
+
+	var z9 Element
+	z9.Square(&z6)
+	z9.Square(&z9)
+	z9.Square(&z9)
+	z9.Mul(&z9, &z3) // 2^9 - 1
+
+	var z18 Element
+	z18.Square(&z9)
+	for i := 1; i < 9; i++ {
+		z18.Square(&z18)
 	}
-	return v
+	z18.Mul(&z18, &z9) // 2^18 - 1
+
+	var z37 Element
+	z37.Square(&z18)
+	for i := 1; i < 18; i++ {
+		z37.Square(&z37)
+
+	}
+	z37.Mul(&z37, &z18)
+	z37.Square(&z37)
+	z37.Mul(&z37, z) // 2^37 - 1
+
+	var z111 Element
+	z111.Square(&z37)
+	for i := 1; i < 37; i++ {
+		z111.Square(&z111)
+	}
+	z111.Mul(&z111, &z37)
+	for i := 0; i < 37; i++ {
+		z111.Square(&z111)
+	}
+	z111.Mul(&z111, &z37) // 2^111 - 1
+
+	var z222 Element
+	z222.Square(&z111)
+	for i := 1; i < 111; i++ {
+		z222.Square(&z222)
+	}
+	z222.Mul(&z222, &z111) // 2^222 - 1
+
+	var z223 Element
+	z223.Square(&z222)
+	z223.Mul(&z223, z) // 2^223 - 1
+
+	var x Element
+	x.Square(&z223)
+	for i := 1; i < 223; i++ {
+		x.Square(&x)
+	}
+	x.Mul(&x, &z222) // 2^446 - 2^222 - 1
+
+	x.Square(&x)
+	x.Square(&x) // 2^448 - 2^224 - 4
+
+	return v.Mul(&x, z) // 2^448 - 2^224 - 3
 }
