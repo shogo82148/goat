@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/x25519"
+	"github.com/shogo82148/goat/x448"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -162,6 +163,23 @@ func TestNewPrivateKey(t *testing.T) {
 		}
 	})
 
+	t.Run("x448", func(t *testing.T) {
+		pub, priv, err := x448.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPrivateKey(priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", priv, key.PrivateKey())
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
 	t.Run("oct", func(t *testing.T) {
 		buf := make([]byte, 32)
 		if _, err := rand.Read(buf); err != nil {
@@ -223,6 +241,20 @@ func TestNewPublicKey(t *testing.T) {
 
 	t.Run("x25519", func(t *testing.T) {
 		pub, _, err := x25519.GenerateKey(rand.Reader)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key, err := NewPublicKey(pub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !pub.Equal(key.PublicKey()) {
+			t.Errorf("unexpected PublicKey: want %#v, got %#v", pub, key.PublicKey())
+		}
+	})
+
+	t.Run("x448", func(t *testing.T) {
+		pub, _, err := x448.GenerateKey(rand.Reader)
 		if err != nil {
 			t.Fatal(err)
 		}
