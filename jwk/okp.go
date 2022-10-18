@@ -15,6 +15,8 @@ func parseOKPKey(d *jsonutils.Decoder, key *Key) {
 		parseEd25519Key(d, key)
 	case jwa.X25519:
 		parseX25519Key(d, key)
+	case jwa.X448:
+		parseX448Key(d, key)
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
 	}

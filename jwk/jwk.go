@@ -23,6 +23,7 @@ import (
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/x25519"
+	"github.com/shogo82148/goat/x448"
 )
 
 // Key is a JSON Web Key.
@@ -159,6 +160,15 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			priv: key,
 			pub:  key.Public(),
 		}, nil
+	case x448.PrivateKey:
+		if err := validateX448PrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.OKP,
+			priv: key,
+			pub:  key.Public(),
+		}, nil
 	case []byte:
 		return &Key{
 			kty:  jwa.Oct,
@@ -197,6 +207,14 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 		}, nil
 	case x25519.PublicKey:
 		if err := validateX25519PublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.OKP,
+			pub: key,
+		}, nil
+	case x448.PublicKey:
+		if err := validateX448PublicKey(key); err != nil {
 			return nil, err
 		}
 		return &Key{
@@ -373,6 +391,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, fmt.Errorf("jwk: public key type is mismatch for x25519: %T", key.pub)
 		}
 		encodeX25519Key(e, priv, pub)
+	case x448.PrivateKey:
+		pub, ok := key.pub.(x448.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for x448: %T", key.pub)
+		}
+		encodeX448Key(e, priv, pub)
 	case []byte:
 		if key.pub != nil {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
@@ -389,6 +413,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeEd25519Key(e, nil, pub)
 		case x25519.PublicKey:
 			encodeX25519Key(e, nil, pub)
+		case x448.PublicKey:
+			encodeX448Key(e, nil, pub)
 		default:
 			return nil, newUnknownKeyTypeError(key)
 		}
