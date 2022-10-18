@@ -19,6 +19,7 @@ import (
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
 	"github.com/shogo82148/goat/x25519"
+	"github.com/shogo82148/goat/x448"
 )
 
 var alg = &Algorithm{
@@ -243,6 +244,12 @@ func deriveZ(priv, pub any) ([]byte, error) {
 			return nil, fmt.Errorf("ecdhes: want x25519.PublicKey but got %T", pub)
 		}
 		return x25519.X25519(priv[:x25519.SeedSize], pubkey)
+	case x448.PrivateKey:
+		pubkey, ok := pub.(x448.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want z447.PublicKey but got %T", pub)
+		}
+		return x448.X448(priv[:x448.SeedSize], pubkey)
 	case *ecdsa.PrivateKey:
 		pubkey, ok := pub.(*ecdsa.PublicKey)
 		if !ok {
