@@ -10,7 +10,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/shogo82148/goat/internal/curve448/fe"
+	"github.com/shogo82148/goat/internal/edwards448/field"
 )
 
 var basepoint []byte = []byte{
@@ -132,10 +132,10 @@ func X448(scalar, point []byte) ([]byte, error) {
 	k[0] &= 252
 	k[55] |= 128
 
-	var u fe.Element
+	var u field.Element
 	u.SetBytes(point)
 
-	var x1, x2, z2, x3, z3 fe.Element
+	var x1, x2, z2, x3, z3 field.Element
 	x1.Set(&u)
 	x2.One()
 	x3.Set(&u)
@@ -149,7 +149,7 @@ func X448(scalar, point []byte) ([]byte, error) {
 		z2.Swap(&z3, swap)
 		swap = kt
 
-		var a, aa, b, bb, e, c, d, da, cb fe.Element
+		var a, aa, b, bb, e, c, d, da, cb field.Element
 		a.Add(&x2, &z2)
 		aa.Square(&a)
 		b.Sub(&x2, &z2)
@@ -177,8 +177,8 @@ func X448(scalar, point []byte) ([]byte, error) {
 	x2.Swap(&x3, swap)
 	z2.Swap(&z3, swap)
 
-	var zero fe.Element
-	var ret fe.Element
+	var zero field.Element
+	var ret field.Element
 	ret.Mul(&x2, ret.Inv(&z2))
 	if zero.Equal(&ret) == 1 {
 		return nil, errors.New("x448 bad input point: low order point")

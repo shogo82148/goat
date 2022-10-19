@@ -1,4 +1,13 @@
-package fe
+// Package field implements fast arithmetic modulo 2^448-2^224-1.
+
+// based on https://github.com/golang/crypto/blob/56aed061732aaf690a941aa617c5b0e322727650/curve25519/internal/field/fe.go
+//
+// original copyright:
+// Copyright (c) 2017 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package field
 
 import "math/bits"
 
@@ -41,6 +50,13 @@ var feOne = &Element{1, 0, 0, 0, 0, 0, 0, 0}
 func (v *Element) One() *Element {
 	*v = *feOne
 	return v
+}
+
+// IsNegative returns 1 if v is negative, and 0 otherwise.
+func (v *Element) IsNegative() int {
+	v0 := *v // shallow copy
+	v0.reduce()
+	return int(v0.l0 & 1)
 }
 
 // reduce reduces v modulo 2^448 - 2^224 - 1 and returns it.
@@ -125,7 +141,7 @@ func (v *Element) Set(a *Element) *Element {
 	return v
 }
 
-// SetBytes sets v to x, which must be a 32-byte little-endian encoding.
+// SetBytes sets v to x, which must be a 56-byte little-endian encoding.
 func (v *Element) SetBytes(x []byte) *Element {
 	if len(x) != 56 {
 		panic("curve448: invalid field element input size")
