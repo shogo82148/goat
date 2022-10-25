@@ -921,10 +921,17 @@ func (v *Element) Power446(z *Element) *Element {
 // sets r according to Section 5.2 of draft-irtf-cfrg-ristretto255-decaf448-04,
 // and returns r and 0.
 func (r *Element) SqrtRatio(u, v *Element) (rr *Element, wasSquare int) {
-	var uv Element
+	// tmp1 = u^3 * v
+	var u2, tmp1 Element
+	u2.Square(u)
+	tmp1.Mul(&tmp1, u)
+	tmp1.Mul(&tmp1, v)
+
+	var uv, tmp2 Element
 	uv.Mul(u, v)
-	uv.Power446(&uv)
-	r.Mul(u, &uv)
+	tmp2.Square(&uv)
+	tmp2.Mul(&tmp2, &uv)
+	tmp2.Mul(&tmp2, &u2)
 
 	var check Element
 	check.Square(r)

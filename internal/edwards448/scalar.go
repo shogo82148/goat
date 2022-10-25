@@ -75,3 +75,12 @@ func (s *Scalar) Equal(t *Scalar) int {
 	}
 	return 0
 }
+
+func (s *Scalar) bytes() [56]byte {
+	var buf [56]byte
+	s.v.FillBytes(buf[:])
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	return buf
+}
