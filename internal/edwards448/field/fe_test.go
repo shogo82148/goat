@@ -472,3 +472,29 @@ func TestInv(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestSqrtRatio(t *testing.T) {
+	x := Element{
+		0x26a82bc70cc05e, 0x80e18b00938e26, 0xf72ab66511433b, 0xa3d3a46412ae1a,
+		0x0f1767ea6de324, 0x36da9e14657047, 0xed221d15a622bf, 0x4f1970c66bed0d,
+	}
+	u := Element{
+		0xfdbea9c1016921, 0x7ce9fb5b58ed6b, 0xb7182b43475674, 0x537802431535a5,
+		0x6ee99099c9bdaf, 0x2d3b302e3babea, 0x71c5d7678ec053, 0x74366fc32eea26,
+	}
+	v := Element{
+		0x485756bfa5233f, 0x9c4ad3e553250c, 0xc75b7e3a92c2ee, 0xa46ead1f2530e3,
+		0x19f43ab1316864, 0xff51be0c885062, 0x6c7f4fe091a63b, 0xf5b4544b009911,
+	}
+
+	var r Element
+	rr, wasSquare := r.SqrtRatio(&u, &v)
+	r.Abs(rr)
+
+	if r.Equal(&x) != 1 {
+		t.Errorf("got %s, want %s", &x, rr)
+	}
+	if wasSquare != 1 {
+		t.Errorf("got %d, want 1", wasSquare)
+	}
+}

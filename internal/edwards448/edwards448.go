@@ -142,7 +142,7 @@ func (v *Point) SetBytes(data []byte) (*Point, error) {
 	// Select the negative square root if the sign bit is set.
 	var xNeg field.Element
 	xNeg.Negate(&x)
-	x.Select(&xNeg, &x, int(data[56]>>7))
+	x.Select(&xNeg, &x, int(data[56]>>7)^x.IsNegative())
 
 	if wasSquare == 0 {
 		return nil, errors.New("edwards448: invalid point encoding")

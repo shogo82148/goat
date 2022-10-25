@@ -39,3 +39,14 @@ func BenchmarkInv(b *testing.B) {
 		x.Inv(&x)
 	}
 }
+
+func BenchmarkSqrtRatio(b *testing.B) {
+	var u Element
+	var v Element
+	u.One()
+	v.One()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		u.SqrtRatio(&u, &v)
+	}
+}
