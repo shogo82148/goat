@@ -109,3 +109,61 @@ func newKeyFromSeed(privateKey, seed []byte) {
 	copy(privateKey, seed)
 	copy(privateKey[57:], p.Bytes())
 }
+
+// Sign signs the message with privateKey and returns a signature. It will
+// panic if len(privateKey) is not PrivateKeySize.
+func Sign(privateKey PrivateKey, message []byte) []byte {
+	// Outline the function body so that the returned signature can be
+	// stack-allocated.
+	signature := make([]byte, SignatureSize)
+	sign(signature, privateKey, message)
+	return signature
+}
+
+var sigEd448 = []byte("SigEd448" +
+	"\000" + // phflag: Ed448
+	"\000", // OLEN(context)
+)
+
+func sign(signature, privateKey, message []byte) {
+	seed, publicKey := privateKey[:SeedSize], privateKey[SeedSize:]
+
+	h := make([]byte, 114)
+	sha3.ShakeSum256(h, seed)
+	s, err := edwards448.NewScalar().SetBytesWithClamping(h[:57])
+	if err != nil {
+		panic("ed25519: internal error: setting scalar failed")
+	}
+	prefix := h[57:]
+
+	mh := sha3.NewShake256()
+	mh.Write(sigEd448)
+	mh.Write(prefix)
+	mh.Write(message)
+	messageDigest := make([]byte, 114)
+	mh.Read(messageDigest)
+	r, err := edwards448.NewScalar().SetUniformBytes(messageDigest)
+	if err != nil {
+		panic("ed25519: internal error: setting scalar failed")
+	}
+
+	R := new(edwards448.Point).ScalarBaseMult(r)
+
+	kh := sha3.NewShake256()
+	kh.Write(sigEd448)
+	kh.Write(R.Bytes())
+	kh.Write(publicKey)
+	kh.Write(message)
+	hramDigest := make([]byte, 114)
+	kh.Read(hramDigest)
+	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
+	if err != nil {
+		panic("ed25519: internal error: setting scalar failed")
+	}
+
+	S := edwards448.NewScalar().MulAdd(k, s, r)
+
+	sb := S.Bytes()
+	copy(signature[:57], R.Bytes())
+	copy(signature[57:], sb[:])
+}

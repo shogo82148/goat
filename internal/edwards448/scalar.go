@@ -80,6 +80,20 @@ func (s *Scalar) Equal(t *Scalar) int {
 	return 0
 }
 
+func (s *Scalar) SetUniformBytes(x []byte) (*Scalar, error) {
+	if len(x) != 114 {
+		return nil, errors.New("edwards448: invalid SetUniformBytes input length")
+	}
+	var buf [114]byte
+	copy(buf[:], x)
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	s.v.SetBytes(buf[:])
+	s.v.Mod(s.v, l)
+	return s, nil
+}
+
 func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
 	if len(x) != 57 {
 		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
@@ -96,7 +110,7 @@ func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
 	return s, nil
 }
 
-func (s *Scalar) bytes() [56]byte {
+func (s *Scalar) Bytes() [56]byte {
 	var buf [56]byte
 	s.v.FillBytes(buf[:])
 	for i := 0; i < len(buf)/2; i++ {

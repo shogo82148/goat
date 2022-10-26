@@ -109,7 +109,7 @@ func (v *Point) bytes(buf *[57]byte) []byte {
 	y.Mul(&v.y, &zInv) // y = Y / Z
 
 	out := copyFieldElement(buf, &y)
-	out[56] |= byte(v.x.IsNegative() << 7)
+	out[56] |= byte(x.IsNegative() << 7)
 	return out
 }
 
