@@ -5,7 +5,6 @@ import (
 	"crypto"
 	cryptorand "crypto/rand"
 	"io"
-	"log"
 	"strconv"
 
 	"github.com/shogo82148/goat/internal/edwards448"
@@ -102,10 +101,11 @@ func newKeyFromSeed(privateKey, seed []byte) {
 	h := make([]byte, 114)
 	sha3.ShakeSum256(h, seed)
 
-	s, err := edwards448.NewScalar().SetBytesWithClamping(h[57:])
+	s, err := edwards448.NewScalar().SetBytesWithClamping(h[:57])
 	if err != nil {
 		panic(err)
 	}
 	p := new(edwards448.Point).ScalarBaseMult(s)
-	log.Printf("%#v", p.Bytes())
+	copy(privateKey, seed)
+	copy(privateKey[57:], p.Bytes())
 }
