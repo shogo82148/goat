@@ -6,7 +6,7 @@ package edwards448
 // TODO: The scalar multiplication is done in constant time.
 func (v *Point) ScalarBaseMult(x *Scalar) *Point {
 	zero := new(Point).Zero()
-	tmp := new(Point).Set(NewIdentityPoint())
+	tmp := new(Point).Set(NewGeneratorPoint())
 	v.Set(NewIdentityPoint())
 	bytes := x.bytes()
 	for _, b := range bytes {

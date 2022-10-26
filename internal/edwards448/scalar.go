@@ -4,7 +4,10 @@
 
 package edwards448
 
-import "math/big"
+import (
+	"errors"
+	"math/big"
+)
 
 // A Scalar is an integer modulo
 //
@@ -65,6 +68,7 @@ func (s *Scalar) Mul(x, y *Scalar) *Scalar {
 
 func (s *Scalar) Set(x *Scalar) *Scalar {
 	s.v.Set(x.v)
+	s.v.Mod(s.v, l)
 	return s
 }
 
@@ -74,6 +78,22 @@ func (s *Scalar) Equal(t *Scalar) int {
 		return 1
 	}
 	return 0
+}
+
+func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
+	if len(x) != 57 {
+		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
+	}
+	var buf [56]byte
+	copy(buf[:], x)
+	buf[0] &= 252
+	buf[55] |= 128
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	s.v.SetBytes(buf[:])
+	s.v.Mod(s.v, l)
+	return s, nil
 }
 
 func (s *Scalar) bytes() [56]byte {
