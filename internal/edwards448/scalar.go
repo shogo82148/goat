@@ -80,10 +80,18 @@ func (s *Scalar) Equal(t *Scalar) int {
 	return 0
 }
 
+// SetUniformBytes sets s = x mod l, where x is a 114-byte little-endian integer.
+// If x is not of the right length, SetUniformBytes returns nil and an error,
+// and the receiver is unchanged.
+//
+// SetUniformBytes can be used to set s to an uniformly distributed value given
+// 64 uniformly distributed random bytes.
 func (s *Scalar) SetUniformBytes(x []byte) (*Scalar, error) {
 	if len(x) != 114 {
 		return nil, errors.New("edwards448: invalid SetUniformBytes input length")
 	}
+
+	// TODO: reimplement with constant-time algorithm
 	var buf [114]byte
 	copy(buf[:], x)
 	for i := 0; i < len(buf)/2; i++ {
@@ -94,10 +102,37 @@ func (s *Scalar) SetUniformBytes(x []byte) (*Scalar, error) {
 	return s, nil
 }
 
+// SetCanonicalBytes sets s = x, where x is a 57-byte little-endian encoding of
+// s, and returns s. If x is not a canonical encoding of s, SetCanonicalBytes
+// returns nil and an error, and the receiver is unchanged.
+func (s *Scalar) SetCanonicalBytes(x []byte) (*Scalar, error) {
+	if len(x) != 57 {
+		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
+	}
+
+	// TODO: reimplement with constant-time algorithm
+	var buf [56]byte
+	copy(buf[:], x)
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	s.v.SetBytes(buf[:])
+	if s.v.Cmp(l) >= 0 {
+		return nil, errors.New("edwards448: invalid scalar encoding")
+	}
+	return s, nil
+}
+
+// SetBytesWithClamping applies the buffer pruning described in RFC 8032,
+// Section 5.1.5 (also known as clamping) and sets s to the result. The input
+// must be 32 bytes, and it is not modified. If x is not of the right length,
+// SetBytesWithClamping returns nil and an error, and the receiver is unchanged.
 func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
 	if len(x) != 57 {
 		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
 	}
+
+	// TODO: reimplement with constant-time algorithm
 	var buf [56]byte
 	copy(buf[:], x)
 	buf[0] &= 252

@@ -279,3 +279,12 @@ func (v *Point) Select(p, q *Point, cond int) *Point {
 	v.z.Select(&p.z, &q.z, cond)
 	return v
 }
+
+// Negate sets v = -p, and returns v.
+func (v *Point) Negate(p *Point) *Point {
+	checkInitialized(p)
+	v.x.Negate(&p.x)
+	v.y.Set(&p.y)
+	v.z.Set(&p.z)
+	return v
+}

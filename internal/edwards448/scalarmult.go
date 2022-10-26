@@ -33,3 +33,15 @@ func (v *Point) ScalarMult(x *Scalar, q *Point) *Point {
 	}
 	return v
 }
+
+// VarTimeDoubleScalarBaseMult sets v = a * A + b * B, where B is the canonical
+// generator, and returns v.
+//
+// Execution time depends on the inputs.
+func (v *Point) VarTimeDoubleScalarBaseMult(a *Scalar, A *Point, b *Scalar) *Point {
+	// TODO: optimize
+	aa := new(Point).ScalarMult(a, A)
+	bb := new(Point).ScalarBaseMult(b)
+	v.Add(aa, bb)
+	return v
+}

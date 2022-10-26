@@ -53,9 +53,14 @@ func TestSign(t *testing.T) {
 			"b61149f05a7363268c71d95808ff2e65" +
 			"2600",
 	)
+	message := decodeHex("")
 	priv := NewKeyFromSeed(seed)
-	signature := Sign(priv, []byte{})
+	signature := Sign(priv, message)
 	if !bytes.Equal(signature, want) {
 		t.Errorf("got %0228x, want %0228x", signature, want)
+	}
+
+	if !Verify(PublicKey(priv[SeedSize:]), message, signature) {
+		t.Error("verification failed")
 	}
 }

@@ -167,3 +167,41 @@ func sign(signature, privateKey, message []byte) {
 	copy(signature[:57], R.Bytes())
 	copy(signature[57:], sb[:])
 }
+
+// Verify reports whether sig is a valid signature of message by publicKey. It
+// will panic if len(publicKey) is not PublicKeySize.
+func Verify(publicKey PublicKey, message, sig []byte) bool {
+	if l := len(publicKey); l != PublicKeySize {
+		panic("ed448: bad public key length: " + strconv.Itoa(l))
+	}
+
+	if len(sig) != SignatureSize || sig[113]&0x7F != 0 {
+		return false
+	}
+
+	A, err := new(edwards448.Point).SetBytes(publicKey)
+	if err != nil {
+		return false
+	}
+
+	kh := sha3.NewShake256()
+	kh.Write(sigEd448)
+	kh.Write(sig[:57])
+	kh.Write(publicKey)
+	kh.Write(message)
+	hramDigest := make([]byte, 114)
+	kh.Read(hramDigest)
+	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
+	if err != nil {
+		panic("ed448: internal error: setting scalar failed")
+	}
+
+	S, err := edwards448.NewScalar().SetCanonicalBytes(sig[57:])
+	if err != nil {
+		return false
+	}
+
+	minusA := new(edwards448.Point).Negate(A)
+	R := new(edwards448.Point).VarTimeDoubleScalarBaseMult(k, minusA, S)
+	return bytes.Equal(sig[:57], R.Bytes())
+}
