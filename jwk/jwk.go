@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/shogo82148/goat/ed448"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
@@ -160,6 +161,15 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			priv: key,
 			pub:  key.Public(),
 		}, nil
+	case ed448.PrivateKey:
+		if err := validateEd448PrivateKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty:  jwa.OKP,
+			priv: key,
+			pub:  key.Public(),
+		}, nil
 	case x448.PrivateKey:
 		if err := validateX448PrivateKey(key); err != nil {
 			return nil, err
@@ -207,6 +217,14 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 		}, nil
 	case x25519.PublicKey:
 		if err := validateX25519PublicKey(key); err != nil {
+			return nil, err
+		}
+		return &Key{
+			kty: jwa.OKP,
+			pub: key,
+		}, nil
+	case ed448.PublicKey:
+		if err := validateEd448PublicKey(key); err != nil {
 			return nil, err
 		}
 		return &Key{
@@ -391,6 +409,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, fmt.Errorf("jwk: public key type is mismatch for x25519: %T", key.pub)
 		}
 		encodeX25519Key(e, priv, pub)
+	case ed448.PrivateKey:
+		pub, ok := key.pub.(ed448.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for ed448: %T", key.pub)
+		}
+		encodeEd448Key(e, priv, pub)
 	case x448.PrivateKey:
 		pub, ok := key.pub.(x448.PublicKey)
 		if !ok {
@@ -413,6 +437,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeEd25519Key(e, nil, pub)
 		case x25519.PublicKey:
 			encodeX25519Key(e, nil, pub)
+		case ed448.PublicKey:
+			encodeEd448Key(e, nil, pub)
 		case x448.PublicKey:
 			encodeX448Key(e, nil, pub)
 		default:
