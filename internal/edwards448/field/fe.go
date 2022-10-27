@@ -1,4 +1,13 @@
-package fe
+// Package field implements fast arithmetic modulo 2^448-2^224-1.
+
+// based on https://github.com/golang/crypto/blob/56aed061732aaf690a941aa617c5b0e322727650/curve25519/internal/field/fe.go
+//
+// original copyright:
+// Copyright (c) 2017 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package field
 
 import "math/bits"
 
@@ -41,6 +50,19 @@ var feOne = &Element{1, 0, 0, 0, 0, 0, 0, 0}
 func (v *Element) One() *Element {
 	*v = *feOne
 	return v
+}
+
+// IsNegative returns 1 if v is negative, and 0 otherwise.
+func (v *Element) IsNegative() int {
+	v0 := *v // shallow copy
+	v0.reduce()
+	return int(v0.l0 & 1)
+}
+
+func (v *Element) Abs(u *Element) *Element {
+	var x Element
+	x.Negate(u)
+	return v.Select(&x, u, u.IsNegative())
 }
 
 // reduce reduces v modulo 2^448 - 2^224 - 1 and returns it.
@@ -125,7 +147,7 @@ func (v *Element) Set(a *Element) *Element {
 	return v
 }
 
-// SetBytes sets v to x, which must be a 32-byte little-endian encoding.
+// SetBytes sets v to x, which must be a 56-byte little-endian encoding.
 func (v *Element) SetBytes(x []byte) *Element {
 	if len(x) != 56 {
 		panic("curve448: invalid field element input size")
@@ -815,6 +837,17 @@ func (v *Element) Square(a *Element) *Element {
 func (v *Element) Inv(z *Element) *Element {
 	// Inversion is implemented as exponentiation with exponent p − 2.
 
+	var x Element
+	x.Power446(z)
+	x.Square(&x)
+	x.Square(&x) // 2^448 - 2^224 - 4
+
+	return v.Mul(&x, z) // 2^448 - 2^224 - 3
+}
+
+// Power446 sets v = v ^ ((p-3)/4) mod p, and returns v.
+// (p-3)/4 is 2^446 - 2^222 - 1.
+func (v *Element) Power446(z *Element) *Element {
 	var z1, z2, z3 Element
 	z1.Square(z)   // 2^1
 	z2.Square(&z1) // 2^2
@@ -877,10 +910,26 @@ func (v *Element) Inv(z *Element) *Element {
 	for i := 1; i < 223; i++ {
 		x.Square(&x)
 	}
-	x.Mul(&x, &z222) // 2^446 - 2^222 - 1
+	v.Mul(&x, &z222) // 2^446 - 2^222 - 1
 
-	x.Square(&x)
-	x.Square(&x) // 2^448 - 2^224 - 4
+	return v
+}
 
-	return v.Mul(&x, z) // 2^448 - 2^224 - 3
+// SqrtRatio sets r to the non-negative square root of the ratio of u and v.
+//
+// If u/v is square, SqrtRatio returns r and 1. If u/v is not square, SqrtRatio
+// sets r according to Section 5.2 of draft-irtf-cfrg-ristretto255-decaf448-04,
+// and returns r and 0.
+func (r *Element) SqrtRatio(u, v *Element) (rr *Element, wasSquare int) {
+	var uv Element
+	uv.Mul(u, v)
+	uv.Power446(&uv)
+	r.Mul(u, &uv)
+
+	var check Element
+	check.Square(r)
+	check.Mul(v, &check)
+	wasSquare = check.Equal(u)
+
+	return r, wasSquare
 }

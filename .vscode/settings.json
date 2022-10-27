@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "acbc",
+        "agcm",
         "agcmkw",
         "AQAB",
         "ciphertext",
@@ -10,6 +11,7 @@
         "ecdhes",
         "eddsa",
         "GCMKW",
+        "invsqrt",
         "jsonutils",
         "jwks",
         "jwktypes",

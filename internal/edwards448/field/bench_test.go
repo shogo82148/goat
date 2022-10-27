@@ -1,4 +1,4 @@
-package fe
+package field
 
 import "testing"
 
@@ -37,5 +37,16 @@ func BenchmarkInv(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		x.Inv(&x)
+	}
+}
+
+func BenchmarkSqrtRatio(b *testing.B) {
+	var u Element
+	var v Element
+	u.One()
+	v.One()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		u.SqrtRatio(&u, &v)
 	}
 }
