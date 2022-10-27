@@ -2,9 +2,8 @@ package edwards448
 
 // ScalarBaseMult sets v = x * B, where B is the canonical generator, and
 // returns v.
-//
-// TODO: The scalar multiplication is done in constant time.
 func (v *Point) ScalarBaseMult(x *Scalar) *Point {
+	// TODO: optimize
 	tmp := new(Point).Set(NewGeneratorPoint())
 	v.Set(NewIdentityPoint())
 	bytes := x.Bytes()
@@ -19,9 +18,8 @@ func (v *Point) ScalarBaseMult(x *Scalar) *Point {
 }
 
 // ScalarMult sets v = x * q, and returns v.
-//
-// TODO: The scalar multiplication is done in constant time.
 func (v *Point) ScalarMult(x *Scalar, q *Point) *Point {
+	// TODO: optimize
 	v.Set(NewIdentityPoint())
 	bytes := x.Bytes()
 	for i := 56*8 - 1; i >= 0; i-- {
