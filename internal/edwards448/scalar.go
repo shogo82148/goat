@@ -10,6 +10,20 @@ import (
 	"math/big"
 )
 
+var (
+	scMinusOne = Scalar{
+		s: [56]byte{
+			0xf2, 0x44, 0x58, 0xab, 0x92, 0xc2, 0x78, 0x23,
+			0x55, 0x8f, 0xc5, 0x8d, 0x72, 0xc2, 0x6c, 0x21,
+			0x90, 0x36, 0xd6, 0xae, 0x49, 0xdb, 0x4e, 0xc4,
+			0xe9, 0x23, 0xca, 0x7c, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+			0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x3f,
+		},
+	}
+)
+
 // A Scalar is an integer modulo
 //
 //	l = 2^446 - 13818066809895115352007386748515426880336692474882178609894547503885
@@ -49,6 +63,15 @@ func (s *Scalar) fillBytes() *Scalar {
 		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
 	}
 	s.s = buf
+	return s
+}
+
+func (s *Scalar) fromBytes() *Scalar {
+	buf := s.s
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	s.v.SetBytes(buf[:])
 	return s
 }
 
@@ -123,39 +146,40 @@ func (s *Scalar) SetCanonicalBytes(x []byte) (*Scalar, error) {
 		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
 	}
 
-	// TODO: reimplement with constant-time algorithm
-	var buf [56]byte
-	copy(buf[:], x)
-	for i := 0; i < len(buf)/2; i++ {
-		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
-	}
-	s.v.SetBytes(buf[:])
-	if s.v.Cmp(l) >= 0 {
+	var ss Scalar
+	copy(ss.s[:], x)
+	if x[56] != 0 || !isReduced(&ss) {
 		return nil, errors.New("edwards448: invalid scalar encoding")
 	}
-	return s.fillBytes(), nil
+	s.s = ss.s
+	return s.fromBytes(), nil
+}
+
+func isReduced(s *Scalar) bool {
+	for i := len(s.s) - 1; i >= 0; i-- {
+		switch {
+		case s.s[i] > scMinusOne.s[i]:
+			return false
+		case s.s[i] < scMinusOne.s[i]:
+			return true
+		}
+	}
+	return true
 }
 
 // SetBytesWithClamping applies the buffer pruning described in RFC 8032,
-// Section 5.1.5 (also known as clamping) and sets s to the result. The input
-// must be 32 bytes, and it is not modified. If x is not of the right length,
+// Section 5.2.5 (also known as clamping) and sets s to the result. The input
+// must be 57 bytes, and it is not modified. If x is not of the right length,
 // SetBytesWithClamping returns nil and an error, and the receiver is unchanged.
 func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
 	if len(x) != 57 {
 		return nil, errors.New("edwards448: invalid SetBytesWithClamping input length")
 	}
 
-	// TODO: reimplement with constant-time algorithm
-	var buf [56]byte
-	copy(buf[:], x)
-	buf[0] &= 252
-	buf[55] |= 128
-	for i := 0; i < len(buf)/2; i++ {
-		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
-	}
-	s.v.SetBytes(buf[:])
-	s.v.Mod(s.v, l)
-	return s.fillBytes(), nil
+	copy(s.s[:], x)
+	s.s[0] &^= 0x03
+	s.s[55] |= 0x80
+	return s.fromBytes(), nil
 }
 
 func (s *Scalar) Bytes() [56]byte {
