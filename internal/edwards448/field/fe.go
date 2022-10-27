@@ -118,7 +118,29 @@ func (v *Element) Add(a, b *Element) *Element {
 	v.l5 = a.l5 + b.l5
 	v.l6 = a.l6 + b.l6
 	v.l7 = a.l7 + b.l7
-	return v.carryPropagate()
+
+	// propagate carry
+	c0 := v.l0 >> 56
+	c1 := v.l1 >> 56
+	c2 := v.l2 >> 56
+	c3 := v.l3 >> 56
+	c4 := v.l4 >> 56
+	c5 := v.l5 >> 56
+	c6 := v.l6 >> 56
+	c7 := v.l7 >> 56
+
+	// c7 is at most 64 - 56 = 8 bits,
+	// so the final l0 will be at most 57 bits. Similarly for the rest.
+	v.l0 = v.l0&maskLow56Bits + c7
+	v.l1 = v.l1&maskLow56Bits + c0
+	v.l2 = v.l2&maskLow56Bits + c1
+	v.l3 = v.l3&maskLow56Bits + c2
+	v.l4 = v.l4&maskLow56Bits + c3 + c7
+	v.l5 = v.l5&maskLow56Bits + c4
+	v.l6 = v.l6&maskLow56Bits + c5
+	v.l7 = v.l7&maskLow56Bits + c6
+
+	return v
 }
 
 // Subtract sets v = a - b, and returns v.
@@ -133,12 +155,66 @@ func (v *Element) Sub(a, b *Element) *Element {
 	v.l5 = (a.l5 + 2*0xFF_FFFF_FFFF_FFFF) - b.l5
 	v.l6 = (a.l6 + 2*0xFF_FFFF_FFFF_FFFF) - b.l6
 	v.l7 = (a.l7 + 2*0xFF_FFFF_FFFF_FFFF) - b.l7
-	return v.carryPropagate()
+
+	// propagate carry
+	c0 := v.l0 >> 56
+	c1 := v.l1 >> 56
+	c2 := v.l2 >> 56
+	c3 := v.l3 >> 56
+	c4 := v.l4 >> 56
+	c5 := v.l5 >> 56
+	c6 := v.l6 >> 56
+	c7 := v.l7 >> 56
+
+	// c7 is at most 64 - 56 = 8 bits,
+	// so the final l0 will be at most 57 bits. Similarly for the rest.
+	v.l0 = v.l0&maskLow56Bits + c7
+	v.l1 = v.l1&maskLow56Bits + c0
+	v.l2 = v.l2&maskLow56Bits + c1
+	v.l3 = v.l3&maskLow56Bits + c2
+	v.l4 = v.l4&maskLow56Bits + c3 + c7
+	v.l5 = v.l5&maskLow56Bits + c4
+	v.l6 = v.l6&maskLow56Bits + c5
+	v.l7 = v.l7&maskLow56Bits + c6
+
+	return v
 }
 
 // Negate sets v = -a, and returns v.
 func (v *Element) Negate(a *Element) *Element {
-	return v.Sub(feZero, a)
+	// We first add 2 * p, to guarantee the subtraction won't underflow, and
+	// then subtract b (which can be up to 2^448 + 2^232 + 2^8).
+	v.l0 = 2*0xFF_FFFF_FFFF_FFFF - a.l0
+	v.l1 = 2*0xFF_FFFF_FFFF_FFFF - a.l1
+	v.l2 = 2*0xFF_FFFF_FFFF_FFFF - a.l2
+	v.l3 = 2*0xFF_FFFF_FFFF_FFFF - a.l3
+	v.l4 = 2*0xFF_FFFF_FFFF_FFFE - a.l4
+	v.l5 = 2*0xFF_FFFF_FFFF_FFFF - a.l5
+	v.l6 = 2*0xFF_FFFF_FFFF_FFFF - a.l6
+	v.l7 = 2*0xFF_FFFF_FFFF_FFFF - a.l7
+
+	// propagate carry
+	c0 := v.l0 >> 56
+	c1 := v.l1 >> 56
+	c2 := v.l2 >> 56
+	c3 := v.l3 >> 56
+	c4 := v.l4 >> 56
+	c5 := v.l5 >> 56
+	c6 := v.l6 >> 56
+	c7 := v.l7 >> 56
+
+	// c7 is at most 64 - 56 = 8 bits,
+	// so the final l0 will be at most 57 bits. Similarly for the rest.
+	v.l0 = v.l0&maskLow56Bits + c7
+	v.l1 = v.l1&maskLow56Bits + c0
+	v.l2 = v.l2&maskLow56Bits + c1
+	v.l3 = v.l3&maskLow56Bits + c2
+	v.l4 = v.l4&maskLow56Bits + c3 + c7
+	v.l5 = v.l5&maskLow56Bits + c4
+	v.l6 = v.l6&maskLow56Bits + c5
+	v.l7 = v.l7&maskLow56Bits + c6
+
+	return v
 }
 
 // Set sets v = a, and returns v.
@@ -664,7 +740,29 @@ func (v *Element) Mul(a, b *Element) *Element {
 	rr6 := r6.lo&maskLow56Bits + c5
 	rr7 := r7.lo&maskLow56Bits + c6
 	*v = Element{rr0, rr1, rr2, rr3, rr4, rr5, rr6, rr7}
-	return v.carryPropagate()
+
+	// propagate carry
+	c0 = v.l0 >> 56
+	c1 = v.l1 >> 56
+	c2 = v.l2 >> 56
+	c3 = v.l3 >> 56
+	c4 = v.l4 >> 56
+	c5 = v.l5 >> 56
+	c6 = v.l6 >> 56
+	c7 = v.l7 >> 56
+
+	// c7 is at most 64 - 56 = 8 bits,
+	// so the final l0 will be at most 57 bits. Similarly for the rest.
+	v.l0 = v.l0&maskLow56Bits + c7
+	v.l1 = v.l1&maskLow56Bits + c0
+	v.l2 = v.l2&maskLow56Bits + c1
+	v.l3 = v.l3&maskLow56Bits + c2
+	v.l4 = v.l4&maskLow56Bits + c3 + c7
+	v.l5 = v.l5&maskLow56Bits + c4
+	v.l6 = v.l6&maskLow56Bits + c5
+	v.l7 = v.l7&maskLow56Bits + c6
+
+	return v
 }
 
 //                                      a7   a6   a5   a4   a3   a2   a1   a0  =
@@ -830,7 +928,29 @@ func (v *Element) Square(a *Element) *Element {
 	rr6 := r6.lo&maskLow56Bits + c5
 	rr7 := r7.lo&maskLow56Bits + c6
 	*v = Element{rr0, rr1, rr2, rr3, rr4, rr5, rr6, rr7}
-	return v.carryPropagate()
+
+	// propagate carry
+	c0 = v.l0 >> 56
+	c1 = v.l1 >> 56
+	c2 = v.l2 >> 56
+	c3 = v.l3 >> 56
+	c4 = v.l4 >> 56
+	c5 = v.l5 >> 56
+	c6 = v.l6 >> 56
+	c7 = v.l7 >> 56
+
+	// c7 is at most 64 - 56 = 8 bits,
+	// so the final l0 will be at most 57 bits. Similarly for the rest.
+	v.l0 = v.l0&maskLow56Bits + c7
+	v.l1 = v.l1&maskLow56Bits + c0
+	v.l2 = v.l2&maskLow56Bits + c1
+	v.l3 = v.l3&maskLow56Bits + c2
+	v.l4 = v.l4&maskLow56Bits + c3 + c7
+	v.l5 = v.l5&maskLow56Bits + c4
+	v.l6 = v.l6&maskLow56Bits + c5
+	v.l7 = v.l7&maskLow56Bits + c6
+
+	return v
 }
 
 // Inv sets v = 1/z mod p, and returns v.
