@@ -2,9 +2,20 @@ package ed448
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 )
+
+type zeroReader struct{}
+
+func (zeroReader) Read(buf []byte) (int, error) {
+	for i := range buf {
+		buf[i] = 0
+	}
+	return len(buf), nil
+}
 
 func decodeHex(t testing.TB, s string) []byte {
 	t.Helper()
@@ -290,6 +301,44 @@ func TestSignAndVerify(t *testing.T) {
 				t.Error("verification failed")
 			}
 		})
+	}
+}
+
+func TestEqual(t *testing.T) {
+	public, private, _ := GenerateKey(rand.Reader)
+
+	if !public.Equal(public) {
+		t.Errorf("public key is not equal to itself: %q", public)
+	}
+	if !public.Equal(crypto.Signer(private).Public()) {
+		t.Errorf("private.Public() is not Equal to public: %q", public)
+	}
+	if !private.Equal(private) {
+		t.Errorf("private key is not equal to itself: %q", private)
+	}
+
+	otherPub, otherPriv, _ := GenerateKey(rand.Reader)
+	if public.Equal(otherPub) {
+		t.Errorf("different public keys are Equal")
+	}
+	if private.Equal(otherPriv) {
+		t.Errorf("different private keys are Equal")
+	}
+}
+
+func BenchmarkKeyGeneration(b *testing.B) {
+	var zero zeroReader
+	for i := 0; i < b.N; i++ {
+		if _, _, err := GenerateKey(zero); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkNewKeyFromSeed(b *testing.B) {
+	seed := make([]byte, SeedSize)
+	for i := 0; i < b.N; i++ {
+		_ = NewKeyFromSeed(seed)
 	}
 }
 

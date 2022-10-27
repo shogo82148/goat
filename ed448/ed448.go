@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	cryptorand "crypto/rand"
+	"errors"
 	"io"
 	"strconv"
 
@@ -60,6 +61,19 @@ func (priv PrivateKey) Seed() []byte {
 	seed := make([]byte, SeedSize)
 	copy(seed, priv[:57])
 	return seed
+}
+
+// Sign signs the given message with priv.
+// Ed448 performs two passes over messages to be signed and therefore cannot
+// handle pre-hashed messages. Thus opts.HashFunc() must return zero to
+// indicate the message hasn't been hashed. This can be achieved by passing
+// crypto.Hash(0) as the value for opts.
+func (priv PrivateKey) Sign(rand io.Reader, message []byte, opts crypto.SignerOpts) (signature []byte, err error) {
+	if opts.HashFunc() != crypto.Hash(0) {
+		return nil, errors.New("ed448: cannot sign hashed message")
+	}
+
+	return Sign(priv, message), nil
 }
 
 // GenerateKey generates a public/private key pair using entropy from rand.
@@ -132,7 +146,7 @@ func sign(signature, privateKey, message []byte) {
 	sha3.ShakeSum256(h, seed)
 	s, err := edwards448.NewScalar().SetBytesWithClamping(h[:57])
 	if err != nil {
-		panic("ed25519: internal error: setting scalar failed")
+		panic("ed448: internal error: setting scalar failed")
 	}
 	prefix := h[57:]
 
@@ -144,7 +158,7 @@ func sign(signature, privateKey, message []byte) {
 	mh.Read(messageDigest)
 	r, err := edwards448.NewScalar().SetUniformBytes(messageDigest)
 	if err != nil {
-		panic("ed25519: internal error: setting scalar failed")
+		panic("ed448: internal error: setting scalar failed")
 	}
 
 	R := new(edwards448.Point).ScalarBaseMult(r)
@@ -158,7 +172,7 @@ func sign(signature, privateKey, message []byte) {
 	kh.Read(hramDigest)
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
-		panic("ed25519: internal error: setting scalar failed")
+		panic("ed448: internal error: setting scalar failed")
 	}
 
 	S := edwards448.NewScalar().MulAdd(k, s, r)
