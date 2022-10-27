@@ -5,6 +5,7 @@
 package edwards448
 
 import (
+	"crypto/subtle"
 	"errors"
 	"math/big"
 )
@@ -21,10 +22,14 @@ import (
 // The zero value is a valid zero element.
 type Scalar struct {
 	v *big.Int
+
+	// s is the Scalar value in little-endian. The value is always reduced
+	// modulo l between operations.
+	s [56]byte
 }
 
 func NewScalar() *Scalar {
-	return &Scalar{new(big.Int)}
+	return &Scalar{v: new(big.Int)}
 }
 
 var l, _ = new(big.Int).SetString("181709681073901722637330951972001133588410340171829515070372549795146003961539585716195755291692375963310293709091662304773755859649779", 10)
@@ -34,6 +39,16 @@ func (s *Scalar) MulAdd(x, y, z *Scalar) *Scalar {
 	s.v.Mul(x.v, y.v)
 	s.v.Add(s.v, z.v)
 	s.v.Mod(s.v, l)
+	return s.fillBytes()
+}
+
+func (s *Scalar) fillBytes() *Scalar {
+	var buf [56]byte
+	s.v.FillBytes(buf[:])
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	s.s = buf
 	return s
 }
 
@@ -41,7 +56,7 @@ func (s *Scalar) Add(x, y *Scalar) *Scalar {
 	// TODO: reimplement with constant-time algorithm
 	s.v.Add(x.v, y.v)
 	s.v.Mod(s.v, l)
-	return s
+	return s.fillBytes()
 }
 
 func (s *Scalar) Sub(x, y *Scalar) *Scalar {
@@ -49,35 +64,33 @@ func (s *Scalar) Sub(x, y *Scalar) *Scalar {
 	s.v.Add(x.v, l)
 	s.v.Sub(s.v, y.v)
 	s.v.Mod(s.v, l)
-	return s
+	return s.fillBytes()
 }
 
 func (s *Scalar) Negate(x *Scalar) *Scalar {
 	// TODO: reimplement with constant-time algorithm
 	s.v.Sub(l, x.v)
 	s.v.Mod(s.v, l)
-	return s
+	return s.fillBytes()
 }
 
 func (s *Scalar) Mul(x, y *Scalar) *Scalar {
 	// TODO: reimplement with constant-time algorithm
 	s.v.Mul(x.v, y.v)
 	s.v.Mod(s.v, l)
-	return s
+	return s.fillBytes()
 }
 
 func (s *Scalar) Set(x *Scalar) *Scalar {
 	s.v.Set(x.v)
 	s.v.Mod(s.v, l)
+	s.s = x.s
 	return s
 }
 
+// Equal returns 1 if s and t are equal, and 0 otherwise.
 func (s *Scalar) Equal(t *Scalar) int {
-	// TODO: reimplement with constant-time algorithm
-	if s.v.Cmp(t.v) == 0 {
-		return 1
-	}
-	return 0
+	return subtle.ConstantTimeCompare(s.s[:], t.s[:])
 }
 
 // SetUniformBytes sets s = x mod l, where x is a 114-byte little-endian integer.
@@ -99,7 +112,7 @@ func (s *Scalar) SetUniformBytes(x []byte) (*Scalar, error) {
 	}
 	s.v.SetBytes(buf[:])
 	s.v.Mod(s.v, l)
-	return s, nil
+	return s.fillBytes(), nil
 }
 
 // SetCanonicalBytes sets s = x, where x is a 57-byte little-endian encoding of
@@ -120,7 +133,7 @@ func (s *Scalar) SetCanonicalBytes(x []byte) (*Scalar, error) {
 	if s.v.Cmp(l) >= 0 {
 		return nil, errors.New("edwards448: invalid scalar encoding")
 	}
-	return s, nil
+	return s.fillBytes(), nil
 }
 
 // SetBytesWithClamping applies the buffer pruning described in RFC 8032,
@@ -142,14 +155,9 @@ func (s *Scalar) SetBytesWithClamping(x []byte) (*Scalar, error) {
 	}
 	s.v.SetBytes(buf[:])
 	s.v.Mod(s.v, l)
-	return s, nil
+	return s.fillBytes(), nil
 }
 
 func (s *Scalar) Bytes() [56]byte {
-	var buf [56]byte
-	s.v.FillBytes(buf[:])
-	for i := 0; i < len(buf)/2; i++ {
-		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
-	}
-	return buf
+	return s.s
 }

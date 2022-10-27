@@ -34,7 +34,7 @@ func (pub PublicKey) Equal(x crypto.PublicKey) bool {
 	return bytes.Equal(pub, xx)
 }
 
-// PrivateKey is the type of X448 private keys.
+// PrivateKey is the type of Ed448 private keys.
 type PrivateKey []byte
 
 // Public returns the PublicKey corresponding to priv.
