@@ -332,6 +332,9 @@ func TestDecoder_MustBytes(t *testing.T) {
 	if !bytes.Equal(want, got) {
 		t.Errorf("unexpected key value: want %x, got %x", want, got)
 	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
 
 	if bytes := d.MustBytes("invalid"); bytes != nil {
 		t.Errorf("want nil, got %#v", bytes)
@@ -343,11 +346,81 @@ func TestDecoder_MustBytes(t *testing.T) {
 }
 
 func TestDecoder_GetBigInt(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"e": "AQAB",
+		"n": "!invalid!",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	v, ok := d.GetBigInt("e")
+	if !ok || v == nil {
+		t.Error("failed to get big.Int")
+	}
+	if v.String() != "65537" {
+		t.Errorf("want 65537, got %d", v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// invalid base64 string
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetBigInt("n"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, got nil")
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetBigInt("d"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestDecoder_MustBigInt(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"e": "AQAB",
+		"n": "!invalid!",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	v := d.MustBigInt("e")
+	if v == nil {
+		t.Error("failed to get big.Int")
+	}
+	if v.String() != "65537" {
+		t.Errorf("want 65537, got %d", v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// invalid base64 string
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustBigInt("n"); v != nil {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, got nil")
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustBigInt("d"); v != nil {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, got nil")
+	}
 }
 
 func TestDecoder_GetURL(t *testing.T) {
