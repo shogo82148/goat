@@ -28,7 +28,7 @@ func TestScalarBaseMult(t *testing.T) {
 			if got.Equal(want) == 0 {
 				t.Errorf("%d, got %#v, want %#v", -i, got.Bytes(), want.Bytes())
 			}
-			s.Add(s, &scMinusOne)
+			s.Sub(s, &scOne)
 			want.Sub(want, g)
 		}
 	})

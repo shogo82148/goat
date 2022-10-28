@@ -72,8 +72,8 @@ func (s *Scalar) Add(x, y *Scalar) *Scalar {
 }
 
 func (s *Scalar) Sub(x, y *Scalar) *Scalar {
-	// s = -1 * x + y mod l
-	scMulAdd(&s.s, &scMinusOne.s, &x.s, &y.s)
+	// s = -1 * y + x mod l
+	scMulAdd(&s.s, &scMinusOne.s, &y.s, &x.s)
 	return s
 }
 
