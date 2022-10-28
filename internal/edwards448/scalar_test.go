@@ -2,7 +2,9 @@ package edwards448
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
+	"testing/quick"
 )
 
 func (s *Scalar) String() string {
@@ -1032,6 +1034,60 @@ func TestSetCanonicalBytes(t *testing.T) {
 			t.Fatal("s should be zero, but it is not")
 		}
 	})
+}
+
+func TestMullAdd(t *testing.T) {
+	t.Run("(-1) * 1 + 0 = -1", func(t *testing.T) {
+		var v Scalar
+		v.MulAdd(&scMinusOne, &scOne, &scZero)
+		if v.Equal(&scMinusOne) == 0 {
+			t.Errorf("got %x, want %x", v.Bytes(), scZero.Bytes())
+		}
+	})
+
+	t.Run("(-1) * (-1) + (-1) = 0", func(t *testing.T) {
+		var v Scalar
+		v.MulAdd(&scMinusOne, &scMinusOne, &scMinusOne)
+		if v.Equal(&scZero) == 0 {
+			t.Errorf("got %x, want %x", v.Bytes(), scZero.Bytes())
+		}
+	})
+}
+
+func TestMulAdd_Check(t *testing.T) {
+	l, _ := new(big.Int).SetString("181709681073901722637330951972001133588410340171829515070372549795146003961539585716195755291692375963310293709091662304773755859649779", 10)
+	f := func(a, b, c [57]byte) bool {
+		var v, s, q, r Scalar
+		s.SetBytesWithClamping(a[:])
+		q.SetBytesWithClamping(b[:])
+		r.SetBytesWithClamping(c[:])
+		v.MulAdd(&s, &q, &r)
+		got := v.toBig(new(big.Int))
+
+		ss := s.toBig(new(big.Int))
+		qq := q.toBig(new(big.Int))
+		rr := r.toBig(new(big.Int))
+		want := new(big.Int).Mul(ss, qq)
+		want.Add(want, rr)
+		want.Mod(want, l)
+		return got.Cmp(want) == 0
+	}
+
+	err := quick.Check(f, &quick.Config{
+		MaxCountScale: 20,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func (s *Scalar) toBig(v *big.Int) *big.Int {
+	var buf [56]byte
+	copy(buf[:], s.s[:])
+	for i := 0; i < len(buf)/2; i++ {
+		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
+	}
+	return v.SetBytes(buf[:])
 }
 
 func TestScalarNonAdjacentForm(t *testing.T) {
