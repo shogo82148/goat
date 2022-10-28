@@ -295,7 +295,7 @@ func (d *Decoder) GetTime(name string) (time.Time, bool) {
 		return t.Time, true
 	case float64:
 		i, f := math.Modf(v)
-		t := time.Unix(int64(i), int64(math.RoundToEven(f*1e9)))
+		t := time.Unix(int64(i), int64(f*1e9))
 		return t, true
 	}
 	if d.err == nil {
@@ -319,7 +319,7 @@ func (d *Decoder) GetInt64(name string) (int64, bool) {
 		i, err := v.Int64()
 		if err != nil {
 			if d.err == nil {
-				d.err = fmt.Errorf("%s: failed to parse integer value: %w", d.pkg, err)
+				d.err = fmt.Errorf("%s: failed to parse integer parameter %s: %w", d.pkg, name, err)
 			}
 			return 0, false
 		}
@@ -328,7 +328,13 @@ func (d *Decoder) GetInt64(name string) (int64, bool) {
 		i, f := math.Modf(v)
 		if f != 0 {
 			if d.err == nil {
-				d.err = fmt.Errorf("%s: failed to parse integer value", d.pkg)
+				d.err = fmt.Errorf("%s: failed to parse integer parameter %s", d.pkg, name)
+			}
+			return 0, false
+		}
+		if i > math.MaxInt64 || i < math.MinInt64 {
+			if d.err == nil {
+				d.err = fmt.Errorf("%s: integer parameter %s is overflow", d.pkg, name)
 			}
 			return 0, false
 		}

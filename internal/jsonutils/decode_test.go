@@ -2,6 +2,7 @@ package jsonutils
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 )
 
@@ -424,17 +425,203 @@ func TestDecoder_MustBigInt(t *testing.T) {
 }
 
 func TestDecoder_GetURL(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"url":     "http://example.com",
+		"number":  42.0,
+		"invalid": "%%invalid!!!!!",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	v, ok := d.GetURL("url")
+	if !ok || v == nil {
+		t.Error("want url, but not")
+	}
+	if v.String() != "http://example.com" {
+		t.Errorf("want %s, got %s", "http://example.com", v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetURL("another"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// type error
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetURL("number"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	// parse error
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetURL("invalid"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
 
 func TestDecoder_GetTime(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"json_number": json.Number("123456789.123456789"),
+		"number":      123456789.5,
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	v, ok := d.GetTime("json_number")
+	if !ok || v.IsZero() {
+		t.Error("want url, but not")
+	}
+	if v.Unix() != 123456789 {
+		t.Errorf("unexpected epoch, want %d, got %d", 123456789, v.Unix())
+	}
+	if v.Nanosecond() != 123456789 {
+		t.Errorf("unexpected nanosecond, want %d, got %d", 123456789, v.Nanosecond())
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	v, ok = d.GetTime("number")
+	if !ok || v.IsZero() {
+		t.Error("want url, but not")
+	}
+	if v.Unix() != 123456789 {
+		t.Errorf("unexpected epoch, want %d, got %d", 123456789, v.Unix())
+	}
+	if v.Nanosecond() != 500000000 {
+		t.Errorf("unexpected nanosecond, want %d, got %d", 500000000, v.Nanosecond())
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetTime("another"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestDecoder_GetInt64(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"integer":        json.Number("9223372036854775807"),
+		"number":         9007199254740991.0,
+		"float":          123456789.5,
+		"overflow":       json.Number("9223372036854775808"),
+		"overflow_float": float64(1 << 64),
+		"string":         "string",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	v, ok := d.GetInt64("integer")
+	if !ok {
+		t.Error("want ok, but not")
+	}
+	if v != 9223372036854775807 {
+		t.Errorf("unexpected value, want %d, got %d", 9223372036854775807, v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	v, ok = d.GetInt64("number")
+	if !ok {
+		t.Error("want ok, but not")
+	}
+	if v != 9007199254740991 {
+		t.Errorf("unexpected value, want %d, got %d", 9007199254740991, v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// not integer
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetInt64("float"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	// overflow
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetInt64("overflow"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetInt64("overflow_float"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetInt64("another"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// type error
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetInt64("string"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
 
 func TestDecoder_MustInt64(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"integer": json.Number("9223372036854775807"),
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	v := d.MustInt64("integer")
+	if v != 9223372036854775807 {
+		t.Errorf("unexpected value: want %d, got %d", 9223372036854775807, v)
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustInt64("another"); v != 0 {
+		t.Errorf("want 0, but %d", v)
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
