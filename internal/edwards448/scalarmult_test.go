@@ -34,10 +34,34 @@ func TestScalarBaseMult(t *testing.T) {
 	})
 }
 
-func BenchmarkScalarBaseMult(b *testing.B) {
+func BenchmarkScalarBaseMult1(b *testing.B) {
 	s := new(Scalar).Set(&scOne)
 	var p Point
 	for i := 0; i < b.N; i++ {
 		p.ScalarBaseMult(s)
+	}
+}
+
+func BenchmarkScalarBaseMultMinus1(b *testing.B) {
+	s := new(Scalar).Set(&scMinusOne)
+	var p Point
+	for i := 0; i < b.N; i++ {
+		p.ScalarBaseMult(s)
+	}
+}
+
+func BenchmarkScalarMult1(b *testing.B) {
+	s := new(Scalar).Set(&scOne)
+	p := NewGeneratorPoint()
+	for i := 0; i < b.N; i++ {
+		p.ScalarMult(s, p)
+	}
+}
+
+func BenchmarkScalarMultMinus1(b *testing.B) {
+	s := new(Scalar).Set(&scMinusOne)
+	p := NewGeneratorPoint()
+	for i := 0; i < b.N; i++ {
+		p.ScalarMult(s, p)
 	}
 }
