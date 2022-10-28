@@ -40,7 +40,8 @@ type Claims struct {
 	// RFC7519 Section 4.1.7. "jti" (JWT ID) Claim
 	JWTID string
 
-	// Raw is a JSON-decoded data of the claims.
+	// Raw is the raw data of JSON-decoded JOSE header.
+	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
 }
 

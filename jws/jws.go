@@ -37,6 +37,10 @@ type jsonSignature struct {
 
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
+	// Raw is the raw data of JSON-decoded JOSE header.
+	// JSON numbers are decoded as json.Number to avoid data loss.
+	Raw map[string]any
+
 	alg     jwa.SignatureAlgorithm
 	jku     *url.URL
 	jwk     *jwk.Key
@@ -48,10 +52,6 @@ type Header struct {
 	typ     string
 	cty     string
 	crit    []string
-
-	// Raw is the raw data of JSON-decoded JOSE header.
-	// JSON numbers are decoded as json.Number to avoid data loss.
-	Raw map[string]any
 }
 
 // Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
