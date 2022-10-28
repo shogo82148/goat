@@ -4,6 +4,8 @@ package agcm
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
+	"errors"
 	"fmt"
 
 	"github.com/shogo82148/goat/enc"
@@ -12,28 +14,22 @@ import (
 
 const nonceSize = 12
 
-var a128gcm = &Algorithm{
-	keyLen: 16,
-}
-
 func New128() enc.Algorithm {
-	return a128gcm
-}
-
-var a192gcm = &Algorithm{
-	keyLen: 24,
+	return &Algorithm{
+		keyLen: 16,
+	}
 }
 
 func New192() enc.Algorithm {
-	return a192gcm
-}
-
-var a256gcm = &Algorithm{
-	keyLen: 32,
+	return &Algorithm{
+		keyLen: 24,
+	}
 }
 
 func New256() enc.Algorithm {
-	return a256gcm
+	return &Algorithm{
+		keyLen: 32,
+	}
 }
 
 func init() {
@@ -46,14 +42,46 @@ var _ enc.Algorithm = (*Algorithm)(nil)
 
 type Algorithm struct {
 	keyLen int
+
+	mask    [nonceSize]byte
+	counter uint64
 }
 
-func (alg *Algorithm) CEKSize() int {
-	return alg.keyLen
+func (alg *Algorithm) GenerateCEK() ([]byte, error) {
+	cek := make([]byte, alg.keyLen)
+	_, err := rand.Read(cek)
+	if err != nil {
+		return nil, err
+	}
+	alg.counter = 0
+	return cek, nil
 }
 
-func (alg *Algorithm) IVSize() int {
-	return nonceSize
+func (alg *Algorithm) GenerateIV() ([]byte, error) {
+	c := alg.counter
+	if c == 0 {
+		_, err := rand.Read(alg.mask[:])
+		if err != nil {
+			return nil, err
+		}
+	}
+	c++
+	if c == 0 {
+		return nil, errors.New("agcm: counter overflow")
+	}
+
+	alg.counter = c
+	var iv [nonceSize]byte
+	copy(iv[:], alg.mask[:])
+	iv[nonceSize-1] ^= byte(c)
+	iv[nonceSize-2] ^= byte(c >> 8)
+	iv[nonceSize-3] ^= byte(c >> 16)
+	iv[nonceSize-4] ^= byte(c >> 24)
+	iv[nonceSize-5] ^= byte(c >> 32)
+	iv[nonceSize-6] ^= byte(c >> 40)
+	iv[nonceSize-7] ^= byte(c >> 48)
+	iv[nonceSize-8] ^= byte(c >> 56)
+	return iv[:], nil
 }
 
 func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {

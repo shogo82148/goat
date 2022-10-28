@@ -2,6 +2,7 @@ package agcm
 
 import (
 	"bytes"
+	"math"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -107,11 +108,58 @@ func TestCEKSize_and_IVSize(t *testing.T) {
 	}
 	for _, enc := range tests {
 		enc1 := enc.New()
-		if want, got := enc1.IVSize(), enc.IVSize(); want != got {
+		cek, err := enc1.GenerateCEK()
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		iv, err := enc1.GenerateIV()
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if want, got := len(iv), enc.IVSize(); want != got {
 			t.Errorf("%s: IVSize is mismatch: want %d, got %d", enc.String(), want, got)
 		}
-		if want, got := enc1.CEKSize(), enc.CEKSize(); want != got {
+		if want, got := len(cek), enc.CEKSize(); want != got {
 			t.Errorf("%s: CEKSize is mismatch: want %d, got %d", enc.String(), want, got)
 		}
+	}
+}
+
+func TestGenerateIV(t *testing.T) {
+	enc := &Algorithm{
+		keyLen: 16,
+	}
+
+	iv0, err := enc.GenerateIV()
+	if err != nil {
+		t.Fatal(err)
+	}
+	iv1, err := enc.GenerateIV()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(iv0, iv1) {
+		t.Errorf("iv must not match: %024x, %024x", iv0, iv1)
+	}
+
+	enc.counter = math.MaxUint64
+	_, err = enc.GenerateIV()
+	if err == nil {
+		t.Error("want some error, but got nil")
+	}
+
+	if _, err := enc.GenerateCEK(); err != nil {
+		t.Fatal(err)
+	}
+
+	iv2, err := enc.GenerateIV()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(iv0, iv2) {
+		t.Errorf("iv must not match: %024x, %024x", iv0, iv2)
 	}
 }
