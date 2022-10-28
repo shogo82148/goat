@@ -27,6 +27,8 @@ type Decoder struct {
 	err error
 }
 
+// NewDecoder returns a new Decoder.
+// raw should be decoded by the json package.
 func NewDecoder(pkg string, raw map[string]any) *Decoder {
 	return &Decoder{
 		pkg: pkg,
@@ -70,12 +72,14 @@ func (d *Decoder) decode(dst []byte, s, name string) []byte {
 	return dst[:n]
 }
 
+// Has returns whether name parameter exists.
 func (d *Decoder) Has(name string) bool {
 	_, ok := d.raw[name]
 	return ok
 }
 
 // GetString gets a string parameter.
+// If the parameter doesn't exist, it returns ("", false).
 func (d *Decoder) GetString(name string) (string, bool) {
 	v, ok := d.raw[name]
 	if !ok {
@@ -97,6 +101,8 @@ func (d *Decoder) GetString(name string) (string, bool) {
 }
 
 // MustString gets a string parameter.
+// If the parameter doesn't exist, it returns an empty string
+// and save the error.
 func (d *Decoder) MustString(name string) string {
 	v, ok := d.raw[name]
 	if !ok {
@@ -123,6 +129,8 @@ func (d *Decoder) MustString(name string) string {
 	return u
 }
 
+// GetArray gets an array parameter.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetArray(name string) ([]any, bool) {
 	v, ok := d.raw[name]
 	if !ok {
@@ -143,6 +151,9 @@ func (d *Decoder) GetArray(name string) ([]any, bool) {
 	return u, true
 }
 
+// MustArray gets an array parameter.
+// If the parameter doesn't exist, it returns nil
+// and save the error.
 func (d *Decoder) MustArray(name string) []any {
 	v, ok := d.raw[name]
 	if !ok {
@@ -169,6 +180,8 @@ func (d *Decoder) MustArray(name string) []any {
 	return u
 }
 
+// GetArray gets an object parameter.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetObject(name string) (map[string]any, bool) {
 	v, ok := d.raw[name]
 	if !ok {
@@ -189,6 +202,8 @@ func (d *Decoder) GetObject(name string) (map[string]any, bool) {
 	return u, true
 }
 
+// GetArray gets a string array parameter.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetStringArray(name string) ([]string, bool) {
 	array, ok := d.GetArray(name)
 	if !ok {
@@ -213,6 +228,8 @@ func (d *Decoder) GetStringArray(name string) ([]string, bool) {
 	return ret, true
 }
 
+// GetBytes gets a parameter of byte sequence base64-raw-url encoded.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetBytes(name string) ([]byte, bool) {
 	s, ok := d.GetString(name)
 	if !ok {
@@ -222,6 +239,9 @@ func (d *Decoder) GetBytes(name string) ([]byte, bool) {
 	return d.decode(buf, s, name), true
 }
 
+// MustBytes gets a parameter of byte sequence base64-raw-url encoded.
+// If the parameter doesn't exist, it returns nil
+// and save the error.
 func (d *Decoder) MustBytes(name string) []byte {
 	s, ok := d.GetString(name)
 	if !ok {
@@ -237,6 +257,9 @@ func (d *Decoder) MustBytes(name string) []byte {
 	return d.decode(buf, s, name)
 }
 
+// GetBigInt gets a big integer parameter.
+// The parameter must be base64-raw-url encoded and big endian.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetBigInt(name string) (*big.Int, bool) {
 	s, ok := d.GetString(name)
 	if !ok {
@@ -249,6 +272,10 @@ func (d *Decoder) GetBigInt(name string) (*big.Int, bool) {
 	return new(big.Int).SetBytes(data), true
 }
 
+// MustBigInt gets a big integer parameter.
+// The parameter must be base64-raw-url encoded and big endian.
+// If the parameter doesn't exist, it returns nil
+// and save the error.
 func (d *Decoder) MustBigInt(name string) *big.Int {
 	n, ok := d.GetBigInt(name)
 	if !ok {
@@ -263,6 +290,8 @@ func (d *Decoder) MustBigInt(name string) *big.Int {
 	return n
 }
 
+// GetURL gets a url parameter.
+// If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetURL(name string) (*url.URL, bool) {
 	s, ok := d.GetString(name)
 	if !ok {
@@ -278,6 +307,9 @@ func (d *Decoder) GetURL(name string) (*url.URL, bool) {
 	return u, true
 }
 
+// GetTime gets a time parameter.
+// The parameter must be a JSON number from UNIX time epoch in seconds.
+// If the parameter doesn't exist, it returns (time.Time{}, false).
 func (d *Decoder) GetTime(name string) (time.Time, bool) {
 	v, ok := d.raw[name]
 	if !ok {
@@ -309,6 +341,8 @@ func (d *Decoder) GetTime(name string) (time.Time, bool) {
 	return time.Time{}, false
 }
 
+// GetInt64 gets an integer parameter.
+// If the parameter doesn't exist, it returns (0, false).
 func (d *Decoder) GetInt64(name string) (int64, bool) {
 	v, ok := d.raw[name]
 	if !ok {
@@ -351,6 +385,9 @@ func (d *Decoder) GetInt64(name string) (int64, bool) {
 	return 0, false
 }
 
+// MustInt64 gets an integer parameter.
+// If the parameter doesn't exist, it returns nil
+// and save the error.
 func (d *Decoder) MustInt64(name string) int64 {
 	n, ok := d.GetInt64(name)
 	if !ok {
