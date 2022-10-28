@@ -46,3 +46,56 @@ func TestSetBytes(t *testing.T) {
 		t.Errorf("want %#v, got %#v", y, v.y)
 	}
 }
+
+func TestAdd(t *testing.T) {
+	t.Run("0 + 1 = 1", func(t *testing.T) {
+		a := new(Point).Zero()
+		b := NewIdentityPoint()
+		a.Add(a, b)
+		if a.Equal(b) == 0 {
+			t.Errorf("got %x, want %x", a.Bytes(), b.Bytes())
+		}
+	})
+
+	t.Run("0 + B = B", func(t *testing.T) {
+		a := new(Point).Zero()
+		b := NewGeneratorPoint()
+		a.Add(a, b)
+		if a.Equal(b) == 0 {
+			t.Errorf("got %x, want %x", a.Bytes(), b.Bytes())
+		}
+	})
+
+	t.Run("1 + (-1) = 0", func(t *testing.T) {
+		a := NewIdentityPoint()
+		b := NewIdentityPoint()
+		b.Negate(b)
+		c := new(Point).Zero()
+		a.Add(a, b)
+		if a.Equal(c) == 0 {
+			t.Errorf("got %x, want %x", a.Bytes(), c.Bytes())
+		}
+	})
+
+	t.Run("16 + (-8) = 8", func(t *testing.T) {
+		a := NewIdentityPoint()
+		a.Add(a, a) // 2
+		a.Add(a, a) // 4
+		a.Add(a, a) // 8
+		a.Add(a, a) // 16
+		b := NewIdentityPoint()
+		b.Negate(b)
+		b.Add(b, b) // -2
+		b.Add(b, b) // -4
+		b.Add(b, b) // -8
+		c := NewIdentityPoint()
+		c.Add(c, c) // 2
+		c.Add(c, c) // 4
+		c.Add(c, c) // 8
+
+		a.Add(a, b)
+		if a.Equal(c) == 0 {
+			t.Errorf("got %x, want %x", a.Bytes(), c.Bytes())
+		}
+	})
+}

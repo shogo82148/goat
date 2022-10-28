@@ -1725,3 +1725,26 @@ func scReduce(out *[56]byte, s *[114]byte) {
 	out[54] = byte(s18 >> 0)
 	out[55] = byte(s18 >> 8)
 }
+
+func (s *Scalar) signedRadix16() [112]int8 {
+	if s.s[55] >= 0x80 {
+		panic("edwards448: scalar has high bit set illegally")
+	}
+
+	var digits [112]int8
+
+	// Compute unsigned radix-16 digits:
+	for i := 0; i < 56; i++ {
+		digits[2*i] = int8(s.s[i] & 0xF)
+		digits[2*i+1] = int8((s.s[i] >> 4) & 0xF)
+	}
+
+	// Recenter coefficients:
+	for i := 0; i < 112-1; i++ {
+		carry := (digits[i] + 8) >> 4
+		digits[i] -= carry << 4
+		digits[i+1] += carry
+	}
+
+	return digits
+}
