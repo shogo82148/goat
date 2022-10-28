@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"crypto"
 	cryptorand "crypto/rand"
+	"crypto/subtle"
 	"errors"
 	"io"
 	"strconv"
@@ -58,7 +59,7 @@ func (priv PrivateKey) Equal(x crypto.PrivateKey) bool {
 	if !ok {
 		return false
 	}
-	return bytes.Equal(priv, xx)
+	return subtle.ConstantTimeCompare(priv, xx) == 1
 }
 
 // Seed returns the private key seed corresponding to priv. It is provided for
