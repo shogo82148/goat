@@ -42,15 +42,33 @@ func (v *Point) ScalarBaseMult(x *Scalar) *Point {
 
 // ScalarMult sets v = x * q, and returns v.
 func (v *Point) ScalarMult(x *Scalar, q *Point) *Point {
-	// TODO: optimize
+	checkInitialized(q)
+
+	// Write x = sum(x_i * 16^i)
+	// so  x*Q = sum( Q*x_i*16^i )
+	//         = Q*x_0 + 16*(Q*x_1 + 16*( ... + Q*x_63) ... )
+	//           <------compute inside out---------
+	//
+	// We use the lookup table to get the x_i*Q values
+	// and do four doublings to compute 16*Q
+	digits := x.signedRadix16()
+
+	var table lookupTable
+	table.Init(q)
+
 	v.Set(NewIdentityPoint())
-	bytes := x.Bytes()
-	for i := 56*8 - 1; i >= 0; i-- {
-		v.Double(v)
-		b := (bytes[i/8] >> (i % 8)) & 1
-		if b != 0 {
-			v.Add(v, q)
-		}
+	var multiple Point
+	table.SelectInto(&multiple, digits[112-1])
+	v.Add(v, &multiple)
+
+	for i := 112 - 2; i >= 0; i-- {
+		v.Double(v) // * 2
+		v.Double(v) // * 4
+		v.Double(v) // * 8
+		v.Double(v) // * 16
+
+		table.SelectInto(&multiple, digits[i])
+		v.Add(v, &multiple)
 	}
 	return v
 }
