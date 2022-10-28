@@ -6,6 +6,7 @@ package edwards448
 
 import (
 	"crypto/subtle"
+	"encoding/binary"
 	"errors"
 )
 
@@ -1747,4 +1748,69 @@ func (s *Scalar) signedRadix16() [112]int8 {
 	}
 
 	return digits
+}
+
+// nonAdjacentForm computes a width-w non-adjacent form for this scalar.
+//
+// w must be between 2 and 8, or nonAdjacentForm will panic.
+func (s *Scalar) nonAdjacentForm(w uint) [448]int8 {
+	// This implementation is adapted from the one
+	// in curve25519-dalek and is documented there:
+	// https://github.com/dalek-cryptography/curve25519-dalek/blob/f630041af28e9a405255f98a8a93adca18e4315b/src/scalar.rs#L800-L871
+	if w < 2 {
+		panic("w must be at least 2 by the definition of NAF")
+	} else if w > 8 {
+		panic("NAF digits must fit in int8")
+	}
+
+	width := uint64(1 << w)
+	windowMask := uint64(width - 1)
+
+	var naf [448]int8 // non adjacent form of s
+	var digits [8]uint64
+
+	for i := 0; i < 7; i++ {
+		digits[i] = binary.LittleEndian.Uint64(s.s[i*8:])
+	}
+
+	pos := uint(0)
+	carry := uint64(0)
+	for pos < uint(len(naf)) {
+		indexU64 := pos / 64
+		indexBit := pos % 64
+		var bitBuf uint64
+		if indexBit < 64-w {
+			// This window's bits are contained in a single u64
+			bitBuf = digits[indexU64] >> indexBit
+		} else {
+			// Combine the current 64 bits with bits from the next 64
+			bitBuf = (digits[indexU64] >> indexBit) | (digits[1+indexU64] << (64 - indexBit))
+		}
+
+		// Add carry into the current window
+		window := carry + (bitBuf & windowMask)
+
+		if window&1 == 0 {
+			// If the window value is even, preserve the carry and continue.
+			// Why is the carry preserved?
+			// If carry == 0 and window & 1 == 0,
+			//    then the next carry should be 0
+			// If carry == 1 and window & 1 == 0,
+			//    then bit_buf & 1 == 1 so the next carry should be 1
+			pos += 1
+			continue
+		}
+
+		if window < width/2 {
+			carry = 0
+			naf[pos] = int8(window)
+		} else {
+			carry = 1
+			naf[pos] = int8(window) - int8(width)
+		}
+
+		pos += w
+	}
+
+	return naf
 }
