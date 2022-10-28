@@ -1,5 +1,4 @@
-// package pbes2 implements a Key Encryption algorithm
-// that is PBES2 with HMAC SHA-2 and AES Key wrapping.
+// Package pbes2 provides PBES2 with HMAC SHA-2 and AES Key wrapping algorithm.
 package pbes2
 
 import (

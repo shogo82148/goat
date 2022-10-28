@@ -211,3 +211,37 @@ func TestSign(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkParse(b *testing.B) {
+	defer mockTime(func() time.Time {
+		return time.Unix(1300819379, 0)
+	})()
+
+	raw := []byte(
+		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
+			"." +
+			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+			"." +
+			"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+	)
+	rawKey := `{"kty":"oct",` +
+		`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+		`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+		`}`
+	key, err := jwk.ParseKey([]byte(rawKey))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
+			alg := header.Algorithm().New()
+			return alg.NewSigningKey(key), nil
+		}))
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

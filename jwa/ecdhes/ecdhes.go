@@ -1,5 +1,5 @@
-// Package ecdhes implements a Key Agreement Algorithm
-// with Elliptic Curve Diffie-Hellman Ephemeral Static (ECDH-ES).
+// Package ecdhes provides the Elliptic Curve Diffie-Hellman Ephemeral Static (ECDH-ES)
+// key agreement algorithm defined in RFC 6278.
 package ecdhes
 
 import (

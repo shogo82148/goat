@@ -1,4 +1,4 @@
-// package acbc provides AES_CBC_HMAC_SHA2 Algorithms.
+// Package acbc provides the AES_CBC_HMAC_SHA2 content encryption algorithm.
 package acbc
 
 import (

@@ -1,4 +1,4 @@
-// package hs implements a signing algorithm HMAC using SHA-2.
+// Package hs provides the HMAC using SHA-2 signature algorithm.
 package hs
 
 import (

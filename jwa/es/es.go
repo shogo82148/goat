@@ -1,4 +1,4 @@
-// package es implements a signing algorithm ECDSA using SHA-2.
+// package es provides the ECDSA using SHA-2 signature algorithm.
 package es
 
 import (

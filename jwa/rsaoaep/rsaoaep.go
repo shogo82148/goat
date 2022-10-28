@@ -1,4 +1,4 @@
-// Package rsaoaep implements a Key Encryption Algorithm RSA-OAEP.
+// Package rsaoaep provides the RSA-OAEP key encryption algorithm.
 package rsaoaep
 
 import (

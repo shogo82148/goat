@@ -1,5 +1,4 @@
-// Package ps implements a signing algorithm
-// RSASSA-PSS Digital Signature.
+// Package ps implements the RSASSA-PSS Digital signature algorithm.
 package ps
 
 import (

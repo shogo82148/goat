@@ -1,3 +1,4 @@
+// Package jws handles JSON Web Encryption defined in RFC 7516.
 package jwe
 
 import (

@@ -1,4 +1,4 @@
-// Package jwa implements RFC 7518.
+// Package jwa implements cryptographic algorithms defined in RFC 7518.
 package jwa
 
 import (
