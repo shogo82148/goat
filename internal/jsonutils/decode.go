@@ -160,7 +160,7 @@ func (d *Decoder) MustArray(name string) []any {
 			d.err = &typeError{
 				pkg:  d.pkg,
 				name: name,
-				want: "string",
+				want: "[]any",
 				got:  reflect.TypeOf(v),
 			}
 		}
