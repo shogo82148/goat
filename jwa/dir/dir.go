@@ -1,5 +1,4 @@
-// Package dir implements a Key Wrapping algorithm
-// that is direct use of a shared symmetric key as the CEK.
+// Package dir provides the direct key wrapping algorithm.
 package dir
 
 import (

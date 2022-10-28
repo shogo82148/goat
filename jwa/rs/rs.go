@@ -1,5 +1,4 @@
-// Package rs implements a signing algorithm
-// RSASSA-PKCS1-v1_5 using SHA-2.
+// Package rs provides the RSASSA-PKCS1-v1_5 using SHA-2 signature algorithm.
 package rs
 
 import (

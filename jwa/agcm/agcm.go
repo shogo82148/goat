@@ -1,4 +1,4 @@
-// Package agcm implements key wrapping with AES GCM.
+// Package agcm provides the AES-GCM content encryption algorithm.
 package agcm
 
 import (

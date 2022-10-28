@@ -1,4 +1,4 @@
-// package none implements no signature algorithm.
+// Package none provides none signature algorithm.
 package none
 
 import (

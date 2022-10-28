@@ -1,4 +1,4 @@
-// package sig provides interface for signature.
+// Package sig provides interfaces for signature.
 package sig
 
 import (

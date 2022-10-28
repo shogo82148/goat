@@ -1,4 +1,4 @@
-// Package jws handles JSON Web Signatures in [RFC7515].
+// Package jws handles JSON Web Signatures defined in RFC 7515.
 package jws
 
 import (

@@ -1,4 +1,4 @@
-// Package rsaoaep implements a Key Encryption Algorithm RSAES-PKCS1-v1_5.
+// Package rsaoaep provides the RSAES-PKCS1-v1_5 key encryption algorithm.
 package rsapkcs1v15
 
 import (

@@ -1,4 +1,4 @@
-// The package jwk handles JSON Web Key [RFC7517].
+// Package jwk handles JSON Web Key defined in RFC 7517.
 package jwk
 
 import (

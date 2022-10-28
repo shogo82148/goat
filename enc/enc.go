@@ -1,4 +1,4 @@
-// package enc provides interfaces for Content Encryption.
+// Package enc provides interfaces for Content Encryption.
 package enc
 
 // Algorithm is an algorithm for encryption.

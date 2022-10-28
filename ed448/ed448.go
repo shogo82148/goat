@@ -1,3 +1,10 @@
+// Package ed448 implements the Ed448 signature algorithm defined in RFC 8032.
+//
+// These functions are also compatible with the “Ed448” function defined in RFC 8032.
+// However, unlike RFC 8032's formulation, this package's private key representation
+// includes a public key suffix to make multiple signing operations
+// with the same key more efficient.
+// This package refers to the RFC 8032 private key as the “seed”.
 package ed448
 
 import (
