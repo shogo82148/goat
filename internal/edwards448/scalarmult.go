@@ -78,9 +78,58 @@ func (v *Point) ScalarMult(x *Scalar, q *Point) *Point {
 //
 // Execution time depends on the inputs.
 func (v *Point) VarTimeDoubleScalarBaseMult(a *Scalar, A *Point, b *Scalar) *Point {
-	// TODO: optimize
-	aa := new(Point).ScalarMult(a, A)
-	bb := new(Point).ScalarBaseMult(b)
-	v.Add(aa, bb)
+	checkInitialized(A)
+
+	// Similarly to the single variable-base approach, we compute
+	// digits and use them with a lookup table.  However, because
+	// we are allowed to do variable-time operations, we don't
+	// need constant-time lookups or constant-time digit
+	// computations.
+	//
+	// So we use a non-adjacent form of some width w instead of
+	// radix 16.  This is like a binary representation (one digit
+	// for each binary place) but we allow the digits to grow in
+	// magnitude up to 2^{w-1} so that the nonzero digits are as
+	// sparse as possible.  Intuitively, this "condenses" the
+	// "mass" of the scalar onto sparse coefficients (meaning
+	// fewer additions).
+	aNAF := a.nonAdjacentForm(5)
+	bNAF := b.nonAdjacentForm(8)
+
+	table := basepointNAFTable()
+	var aTable nafLookupTable5
+	aTable.Init(A)
+
+	i := len(aNAF) - 1
+	for ; i >= 0; i-- {
+		if aNAF[i] != 0 || bNAF[i] != 0 {
+			break
+		}
+	}
+
+	// Move from high to low bits, doubling the accumulator
+	// at each iteration and checking whether there is a nonzero
+	// coefficient to look up a multiple of.
+	v.Zero()
+	for ; i >= 0; i-- {
+		var multA, multB Point
+		v.Double(v)
+
+		if x := aNAF[i]; x > 0 {
+			aTable.SelectInto(&multA, x)
+			v.Add(v, &multA)
+		} else if x < 0 {
+			aTable.SelectInto(&multA, -x)
+			v.Sub(v, &multA)
+		}
+
+		if x := bNAF[i]; x > 0 {
+			table.SelectInto(&multB, x)
+			v.Add(v, &multB)
+		} else if x < 0 {
+			table.SelectInto(&multB, -x)
+			v.Sub(v, &multB)
+		}
+	}
 	return v
 }
