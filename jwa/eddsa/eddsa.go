@@ -4,6 +4,7 @@ package eddsa
 import (
 	"crypto/ed25519"
 
+	"github.com/shogo82148/goat/ed448"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/sig"
@@ -22,35 +23,62 @@ type Algorithm struct{}
 func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
+	canSign := jwktypes.CanUseFor(key, jwktypes.KeyOpSign)
+	canVerify := jwktypes.CanUseFor(key, jwktypes.KeyOpVerify)
 
-	k := SigningKey{
-		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
-		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
+	switch priv := priv.(type) {
+	case ed25519.PrivateKey:
+		pubkey, ok := pub.(ed25519.PublicKey)
+		if !ok {
+			return sig.NewInvalidKey("eddsa", priv, pub)
+		}
+		return &Ed25519{
+			priv:      priv,
+			pub:       pubkey,
+			canSign:   canSign,
+			canVerify: canVerify,
+		}
+	case ed448.PrivateKey:
+		pubkey, ok := pub.(ed448.PublicKey)
+		if !ok {
+			return sig.NewInvalidKey("eddsa", priv, pub)
+		}
+		return &Ed448{
+			priv:      priv,
+			pub:       pubkey,
+			canSign:   canSign,
+			canVerify: canVerify,
+		}
+	case nil:
+		switch pub := pub.(type) {
+		case ed25519.PublicKey:
+			return &Ed25519{
+				pub:       pub,
+				canSign:   canSign,
+				canVerify: canVerify,
+			}
+		case ed448.PublicKey:
+			return &Ed448{
+				pub:       pub,
+				canSign:   canSign,
+				canVerify: canVerify,
+			}
+		default:
+			return sig.NewInvalidKey("eddsa", priv, pub)
+		}
+	default:
+		return sig.NewInvalidKey("eddsa", priv, pub)
 	}
-	if key, ok := priv.(ed25519.PrivateKey); ok {
-		k.priv = key
-	} else if priv != nil {
-		return sig.NewInvalidKey(jwa.Ed25519.String(), priv, pub)
-	}
-	if key, ok := pub.(ed25519.PublicKey); ok {
-		k.pub = key
-	} else if pub != nil {
-		return sig.NewInvalidKey(jwa.Ed25519.String(), priv, pub)
-	}
-	if k.priv != nil && k.pub == nil {
-		k.pub = k.priv.Public().(ed25519.PublicKey)
-	}
-	return &k
 }
 
-type SigningKey struct {
+type Ed25519 struct {
 	priv      ed25519.PrivateKey
 	pub       ed25519.PublicKey
 	canSign   bool
 	canVerify bool
 }
 
-func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
+func (key *Ed25519) Sign(payload []byte) (signature []byte, err error) {
 	if !key.canSign {
 		return nil, sig.ErrSignUnavailable
 	}
@@ -58,11 +86,36 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 	return
 }
 
-func (key *SigningKey) Verify(payload, signature []byte) error {
+func (key *Ed25519) Verify(payload, signature []byte) error {
 	if !key.canVerify {
 		return sig.ErrSignUnavailable
 	}
 	if !ed25519.Verify(key.pub, payload, signature) {
+		return sig.ErrSignatureMismatch
+	}
+	return nil
+}
+
+type Ed448 struct {
+	priv      ed448.PrivateKey
+	pub       ed448.PublicKey
+	canSign   bool
+	canVerify bool
+}
+
+func (key *Ed448) Sign(payload []byte) (signature []byte, err error) {
+	if !key.canSign {
+		return nil, sig.ErrSignUnavailable
+	}
+	signature = ed448.Sign(key.priv, payload)
+	return
+}
+
+func (key *Ed448) Verify(payload, signature []byte) error {
+	if !key.canVerify {
+		return sig.ErrSignUnavailable
+	}
+	if !ed448.Verify(key.pub, payload, signature) {
 		return sig.ErrSignatureMismatch
 	}
 	return nil
