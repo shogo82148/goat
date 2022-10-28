@@ -273,6 +273,12 @@ func (v *Point) Double(u *Point) *Point {
 	return v
 }
 
+func (v *Point) Sub(p, q *Point) *Point {
+	var neg Point
+	neg.Negate(q)
+	return v.Add(p, &neg)
+}
+
 func (v *Point) Select(p, q *Point, cond int) *Point {
 	v.x.Select(&p.x, &q.x, cond)
 	v.y.Select(&p.y, &q.y, cond)
@@ -287,4 +293,10 @@ func (v *Point) Negate(p *Point) *Point {
 	v.y.Set(&p.y)
 	v.z.Set(&p.z)
 	return v
+}
+
+func (v *Point) CondNeg(cond int) *Point {
+	var neg Point
+	neg.Negate(v)
+	return v.Select(&neg, v, cond)
 }
