@@ -18,20 +18,24 @@ func basepointTable() *[56]lookupTable {
 	initBasepointOnce.Do(func() {
 		p := NewGeneratorPoint()
 		for i := 0; i < 56; i++ {
-			// Goal: v.points[i] = (i+1)*Q, i.e., Q, 2Q, ..., 8Q
-			// This allows lookup of -8Q, ..., -Q, 0, Q, ..., 8Q
-			points := &varBasepointTable[i].points
-			points[0].Set(p)
-			for j := 1; j < 8; j++ {
-				var v Point
-				points[j].Set(v.Add(&points[j-1], p))
-			}
+			varBasepointTable[i].Init(p)
 			for j := 0; j < 8; j++ {
 				p.Add(p, p)
 			}
 		}
 	})
 	return &varBasepointTable
+}
+
+func (v *lookupTable) Init(p *Point) {
+	// Goal: v.points[i] = (i+1)*Q, i.e., Q, 2Q, ..., 8Q
+	// This allows lookup of -8Q, ..., -Q, 0, Q, ..., 8Q
+	points := &v.points
+	points[0].Set(p)
+	for i := 1; i < 8; i++ {
+		var v Point
+		points[i].Set(v.Add(&points[i-1], p))
+	}
 }
 
 // Set dest to x*Q, where -8 <= x <= 8, in constant time.
