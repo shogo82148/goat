@@ -158,15 +158,123 @@ func TestDecoder_GetArray(t *testing.T) {
 }
 
 func TestDecoder_MustArray(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"array":  []any{},
+		"string": "it is a string",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustArray("array"); v == nil {
+		t.Error("want an array, but failed")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// key not found
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustArray("not key"); v != nil {
+		t.Errorf("want nil, but got %#v", v)
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	// type error
+	d = NewDecoder("jsonutils", raw)
+	if v := d.MustArray("string"); v != nil {
+		t.Errorf("want nil, but got %#v", v)
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
 
 func TestDecoder_GetObject(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"object": map[string]any{},
+		"string": "it is a string",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	if v, ok := d.GetObject("object"); !ok || v == nil {
+		t.Error("want an object, but not")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetObject("another"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// type error
+	if _, ok := d.GetObject("string"); ok {
+		t.Error("want not ok, but got")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
 
 func TestDecoder_GetStringArray(t *testing.T) {
-	// TODO
+	var d *Decoder
+	raw := map[string]any{
+		"empty":        []any{},
+		"string-array": []any{"string"},
+		"number-array": []any{1.0},
+		"string":       "string",
+	}
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	if v, ok := d.GetStringArray("empty"); !ok || v == nil {
+		t.Error("want an array, but not")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	v, ok := d.GetStringArray("string-array")
+	if !ok || v == nil {
+		t.Error("want an array, but not")
+	}
+	if len(v) != 1 {
+		t.Error("invalid length")
+	}
+	if v[0] != "string" {
+		t.Error("invalid content")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// type error: number array
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetStringArray("number-array"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+
+	// type error: string
+	if _, ok := d.GetStringArray("string"); ok {
+		t.Error("want not ok, but got")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
 }
 
 func TestDecoder_GetBytes(t *testing.T) {
