@@ -243,10 +243,7 @@ func (d *Decoder) GetBigInt(name string) (*big.Int, bool) {
 		return nil, false
 	}
 	data := d.Decode(s, name)
-	if len(data) == 0 {
-		if d.err == nil {
-			d.err = fmt.Errorf("%s: failed to parse the parameter %s as big.Int", d.pkg, name)
-		}
+	if d.err != nil {
 		return nil, false
 	}
 	return new(big.Int).SetBytes(data), true
