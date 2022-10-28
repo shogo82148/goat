@@ -3,11 +3,11 @@ package enc
 
 // Algorithm is an algorithm for encryption.
 type Algorithm interface {
-	// CEKSize returns the byte size of CEK(Content Encryption Key) for the algorithm.
-	CEKSize() int
+	// GenerateCEK generates a new CEK(Content Encryption Key).
+	GenerateCEK() ([]byte, error)
 
-	// IVSice returns the byte size of IV(Initialization Vector) for the algorithm.
-	IVSize() int
+	// IVSice generates a new IV(Initialization Vector).
+	GenerateIV() ([]byte, error)
 
 	// Decrypt decrypts and verifies ciphertext.
 	Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error)

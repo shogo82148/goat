@@ -107,10 +107,21 @@ func TestCEKSize_and_IVSize(t *testing.T) {
 	}
 	for _, enc := range tests {
 		enc1 := enc.New()
-		if want, got := enc1.IVSize(), enc.IVSize(); want != got {
+		cek, err := enc1.GenerateCEK()
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		iv, err := enc1.GenerateIV()
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		if want, got := len(iv), enc.IVSize(); want != got {
 			t.Errorf("%s: IVSize is mismatch: want %d, got %d", enc.String(), want, got)
 		}
-		if want, got := enc1.CEKSize(), enc.CEKSize(); want != got {
+		if want, got := len(cek), enc.CEKSize(); want != got {
 			t.Errorf("%s: CEKSize is mismatch: want %d, got %d", enc.String(), want, got)
 		}
 	}

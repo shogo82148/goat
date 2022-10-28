@@ -4,6 +4,7 @@ package agcm
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"fmt"
 
 	"github.com/shogo82148/goat/enc"
@@ -48,12 +49,26 @@ type Algorithm struct {
 	keyLen int
 }
 
-func (alg *Algorithm) CEKSize() int {
-	return alg.keyLen
-}
-
 func (alg *Algorithm) IVSize() int {
 	return nonceSize
+}
+
+func (alg *Algorithm) GenerateCEK() ([]byte, error) {
+	cek := make([]byte, alg.keyLen)
+	_, err := rand.Read(cek)
+	if err != nil {
+		return nil, err
+	}
+	return cek, nil
+}
+
+func (alg *Algorithm) GenerateIV() ([]byte, error) {
+	iv := make([]byte, nonceSize)
+	_, err := rand.Read(iv)
+	if err != nil {
+		return nil, err
+	}
+	return iv, nil
 }
 
 func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {

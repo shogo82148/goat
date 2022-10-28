@@ -3,7 +3,6 @@ package jwe
 import (
 	"bytes"
 	"compress/flate"
-	"crypto/rand"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -640,11 +639,15 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 	}
 
 	// generate a new content encryption key
-	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
-	if _, err := rand.Read(entropy); err != nil {
-		return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+	enc1 := enc.New()
+	cek, err := enc1.GenerateCEK()
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate content encryption key: %w", err)
 	}
-	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+	iv, err := enc1.GenerateIV()
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate initialization vector: %w", err)
+	}
 
 	// encode the protected header
 	header := protected.Clone()
@@ -656,7 +659,7 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 	b64header := b64Encode(rawHeader)
 
 	// encrypt CEK
-	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+	ciphertext, authTag, err := enc1.Encrypt(cek, iv, b64header, plaintext)
 	if err != nil {
 		return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
 	}
@@ -711,9 +714,10 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		b64header := b64Encode(rawHeader)
 
 		// encrypt CEK
-		iv := make([]byte, enc.IVSize())
-		if _, err := rand.Read(iv); err != nil {
-			return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+		enc1 := enc.New()
+		iv, err := enc1.GenerateIV()
+		if err != nil {
+			return nil, fmt.Errorf("jwe: failed to generate initialization vector: %w", err)
 		}
 		ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
 		if err != nil {
@@ -741,11 +745,15 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 	}
 
 	// generate a new content encryption key
-	entropy := make([]byte, enc.CEKSize()+enc.IVSize())
-	if _, err := rand.Read(entropy); err != nil {
-		return nil, fmt.Errorf("jwe: failed to generate content encryption key")
+	enc1 := enc.New()
+	cek, err := enc1.GenerateCEK()
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate content encryption key: %w", err)
 	}
-	cek, iv := entropy[:enc.CEKSize()], entropy[enc.CEKSize():]
+	iv, err := enc1.GenerateIV()
+	if err != nil {
+		return nil, fmt.Errorf("jwe: failed to generate initialization vector: %w", err)
+	}
 
 	header := protected.Clone()
 	encryptedKey, err := kw.WrapKey(cek, header)
@@ -762,7 +770,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 	b64header := b64Encode(rawHeader)
 
 	// encrypt CEK
-	ciphertext, authTag, err := enc.New().Encrypt(cek, iv, b64header, plaintext)
+	ciphertext, authTag, err := enc1.Encrypt(cek, iv, b64header, plaintext)
 	if err != nil {
 		return nil, fmt.Errorf("jwe: failed to encrypt: %w", err)
 	}
