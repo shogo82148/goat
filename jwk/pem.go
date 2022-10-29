@@ -7,6 +7,7 @@ import (
 	"fmt"
 )
 
+// DecodePEM decodes the PEM data encoded keys.
 func DecodePEM(data []byte) (key *Key, rest []byte, err error) {
 	block, rest := pem.Decode(data)
 	if block == nil {

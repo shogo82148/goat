@@ -29,6 +29,10 @@ import (
 
 // Key is a JSON Web Key.
 type Key struct {
+	// Raw is the raw data of JSON-decoded JWK.
+	// JSON numbers are decoded as json.Number to avoid data loss.
+	Raw map[string]any
+
 	kty     jwa.KeyType
 	use     jwktypes.KeyUse
 	keyOps  []jwktypes.KeyOp
@@ -40,45 +44,44 @@ type Key struct {
 	x5tS256 []byte
 	priv    crypto.PrivateKey
 	pub     crypto.PublicKey
-
-	// Raw is the raw data of JSON-decoded JWK.
-	// JSON numbers are decoded as json.Number to avoid data loss.
-	Raw map[string]any
 }
 
-// KeyType is RFC7517 4.1. "kty" (Key Type) Parameter.
+// KeyType returns RFC 7517 Section 4.1. "kty" (Key Type) Parameter.
 func (key *Key) KeyType() jwa.KeyType {
 	return key.kty
 }
 
-// PublicKeyUse is RFC7517 4.2. "use" (Public Key Use) Parameter.
+// PublicKeyUse returns RFC 7517 Section 4.2. "use" (Public Key Use) Parameter.
 func (key *Key) PublicKeyUse() jwktypes.KeyUse {
 	return key.use
 }
 
+// SetPublicKeyUse sets RFC 7517 Section 4.2. "use" (Public Key Use) Parameter.
 func (key *Key) SetPublicKeyUse(use jwktypes.KeyUse) {
 	key.use = use
 }
 
-// KeyOperations is RFC7517 4.3. "key_ops" (Key Operations) Parameter.
+// KeyOperations returns RFC 7517 4.3. "key_ops" (Key Operations) Parameter.
 func (key *Key) KeyOperations() []jwktypes.KeyOp {
 	return key.keyOps
 }
 
+// SetKeyOperation sets RFC 7517 4.3. "key_ops" (Key Operations) Parameter.
 func (key *Key) SetKeyOperation(keyOps []jwktypes.KeyOp) {
 	key.keyOps = keyOps
 }
 
-// Algorithm is RFC7517 4.4. "alg" (Algorithm) Parameter.
+// Algorithm returns RFC 7517 Section 4.4. "alg" (Algorithm) Parameter.
 func (key *Key) Algorithm() jwa.KeyAlgorithm {
 	return key.alg
 }
 
+// SetAlgorithm sets RFC 7517 Section 4.4. "alg" (Algorithm) Parameter.
 func (key *Key) SetAlgorithm(alg jwa.KeyAlgorithm) {
 	key.alg = alg
 }
 
-// KeyID is RFC7517 4.5. "kid" (Key ID) Parameter.
+// KeyID is RFC 7517 Section 4.5. "kid" (Key ID) Parameter.
 func (key *Key) KeyID() string {
 	return key.kid
 }
@@ -87,7 +90,7 @@ func (key *Key) SetKeyID(kid string) {
 	key.kid = kid
 }
 
-// X509URL is RFC7517 4.6. "x5u" (X.509 URL) Parameter.
+// X509URL is RFC 7517 Section 4.6. "x5u" (X.509 URL) Parameter.
 func (key *Key) X509URL() *url.URL {
 	return key.x5u
 }
@@ -123,6 +126,10 @@ func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
 	key.x5tS256 = x5tS256
 }
 
+// NewPrivateKey returns a new JWK from the private key.
+//
+// key must be one of *ecdsa.PrivateKey, *rsa.PrivateKey, ed25519.PrivateKey,
+// x25519.PrivateKey, ed448.PrivateKey, x448.PrivateKey, or []byte.
 func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PrivateKey:
@@ -189,6 +196,10 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 	}
 }
 
+// NewPublicKey returns a new JWK from the public key.
+//
+// key must be one of *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey,
+// x25519.PublicKey, ed448.PublicKey, or x448.PublicKey.
 func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PublicKey:
@@ -500,7 +511,7 @@ func (key *Key) SetPublicKey(pub crypto.PublicKey) {
 	key.pub = pub
 }
 
-// ParseMap parses a JWK that is decoded by the json package.
+// ParseMap parses a JWK that is decoded by the [encoding/json] package.
 func ParseMap(raw map[string]any) (*Key, error) {
 	d := jsonutils.NewDecoder("jwk", raw)
 	key := &Key{
