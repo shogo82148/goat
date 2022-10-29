@@ -17,27 +17,27 @@ import (
 var b64 = base64.RawURLEncoding
 var nowFunc = time.Now // for testing
 
-// Claims is a JWT Claims Set defined in RFC7519.
+// Claims is a JWT Claims Set defined in RFC 7519.
 type Claims struct {
-	// RFC7519 Section 4.1.1. "iss" (Issuer) Claim
+	// RFC 7519 Section 4.1.1. "iss" (Issuer) Claim
 	Issuer string
 
-	// RFC7519 Section 4.1.2. "sub" (Subject) Claim
+	// RFC 7519 Section 4.1.2. "sub" (Subject) Claim
 	Subject string
 
-	// RFC7519 Section 4.1.3. "aud" (Audience) Claim
+	// RFC 7519 Section 4.1.3. "aud" (Audience) Claim
 	Audience []string
 
-	// RFC7519 Section 4.1.4. "exp" (Expiration Time) Claim
+	// RFC 7519 Section 4.1.4. "exp" (Expiration Time) Claim
 	ExpirationTime time.Time
 
-	// RFC7519 Section 4.1.5. "nbf" (Not Before) Claim
+	// RFC 7519 Section 4.1.5. "nbf" (Not Before) Claim
 	NotBefore time.Time
 
-	// RFC7519 Section 4.1.6. "iat" (Issued At) Claim
+	// RFC 7519 Section 4.1.6. "iat" (Issued At) Claim
 	IssuedAt time.Time
 
-	// RFC7519 Section 4.1.7. "jti" (JWT ID) Claim
+	// RFC 7519 Section 4.1.7. "jti" (JWT ID) Claim
 	JWTID string
 
 	// Raw is the raw data of JSON-decoded JOSE header.
@@ -45,23 +45,7 @@ type Claims struct {
 	Raw map[string]any
 }
 
-// KeyFinder is a wrapper for the FindKey method.
-type KeyFinder interface {
-	FindKey(header *jws.Header) (key sig.SigningKey, err error)
-}
-
-type FindKeyFunc func(header *jws.Header) (key sig.SigningKey, err error)
-
-func (f FindKeyFunc) FindKey(header *jws.Header) (key sig.SigningKey, err error) {
-	return f(header)
-}
-
-// Token is a decoded JWT token.
-type Token struct {
-	Header *jws.Header
-	Claims *Claims
-}
-
+// Parse parses a JWT.
 func Parse(data []byte, finder KeyFinder) (*Token, error) {
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
@@ -147,7 +131,7 @@ func parseClaims(data []byte) (*Claims, error) {
 	c.Issuer, _ = d.GetString("iss")
 	c.Subject, _ = d.GetString("sub")
 
-	// In RFC7519, the "aud" claim is defined as a string or an array of strings.
+	// In RFC 7519, the "aud" claim is defined as a string or an array of strings.
 	if aud, ok := raw["aud"]; ok {
 		switch aud := aud.(type) {
 		case []any:

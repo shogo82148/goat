@@ -43,10 +43,8 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-			alg := header.Algorithm().New()
-			return alg.NewSigningKey(key), nil
-		}))
+		finder := &JWKKeyFiner{Key: key}
+		token, err := Parse(raw, finder)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -233,13 +231,11 @@ func BenchmarkParse(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	finder := &JWKKeyFiner{Key: key}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-			alg := header.Algorithm().New()
-			return alg.NewSigningKey(key), nil
-		}))
+		_, err := Parse(raw, finder)
 		if err != nil {
 			b.Fatal(err)
 		}
