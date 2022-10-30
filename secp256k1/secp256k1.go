@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/shogo82148/goat/internal/secp256k1/field"
+	"github.com/shogo82148/goat/internal/curve256k1"
 )
 
 var initonce sync.Once
@@ -52,46 +52,13 @@ func (crv *secp256k1) Params() *elliptic.CurveParams {
 	return crv.params
 }
 
-var feZero field.Element
-var fe7 field.Element
-
-func init() {
-	if err := fe7.SetBytes([]byte{0x07}); err != nil {
-		panic(err)
-	}
-}
-
 // IsOnCurve reports whether the given (x,y) lies on the curve.
 func (crv *secp256k1) IsOnCurve(x, y *big.Int) bool {
-	var buf [32]byte
-	var X, Y field.Element
-	if x.BitLen() > 256 || y.BitLen() > 256 {
+	var p curve256k1.Point
+	if _, err := p.NewPoint(x, y); err != nil {
 		return false
 	}
-	x.FillBytes(buf[:])
-	if err := X.SetBytes(buf[:]); err != nil {
-		return false
-	}
-	y.FillBytes(buf[:])
-	if err := Y.SetBytes(y.Bytes()); err != nil {
-		return false
-	}
-
-	// x^3
-	var x3 field.Element
-	x3.Square(&X)
-	x3.Mul(&x3, &X)
-
-	// y^2
-	var y2 field.Element
-	y2.Square(&Y)
-
-	// x^3 - y^2 + 7
-	var ret field.Element
-	ret.Sub(&x3, &y2)
-	ret.Add(&ret, &fe7)
-
-	return ret.Equal(&feZero) == 1
+	return curve256k1.IsOnCurve(&p)
 }
 
 // zForAffine returns a Jacobian Z value for the affine point (x, y). If x and
