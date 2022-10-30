@@ -93,6 +93,12 @@ func (p *Point) ToAffine(v *PointJacobian) *Point {
 	return p
 }
 
+func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {
+	x.SetBytes(p.x.Bytes())
+	y.SetBytes(p.y.Bytes())
+	return x, y
+}
+
 // Add set p = a + b.
 func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	// See https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl

@@ -172,9 +172,19 @@ func (crv *secp256k1) addJacobian(x1, y1, z1, x2, y2, z2 *big.Int) (*big.Int, *b
 
 // Add returns the sum of (x1,y1) and (x2,y2)
 func (crv *secp256k1) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-	z1 := zForAffine(x1, y1)
-	z2 := zForAffine(x2, y2)
-	return curve.affineFromJacobian(crv.addJacobian(x1, y1, z1, x2, y2, z2))
+	// z1 := zForAffine(x1, y1)
+	// z2 := zForAffine(x2, y2)
+	// return curve.affineFromJacobian(crv.addJacobian(x1, y1, z1, x2, y2, z2))
+
+	var p1, p2, p3 curve256k1.Point
+	var pj1, pj2, pj3 curve256k1.PointJacobian
+	p1.NewPoint(x1, y1)
+	p2.NewPoint(x2, y2)
+	pj1.FromAffine(&p1)
+	pj2.FromAffine(&p2)
+	pj3.Add(&pj1, &pj2)
+	p3.ToAffine(&pj3)
+	return p3.ToBig(new(big.Int), new(big.Int))
 }
 
 // Double returns 2*(x,y)
