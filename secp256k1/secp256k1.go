@@ -56,15 +56,23 @@ var feZero field.Element
 var fe7 field.Element
 
 func init() {
-	fe7.SetBytes([]byte{0x07})
+	if err := fe7.SetBytes([]byte{0x07}); err != nil {
+		panic(err)
+	}
 }
 
 // IsOnCurve reports whether the given (x,y) lies on the curve.
 func (crv *secp256k1) IsOnCurve(x, y *big.Int) bool {
+	var buf [32]byte
 	var X, Y field.Element
-	if err := X.SetBytes(x.Bytes()); err != nil {
+	if x.BitLen() > 256 || y.BitLen() > 256 {
 		return false
 	}
+	x.FillBytes(buf[:])
+	if err := X.SetBytes(buf[:]); err != nil {
+		return false
+	}
+	y.FillBytes(buf[:])
 	if err := Y.SetBytes(y.Bytes()); err != nil {
 		return false
 	}
