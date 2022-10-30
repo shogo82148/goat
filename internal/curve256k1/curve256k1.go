@@ -95,12 +95,70 @@ func (p *Point) ToAffine(v *PointJacobian) *Point {
 
 // Add set p = a + b.
 func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
-	// var z1z1, z2z2, u1, u2, s1, s2, h, i, j, r, v, x3, y3, z3 field.Element
+	// See https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl
 
-	// z1z1.Square(&a.z)
-	// z2z2.Square(&b.z)
-	// u1.Mul(&a.x, &z2z2)
-	// u2.Mul(&b.x, &z1z1)
-	// s1.Mul(&a)
+	var z1z1, z2z2, u1, u2, s1, s2, tmp field.Element
+	var h, i, j, r, v, x3, y3, z3 field.Element
+
+	// Z1Z1 = Z1^2
+	z1z1.Square(&a.z)
+
+	// Z2Z2 = Z2^2
+	z2z2.Square(&b.z)
+
+	// U1 = X1*Z2Z2
+	u1.Mul(&a.x, &z2z2)
+
+	// U2 = X2*Z1Z1
+	u2.Mul(&b.x, &z1z1)
+
+	// S1 = Y1*Z2*Z2Z2
+	s1.Mul(&a.y, &b.z)
+	s1.Mul(&s1, &z2z2)
+
+	// S2 = Y2*Z1*Z1Z1
+	s2.Mul(&b.y, &a.z)
+	s2.Mul(&s2, &z1z1)
+
+	// H = U2-U1
+	h.Sub(&u2, &u1)
+
+	// I = (2*H)^2
+	i.Add(&h, &h)
+	i.Square(&i)
+
+	// J = H*I
+	j.Mul(&h, &i)
+
+	// r = 2*(S2-S1)
+	r.Sub(&s2, &s1)
+	r.Add(&r, &r)
+
+	// V = U1*I
+	v.Mul(&u1, &i)
+
+	// X3 = r^2-J-2*V
+	x3.Square(&r)
+	x3.Sub(&x3, &j)
+	tmp.Add(&v, &v)
+	x3.Sub(&x3, &tmp)
+
+	// Y3 = r*(V-X3)-2*S1*J
+	y3.Sub(&v, &x3)
+	y3.Mul(&y3, &r)
+	tmp.Mul(&s1, &j)
+	tmp.Add(&tmp, &tmp)
+	y3.Sub(&y3, &tmp)
+
+	// Z3 = ((Z1+Z2)^2-Z1Z1-Z2Z2)*H
+	z3.Add(&a.z, &b.z)
+	z3.Square(&z3)
+	z3.Sub(&z3, &z1z1)
+	z3.Sub(&z3, &z2z2)
+	z3.Mul(&z3, &h)
+
+	p.x.Set(&x3)
+	p.y.Set(&y3)
+	p.z.Set(&z3)
 	return p
 }
