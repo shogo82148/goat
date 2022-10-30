@@ -59,8 +59,9 @@ func (crv *secp256k1) IsOnCurve(x, y *big.Int) bool {
 	x3.Mul(x3, x)
 	x3.Mod(x3, crv.params.P)
 
-	ans := new(big.Int).Sub(y2, x3)
-	ans.Add(ans, crv.params.B)
+	ans := new(big.Int).Add(y2, crv.params.P) // to avoid overflow
+	ans.Sub(ans, x3)
+	ans.Sub(ans, crv.params.B)
 	ans.Mod(ans, crv.params.P)
 	return ans.Sign() == 0
 }
@@ -183,7 +184,8 @@ func (crv *secp256k1) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 
 // Double returns 2*(x,y)
 func (crv *secp256k1) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	return
+	z1 := zForAffine(x1, y1)
+	return curve.affineFromJacobian(curve.doubleJacobian(x1, y1, z1))
 }
 
 // doubleJacobian takes a point in Jacobian coordinates, (x, y, z), and returns its double, also in Jacobian form.
