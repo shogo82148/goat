@@ -217,6 +217,16 @@ func TestMul(t *testing.T) {
 			y: "2e13e4d2bcc909a00a761eacbe3c2b6ff0384aa12cec1edf4b944e0d51e7036a",
 			z: "00f098008bb2ec1d27f884647e5799ebfeaad06938ea0ec8ee0c6a4a31a9ff25",
 		},
+		{
+			x: "086a8c914f43403feb8f16de349b17b0ea7ea984ff3d9194593f3fa81dbe62bc",
+			y: "223e262e88f6e56c1a90f8e8dbe38e8c55998dcdc37ac8fda92c76b1be11f391",
+			z: "0055668176eb40e9ee4b00dd4d8af595871f3729377c398c075d6256c79ae960",
+		},
+		{
+			x: "5940947b0105d4a5571fcd9ba5864edde6fafb8d12dd0d040c30e0cbf92cd823",
+			y: "1bbc2e0b8cd1efc509e0ff8f57d995c99c42aaee0d93c327762dd94504297702",
+			z: "00898f5446f1b1d1b7ebcfea5364b4b0b70f280c0d5249bd09ae540d75b79f9f",
+		},
 	}
 
 	for _, tc := range tests {
@@ -255,10 +265,15 @@ func TestMul_Quick(t *testing.T) {
 		B := new(big.Int).SetBytes(y[:])
 		C := new(big.Int).Mul(A, B)
 		C.Mod(C, l)
+		var buf [32]byte
+		C.FillBytes(buf[:])
 
-		return bytes.Equal(c.Bytes(), C.Bytes())
+		return bytes.Equal(c.Bytes(), buf[:])
 	}
-	if err := quick.Check(f, nil); err != nil {
+	cfn := &quick.Config{
+		MaxCountScale: 10,
+	}
+	if err := quick.Check(f, cfn); err != nil {
 		t.Error(err)
 	}
 }
