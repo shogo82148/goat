@@ -189,8 +189,15 @@ func (crv *secp256k1) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 
 // Double returns 2*(x,y)
 func (crv *secp256k1) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	z1 := zForAffine(x1, y1)
-	return curve.affineFromJacobian(curve.doubleJacobian(x1, y1, z1))
+	var p1, p3 curve256k1.Point
+	var pj1, pj3 curve256k1.PointJacobian
+	if _, err := p1.NewPoint(x1, y1); err != nil {
+		panic("invalid point")
+	}
+	pj1.FromAffine(&p1)
+	pj3.Double(&pj1)
+	p3.ToAffine(&pj3)
+	return p3.ToBig(new(big.Int), new(big.Int))
 }
 
 // doubleJacobian takes a point in Jacobian coordinates, (x, y, z), and returns its double, also in Jacobian form.

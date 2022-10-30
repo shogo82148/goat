@@ -168,3 +168,54 @@ func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	p.z.Set(&z3)
 	return p
 }
+
+// Add set p = a + a.
+func (p *PointJacobian) Double(v *PointJacobian) *PointJacobian {
+	// see http://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#doubling-dbl-2009-l
+
+	var a, b, c, d, e, f, tmp, x3, y3, z3 field.Element
+
+	// A = X1^2
+	a.Square(&v.x)
+
+	// B = Y1^2
+	b.Square(&v.y)
+
+	// C = B^2
+	c.Square(&b)
+
+	// D = 2*((X1+B)^2-A-C)
+	d.Add(&v.x, &b)
+	d.Square(&d)
+	d.Sub(&d, &a)
+	d.Sub(&d, &c)
+	d.Add(&d, &d)
+
+	// E = 3*A
+	e.Add(&a, &a)
+	e.Add(&e, &a)
+
+	// F = E^2
+	f.Square(&e)
+
+	// X3 = F-2*D
+	x3.Add(&d, &d)
+	x3.Sub(&f, &x3)
+
+	// Y3 = E*(D-X3)-8*C
+	tmp.Add(&c, &c)
+	tmp.Add(&tmp, &tmp)
+	tmp.Add(&tmp, &tmp)
+	y3.Sub(&d, &x3)
+	y3.Mul(&e, &y3)
+	y3.Sub(&y3, &tmp)
+
+	// Z3 = 2*Y1*Z1
+	z3.Mul(&v.y, &v.z)
+	z3.Add(&z3, &z3)
+
+	p.x.Set(&x3)
+	p.y.Set(&y3)
+	p.z.Set(&z3)
+	return p
+}

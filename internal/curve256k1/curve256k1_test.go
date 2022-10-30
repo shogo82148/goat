@@ -103,3 +103,43 @@ func TestAdd(t *testing.T) {
 		}
 	}
 }
+
+func TestDouble(t *testing.T) {
+	tests := []struct {
+		x1, y1, z1 string
+		x3, y3, z3 string
+	}{
+		{
+			x1: "79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14",
+			y1: "d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb",
+			z1: "0000000000000000000000000000000000000000000000000000000000000001",
+			x3: "5d22aa68d498ee29f8d1d7a0f7d73e2a5c46b961c0f1fe97ad8ede5f919a3db8",
+			y3: "f1a409e68bc80e4ec9f667868feb70403f13c991b2a54f6372815b0780d78b4f",
+			z3: "a72ea58024ebd536c38cf3200d248782b06e7aea94a97359a5d1cd8cb6cf0347",
+		},
+	}
+
+	for _, tc := range tests {
+		var p1, p3 PointJacobian
+		p1.x.Set(hex2element(tc.x1))
+		p1.y.Set(hex2element(tc.y1))
+		p1.z.Set(hex2element(tc.z1))
+
+		p3.x.Set(hex2element(tc.x3))
+		p3.y.Set(hex2element(tc.y3))
+		p3.z.Set(hex2element(tc.z3))
+
+		var v PointJacobian
+		v.Double(&p1)
+
+		if p3.x.Equal(&v.x)&p3.y.Equal(&v.y)&p3.z.Equal(&v.z) != 1 {
+			t.Errorf(
+				"(%s, %s, %s) + (%s, %s, %s) should be (%s, %s, %s), got (%x, %x, %x)",
+				tc.x1, tc.y1, tc.z1,
+				tc.x1, tc.y1, tc.z1,
+				tc.x3, tc.y3, tc.z3,
+				v.x.Bytes(), v.y.Bytes(), v.z.Bytes(),
+			)
+		}
+	}
+}
