@@ -74,8 +74,23 @@ func (p *PointJacobian) FromAffine(v *Point) *PointJacobian {
 }
 
 // ToAffine reverses the Jacobian transform. If the point is ∞ it returns 0, 0.
-func (p *PointJacobian) ToAffine(v *Point) *Point {
-	return v
+func (p *Point) ToAffine(v *PointJacobian) *Point {
+	if v.z.Equal(&feZero) == 1 {
+		p.x.Zero()
+		p.y.Zero()
+		return p
+	}
+
+	var zinv field.Element // = 1/z mod p
+	zinv.Inv(&v.z)
+
+	var zinvsq, zinvcb field.Element // 1/z^2, 1/z^3
+	zinvsq.Square(&zinv)
+	zinvcb.Mul(&zinv, &zinvsq)
+
+	p.x.Mul(&v.x, &zinvsq)
+	p.y.Mul(&v.y, &zinvcb)
+	return p
 }
 
 // Add set p = a + b.
