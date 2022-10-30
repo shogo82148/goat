@@ -375,3 +375,119 @@ func (v *Element) Mul(a, b *Element) *Element {
 func (v *Element) Square(x *Element) *Element {
 	return v.Mul(x, x)
 }
+
+// Inv sets v = 1/z mod p, and returns v.
+func (v *Element) Inv(z *Element) *Element {
+	var z1, z2, z3 Element
+	z1.Square(z)
+	z2.Square(&z1)
+	z3.Square(&z2)
+
+	var z4 Element
+	z4.Mul(z, &z1)
+	z4.Mul(&z4, &z2)
+	z4.Mul(&z4, &z3) // = 2^4 - 1
+
+	var z8 Element
+	z8.Square(&z4)
+	z8.Square(&z8)
+	z8.Square(&z8)
+	z8.Square(&z8)
+	z8.Mul(&z8, &z4) // = 2^8 - 1
+
+	var z16 Element
+	z16.Square(&z8)
+	for i := 1; i < 8; i++ {
+		z16.Square(&z16)
+	}
+	z16.Mul(&z16, &z8) // = 2^16 - 1
+
+	var z32 Element
+	z32.Square(&z16)
+	for i := 1; i < 16; i++ {
+		z32.Square(&z32)
+	}
+	z32.Mul(&z32, &z16) // = 2^32 - 1
+
+	var z64 Element
+	z64.Square(&z32)
+	for i := 1; i < 32; i++ {
+		z64.Square(&z64)
+	}
+	z64.Mul(&z64, &z32) // = 2^64 - 1
+
+	var z128 Element
+	z128.Square(&z64)
+	for i := 1; i < 64; i++ {
+		z128.Square(&z128)
+	}
+	z128.Mul(&z128, &z64) // = 2^128 - 1
+
+	var x Element
+	x.Square(&z128)
+	for i := 1; i < 64; i++ {
+		x.Square(&x)
+	}
+	x.Mul(&x, &z64) // = 2^192 - 1
+
+	for i := 0; i < 16; i++ {
+		x.Square(&x)
+	}
+	x.Mul(&x, &z16) // = 2^208 - 1
+
+	for i := 0; i < 8; i++ {
+		x.Square(&x)
+	}
+	x.Mul(&x, &z8) // = 2^216 - 1
+
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Mul(&x, &z4) // = 2^220 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^221 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^222 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^223 - 1
+
+	for i := 0; i < 17; i++ {
+		x.Square(&x)
+	}
+	x.Mul(&x, &z16) // = 2^240 - 2^16 - 1
+
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Mul(&x, &z4) // = 2^244 - 2^20 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^245 - 2^21 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^246 - 2^22 - 1
+
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^251 - 2^27 - 2^4 - 2^3 - 2^2 - 2^1 - 1
+
+	x.Square(&x)
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^253 - 2^29 - 2^6 - 2^5 - 2^4 - 2^3 - 2^1 - 1
+
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^254 - 2^30 - 2^7 - 2^6 - 2^5 - 2^4 - 2^2 - 1
+
+	x.Square(&x)
+	x.Square(&x)
+	x.Mul(&x, z) // = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 3
+	return v.Set(&x)
+}

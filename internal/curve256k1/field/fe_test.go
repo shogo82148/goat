@@ -244,3 +244,34 @@ func TestMul_Quick(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestInv(t *testing.T) {
+	var v, z, one Element
+	one.One()
+	z.One()
+	z.Add(&z, &z)
+
+	v.Inv(&z)
+	v.Mul(&v, &z)
+	if v.Equal(&one) != 1 {
+		t.Error("incorrect")
+	}
+}
+
+func TestInv_Check(t *testing.T) {
+	var one Element
+	one.One()
+	f := func(x [32]byte) bool {
+		var a Element
+		if err := a.SetBytes(x[:]); err != nil {
+			return true
+		}
+		var v Element
+		v.Inv(&a)
+		v.Mul(&v, &a)
+		return v.Equal(&one) == 1
+	}
+	if err := quick.Check(f, nil); err != nil {
+		t.Error(err)
+	}
+}
