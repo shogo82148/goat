@@ -113,9 +113,15 @@ func TestAdd(t *testing.T) {
 		x := new(Element)
 		y := new(Element)
 		z := new(Element)
-		x.SetBytes(decodeHex(tc.x))
-		y.SetBytes(decodeHex(tc.y))
-		z.SetBytes(decodeHex(tc.z))
+		if err := x.SetBytes(decodeHex(tc.x)); err != nil {
+			t.Errorf("failed to decode x: %v", err)
+		}
+		if err := y.SetBytes(decodeHex(tc.y)); err != nil {
+			t.Errorf("failed to decode y: %v", err)
+		}
+		if err := z.SetBytes(decodeHex(tc.z)); err != nil {
+			t.Errorf("failed to decode z: %v", err)
+		}
 		v := new(Element).Add(x, y)
 		if v.Equal(z) == 0 {
 			t.Errorf("%s + %s = %s, but got %s", x, y, z, v)
@@ -167,9 +173,15 @@ func TestSub(t *testing.T) {
 		x := new(Element)
 		y := new(Element)
 		z := new(Element)
-		x.SetBytes(decodeHex(tc.x))
-		y.SetBytes(decodeHex(tc.y))
-		z.SetBytes(decodeHex(tc.z))
+		if err := x.SetBytes(decodeHex(tc.x)); err != nil {
+			t.Errorf("failed to decode x: %v", err)
+		}
+		if err := y.SetBytes(decodeHex(tc.y)); err != nil {
+			t.Errorf("failed to decode y: %v", err)
+		}
+		if err := z.SetBytes(decodeHex(tc.z)); err != nil {
+			t.Errorf("failed to decode z: %v", err)
+		}
 		v := new(Element).Sub(x, y)
 		if v.Equal(z) == 0 {
 			t.Errorf("%s - %s = %s, but got %s", x, y, z, v)
@@ -211,9 +223,15 @@ func TestMul(t *testing.T) {
 		x := new(Element)
 		y := new(Element)
 		z := new(Element)
-		x.SetBytes(decodeHex(tc.x))
-		y.SetBytes(decodeHex(tc.y))
-		z.SetBytes(decodeHex(tc.z))
+		if err := x.SetBytes(decodeHex(tc.x)); err != nil {
+			t.Errorf("failed to decode x: %v", err)
+		}
+		if err := y.SetBytes(decodeHex(tc.y)); err != nil {
+			t.Errorf("failed to decode y: %v", err)
+		}
+		if err := z.SetBytes(decodeHex(tc.z)); err != nil {
+			t.Errorf("failed to decode z: %v", err)
+		}
 		v := new(Element).Mul(x, y)
 		if v.Equal(z) == 0 {
 			t.Errorf("%s * %s = %s, but got %s", x, y, z, v)
