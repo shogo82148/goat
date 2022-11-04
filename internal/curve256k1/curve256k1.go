@@ -164,7 +164,7 @@ func (p *PointJacobian) Equal(v *PointJacobian) int {
 	zz1.Square(&p.z)
 	zzz1.Mul(&zz1, &p.z)
 	zz2.Square(&v.z)
-	zzz2.Mul(&zz1, &v.z)
+	zzz2.Mul(&zz2, &v.z)
 
 	x1.Mul(&p.x, &zz2)
 	x2.Mul(&v.x, &zz1)
