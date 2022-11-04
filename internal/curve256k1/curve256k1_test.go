@@ -46,6 +46,15 @@ func TestEqual(t *testing.T) {
 			z2: "0000000000000000000000000000000000000000000000000000000000000001",
 			eq: true,
 		},
+		{
+			x1: "79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14",
+			y1: "d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb",
+			z1: "0000000000000000000000000000000000000000000000000000000000000001",
+			x2: "1e6c40c6c5babb5c9fe547c3eb7baf26a54024a187f899a1a68b95f9bb6a5685",
+			y2: "7a72ea58024ebd536c38cf3200d248782b06e7aea94a97359a5d1cd85b6cee89",
+			z2: "7fffffffffffffffffffffffffffffffffffffffffffffffffffffff7ffffe18",
+			eq: true,
+		},
 	}
 
 	for _, tc := range tests {
@@ -62,10 +71,13 @@ func TestEqual(t *testing.T) {
 		v.Add(&p1, &p2)
 
 		if (p1.Equal(&p2) != 0) != tc.eq {
+			var a, b Point
+			a.FromJacobian(&p1)
+			b.FromJacobian(&p2)
 			t.Errorf(
-				"(%s, %s, %s) == (%s, %s, %s) should be %t, but got not",
-				tc.x1, tc.y1, tc.z1,
-				tc.x2, tc.y2, tc.z2,
+				"(%x, %x) == (%x, %x) should be %t, but got not",
+				a.x.Bytes(), a.y.Bytes(),
+				b.x.Bytes(), b.y.Bytes(),
 				tc.eq,
 			)
 		}
