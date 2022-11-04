@@ -1,6 +1,7 @@
 package curve256k1
 
 import (
+	"encoding/hex"
 	"errors"
 	"math/big"
 
@@ -19,6 +20,22 @@ func init() {
 	if err := fe7.SetBytes([]byte{0x07}); err != nil {
 		panic(err)
 	}
+}
+
+func decodeHex(s string) []byte {
+	data, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
+func hex2element(s string) *field.Element {
+	v := new(field.Element)
+	if err := v.SetBytes(decodeHex(s)); err != nil {
+		panic(err)
+	}
+	return v
 }
 
 func (p *Point) NewPoint(x, y *big.Int) (*Point, error) {
@@ -40,6 +57,18 @@ func (p *Point) NewPoint(x, y *big.Int) (*Point, error) {
 	return p, nil
 }
 
+var generator Point
+
+func init() {
+	generator.x.Set(hex2element("79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"))
+	generator.y.Set(hex2element("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8"))
+}
+
+func (p *Point) NewGenerator() *Point {
+	p.Set(&generator)
+	return p
+}
+
 func IsOnCurve(p *Point) bool {
 	// x^3
 	var x3 field.Element
@@ -56,6 +85,12 @@ func IsOnCurve(p *Point) bool {
 	ret.Add(&ret, &fe7)
 
 	return ret.Equal(&feZero) == 1
+}
+
+func (p *Point) Set(q *Point) *Point {
+	p.x.Set(&q.x)
+	p.y.Set(&q.y)
+	return p
 }
 
 type PointJacobian struct {
@@ -90,19 +125,6 @@ func (p *PointJacobian) Select(a, b *PointJacobian, cond int) *PointJacobian {
 	return p
 }
 
-func (p *PointJacobian) Neg(v *PointJacobian) *PointJacobian {
-	p.x.Neg(&v.x)
-	p.y.Set(&v.y)
-	p.z.Set(&v.z)
-	return p
-}
-
-func (p *PointJacobian) CondNeg(cond int) *PointJacobian {
-	var neg PointJacobian
-	neg.Neg(p)
-	return p.Select(&neg, p, cond)
-}
-
 // FromAffine returns a Jacobian Z value for the affine point (x, y). If x and
 // y are zero, it assumes that they represent the point at infinity because (0,
 // 0) is not on the any of the curves handled here.
@@ -113,8 +135,8 @@ func (p *PointJacobian) FromAffine(v *Point) *PointJacobian {
 	return p
 }
 
-// ToAffine reverses the Jacobian transform. If the point is ∞ it returns 0, 0.
-func (p *Point) ToAffine(v *PointJacobian) *Point {
+// FromJacobian reverses the Jacobian transform. If the point is ∞ it returns 0, 0.
+func (p *Point) FromJacobian(v *PointJacobian) *Point {
 	if v.z.Equal(&feZero) == 1 {
 		p.x.Zero()
 		p.y.Zero()
@@ -131,6 +153,20 @@ func (p *Point) ToAffine(v *PointJacobian) *Point {
 	p.x.Mul(&v.x, &zinvsq)
 	p.y.Mul(&v.y, &zinvcb)
 	return p
+}
+
+func (p *PointJacobian) Equal(v *PointJacobian) int {
+	var x, y field.Element
+	var zinv field.Element // = 1/z mod p
+	zinv.Inv(&p.z)
+
+	var zinvsq, zinvcb field.Element // 1/z^2, 1/z^3
+	zinvsq.Square(&zinv)
+	zinvcb.Mul(&zinv, &zinvsq)
+
+	x.Mul(&p.x, &zinvsq)
+	y.Mul(&p.y, &zinvcb)
+	return (x.Equal(&v.x) & y.Equal(&v.y)) | (p.z.IsZero() & v.z.IsZero())
 }
 
 func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {

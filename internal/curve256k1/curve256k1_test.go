@@ -1,27 +1,8 @@
 package curve256k1
 
 import (
-	"encoding/hex"
 	"testing"
-
-	"github.com/shogo82148/goat/internal/curve256k1/field"
 )
-
-func decodeHex(s string) []byte {
-	data, err := hex.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
-	return data
-}
-
-func hex2element(s string) *field.Element {
-	v := new(field.Element)
-	if err := v.SetBytes(decodeHex(s)); err != nil {
-		panic(err)
-	}
-	return v
-}
 
 func TestAdd(t *testing.T) {
 	tests := []struct {
