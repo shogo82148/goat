@@ -1,5 +1,7 @@
 package curve256k1
 
+import "sync"
+
 func (p *PointJacobian) ScalarMult(q *PointJacobian, k []byte) *PointJacobian {
 	var table lookupTable
 	table.Init(q)
@@ -40,21 +42,45 @@ func (p *PointJacobian) ScalarMult(q *PointJacobian, k []byte) *PointJacobian {
 	return p
 }
 
+var baseTable [64]lookupTable
+var initOnce sync.Once
+
+func initBaseTable() {
+	initOnce.Do(func() {
+		var gen Point
+		var base PointJacobian
+		base.FromAffine(gen.NewGenerator())
+		for i := 0; i < 64; i++ {
+			baseTable[i].Init(&base)
+			base.Double(&base)
+			base.Double(&base)
+			base.Double(&base)
+			base.Double(&base)
+		}
+	})
+}
+
 func (p *PointJacobian) ScalarBaseMult(k []byte) *PointJacobian {
+	initBaseTable()
+
 	var q PointJacobian
 	q.FromAffine(new(Point).NewGenerator())
 
-	var zero, v PointJacobian
-	zero.Zero()
+	var v PointJacobian
 	v.Zero()
-	for i := 0; i < len(k); i++ {
-		b := int(k[i])
-		for j := 7; j >= 0; j-- {
-			var tmp PointJacobian
-			v.Double(&v)
-			tmp.Select(&q, &zero, (b>>j)&1)
-			v.Add(&v, &tmp)
-		}
+	for i, j := 0, len(baseTable)-1; i < len(k); i++ {
+		b := k[i]
+
+		// hi-nibble
+		var tmp PointJacobian
+		baseTable[j].SelectInto(&tmp, b>>4)
+		v.Add(&v, &tmp)
+		j--
+
+		// low-nibble
+		baseTable[j].SelectInto(&tmp, b&0xf)
+		v.Add(&v, &tmp)
+		j--
 	}
 	p.Set(&v)
 	return p
