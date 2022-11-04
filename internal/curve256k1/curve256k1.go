@@ -156,17 +156,24 @@ func (p *Point) FromJacobian(v *PointJacobian) *Point {
 }
 
 func (p *PointJacobian) Equal(v *PointJacobian) int {
-	var x, y field.Element
-	var zinv field.Element // = 1/z mod p
-	zinv.Inv(&p.z)
+	var x1, y1 field.Element
+	var x2, y2 field.Element
 
-	var zinvsq, zinvcb field.Element // 1/z^2, 1/z^3
-	zinvsq.Square(&zinv)
-	zinvcb.Mul(&zinv, &zinvsq)
+	// z1^2, z2^2, z1^3, z2^3
+	var zz1, zz2, zzz1, zzz2 field.Element
+	zz1.Square(&p.z)
+	zzz1.Mul(&zz1, &p.z)
+	zz2.Square(&v.z)
+	zzz2.Mul(&zz1, &v.z)
 
-	x.Mul(&p.x, &zinvsq)
-	y.Mul(&p.y, &zinvcb)
-	return (x.Equal(&v.x) & y.Equal(&v.y)) | (p.z.IsZero() & v.z.IsZero())
+	x1.Mul(&p.x, &zz2)
+	x2.Mul(&v.x, &zz1)
+	y1.Mul(&p.y, &zzz2)
+	y2.Mul(&v.y, &zzz1)
+
+	zero1 := p.z.IsZero()
+	zero2 := v.z.IsZero()
+	return (x1.Equal(&x2) & y1.Equal(&y2) & ^zero1 & ^zero2) | (zero1 & zero2)
 }
 
 func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {
