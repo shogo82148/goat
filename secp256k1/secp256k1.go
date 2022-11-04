@@ -61,18 +61,6 @@ func (crv *secp256k1) IsOnCurve(x, y *big.Int) bool {
 	return curve256k1.IsOnCurve(&p)
 }
 
-// zForAffine returns a Jacobian Z value for the affine point (x, y). If x and
-// y are zero, it assumes that they represent the point at infinity because (0,
-// 0) is not on the any of the curves handled here.
-func zForAffine(x, y *big.Int) *big.Int {
-	z := new(big.Int)
-	if x.Sign() != 0 || y.Sign() != 0 {
-		z.SetInt64(1)
-	}
-
-	return z
-}
-
 // affineFromJacobian reverses the Jacobian transform. If the point is ∞ it returns 0, 0.
 func (crv *secp256k1) affineFromJacobian(x, y, z *big.Int) (xOut, yOut *big.Int) {
 	if z.Sign() == 0 {
@@ -234,20 +222,15 @@ func (crv *secp256k1) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
 func (crv *secp256k1) ScalarMult(Bx, By *big.Int, k []byte) (x, y *big.Int) {
-	Bz := new(big.Int).SetInt64(1)
-	x, y, z := new(big.Int), new(big.Int), new(big.Int)
-
-	for _, byte := range k {
-		for bitNum := 0; bitNum < 8; bitNum++ {
-			x, y, z = crv.doubleJacobian(x, y, z)
-			if byte&0x80 == 0x80 {
-				x, y, z = crv.addJacobian(Bx, By, Bz, x, y, z)
-			}
-			byte <<= 1
-		}
+	var B, ret curve256k1.Point
+	var Bj, retj curve256k1.PointJacobian
+	if _, err := B.NewPoint(Bx, By); err != nil {
+		panic("invalid point")
 	}
-
-	return curve.affineFromJacobian(x, y, z)
+	Bj.FromAffine(&B)
+	retj.ScalarMult(&Bj, k)
+	ret.ToAffine(&retj)
+	return ret.ToBig(new(big.Int), new(big.Int))
 }
 
 // ScalarBaseMult returns k*G, where G is the base point of the group

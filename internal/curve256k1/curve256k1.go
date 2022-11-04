@@ -63,13 +63,47 @@ type PointJacobian struct {
 	x, y, z field.Element
 }
 
+func (p *PointJacobian) Zero() *PointJacobian {
+	p.x.Zero()
+	p.y.Zero()
+	p.z.One()
+	return p
+}
+
+func (p *PointJacobian) Set(v *PointJacobian) *PointJacobian {
+	p.x.Set(&v.x)
+	p.y.Set(&v.y)
+	p.z.Set(&v.z)
+	return p
+}
+
+func (p *PointJacobian) Select(a, b *PointJacobian, cond int) *PointJacobian {
+	p.x.Select(&a.x, &b.x, cond)
+	p.y.Select(&a.y, &b.y, cond)
+	p.z.Select(&a.z, &b.z, cond)
+	return p
+}
+
+func (p *PointJacobian) Neg(v *PointJacobian) *PointJacobian {
+	p.x.Neg(&v.x)
+	p.y.Set(&v.y)
+	p.z.Set(&v.z)
+	return p
+}
+
+func (p *PointJacobian) CondNeg(cond int) *PointJacobian {
+	var neg PointJacobian
+	neg.Neg(p)
+	return p.Select(&neg, p, cond)
+}
+
 // FromAffine returns a Jacobian Z value for the affine point (x, y). If x and
 // y are zero, it assumes that they represent the point at infinity because (0,
 // 0) is not on the any of the curves handled here.
 func (p *PointJacobian) FromAffine(v *Point) *PointJacobian {
 	p.x.Set(&v.x)
 	p.y.Set(&v.y)
-	p.z.Select(&feZero, &feOne, v.x.Equal(&feZero)|v.y.Equal(&feZero))
+	p.z.Select(&feZero, &feOne, v.x.IsZero()|v.y.IsZero())
 	return p
 }
 
@@ -163,6 +197,17 @@ func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	z3.Sub(&z3, &z2z2)
 	z3.Mul(&z3, &h)
 
+	var zero int
+	zero = b.z.IsZero()
+	x3.Select(&a.x, &x3, zero)
+	y3.Select(&a.y, &y3, zero)
+	z3.Select(&a.z, &z3, zero)
+
+	zero = a.z.IsZero()
+	x3.Select(&b.x, &x3, zero)
+	y3.Select(&b.y, &y3, zero)
+	z3.Select(&b.z, &z3, zero)
+
 	p.x.Set(&x3)
 	p.y.Set(&y3)
 	p.z.Set(&z3)
@@ -214,8 +259,25 @@ func (p *PointJacobian) Double(v *PointJacobian) *PointJacobian {
 	z3.Mul(&v.y, &v.z)
 	z3.Add(&z3, &z3)
 
-	p.x.Set(&x3)
-	p.y.Set(&y3)
-	p.z.Set(&z3)
+	zero := v.z.Equal(&feZero)
+	p.x.Select(&v.x, &x3, zero)
+	p.y.Select(&v.y, &y3, zero)
+	p.z.Select(&v.z, &z3, zero)
+	return p
+}
+
+func (p *PointJacobian) ScalarMult(q *PointJacobian, k []byte) *PointJacobian {
+	var zero PointJacobian
+	zero.Zero()
+	p.Zero()
+	for i := len(k) - 1; i >= 0; i-- {
+		b := k[i]
+		for j := 7; j >= 0; j-- {
+			var tmp PointJacobian
+			p.Double(p)
+			tmp.Select(q, &zero, int(b>>j)&1)
+			p.Add(p, &tmp)
+		}
+	}
 	return p
 }
