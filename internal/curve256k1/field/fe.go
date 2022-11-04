@@ -139,6 +139,19 @@ func (v *Element) Equal(x *Element) int {
 	return int(c >> 63)
 }
 
+// Equal returns 1 if v equals zero, and 0 otherwise.
+func (v *Element) IsZero() int {
+	var c uint64
+	c |= v.l0
+	c |= v.l1
+	c |= v.l2
+	c |= v.l3
+
+	c = (c & 0xFFFFFFFF) | (c >> 32)
+	c--
+	return int(c >> 63)
+}
+
 // Set sets v = a, and returns v.
 func (v *Element) Set(x *Element) *Element {
 	*v = *x

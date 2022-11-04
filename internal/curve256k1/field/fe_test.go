@@ -20,6 +20,14 @@ func (v *Element) String() string {
 	return hex.EncodeToString(v.Bytes())
 }
 
+func newElement(s string) *Element {
+	var v Element
+	if err := v.SetBytes(decodeHex(s)); err != nil {
+		panic(err)
+	}
+	return &v
+}
+
 func TestBytes(t *testing.T) {
 	t.Run("1", func(t *testing.T) {
 		x := decodeHex("01")
@@ -52,6 +60,18 @@ func TestBytes(t *testing.T) {
 			t.Error("want error, but not")
 		}
 	})
+}
+
+func TestIsZero(t *testing.T) {
+	v := newElement("0000000000000000000000000000000000000000000000000000000000000001")
+	if v.IsZero() == 1 {
+		t.Error("unexpected result: v is zero")
+	}
+
+	v = newElement("0000000000000000000000000000000000000000000000000000000000000000")
+	if v.IsZero() == 0 {
+		t.Error("unexpected result: v is not zero")
+	}
 }
 
 func TestBytes_Quick(t *testing.T) {
