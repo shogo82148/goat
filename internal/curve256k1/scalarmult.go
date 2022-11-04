@@ -9,7 +9,19 @@ func (p *PointJacobian) ScalarMult(q *PointJacobian, k []byte) *PointJacobian {
 	zero.Zero()
 	v.Zero()
 
-	for _, b := range k {
+	// first byte
+	b := k[0]
+	table.SelectInto(&tmp, b>>4)
+	v.Add(&v, &tmp)
+	v.Double(&v)
+	v.Double(&v)
+	v.Double(&v)
+	v.Double(&v)
+	table.SelectInto(&tmp, b&0xf)
+	v.Add(&v, &tmp)
+
+	for i := 1; i < len(k); i++ {
+		b := k[i]
 		v.Double(&v)
 		v.Double(&v)
 		v.Double(&v)
