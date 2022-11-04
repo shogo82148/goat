@@ -6,15 +6,15 @@ import (
 )
 
 type lookupTable struct {
-	points [16]PointJacobian
+	points [15]PointJacobian
 }
 
 func (v *lookupTable) Init(p *PointJacobian) {
 	points := &v.points
 	points[0].Set(p)
-	for i := 1; i < 16; i++ {
-		var v PointJacobian
-		points[i].Set(v.Add(&points[i-1], p))
+	for i := 1; i < 15; i += 2 {
+		points[i].Double(&points[i/2])
+		points[i+1].Add(&points[i], p)
 	}
 }
 
