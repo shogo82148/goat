@@ -61,12 +61,18 @@ func IsOnCurve(p *Point) bool {
 type PointJacobian struct {
 	// X = x/z^2, Y = y/z^3
 	x, y, z field.Element
+
+	// Make the type not comparable (i.e. used with == or as a map key), as
+	// equivalent points can be represented by different Go values.
+	_ incomparable
 }
+
+type incomparable [0]func()
 
 func (p *PointJacobian) Zero() *PointJacobian {
 	p.x.Zero()
 	p.y.Zero()
-	p.z.One()
+	p.z.Zero()
 	return p
 }
 
@@ -270,14 +276,12 @@ func (p *PointJacobian) ScalarMult(q *PointJacobian, k []byte) *PointJacobian {
 	var zero PointJacobian
 	zero.Zero()
 	p.Zero()
-	for i := len(k) - 1; i >= 0; i-- {
-		b := k[i]
-		for j := 7; j >= 0; j-- {
-			var tmp PointJacobian
-			p.Double(p)
-			tmp.Select(q, &zero, int(b>>j)&1)
-			p.Add(p, &tmp)
-		}
+	for i := 0; i < 256; i++ {
+		var tmp PointJacobian
+		b := int(k[i/8]>>(7-i%8)) & 1
+		p.Double(p)
+		tmp.Select(q, &zero, b)
+		p.Add(p, &tmp)
 	}
 	return p
 }

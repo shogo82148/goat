@@ -222,6 +222,18 @@ func (crv *secp256k1) doubleJacobian(x, y, z *big.Int) (*big.Int, *big.Int, *big
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
 func (crv *secp256k1) ScalarMult(Bx, By *big.Int, k []byte) (x, y *big.Int) {
+	// Bz := new(big.Int).SetInt64(1)
+	// x, y, z := new(big.Int), new(big.Int), new(big.Int)
+
+	// for i := 0; i < 256; i++ {
+	// 	x, y, z = crv.doubleJacobian(x, y, z)
+	// 	b := int(k[i/8]>>(7-i%8)) & 1
+	// 	if b != 0 {
+	// 		x, y, z = crv.addJacobian(Bx, By, Bz, x, y, z)
+	// 	}
+	// }
+	// return curve.affineFromJacobian(x, y, z)
+
 	var B, ret curve256k1.Point
 	var Bj, retj curve256k1.PointJacobian
 	if _, err := B.NewPoint(Bx, By); err != nil {
