@@ -66,7 +66,7 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 		if sec > maxEpoch || sec < -maxEpoch {
 			return fmt.Errorf("unix time epoch overflow: %d", sec)
 		}
-		date.Time = time.Unix(sec, 0)
+		date.Time = time.Unix(sec, 0).UTC()
 		return nil
 	}
 
@@ -86,6 +86,6 @@ func (date *NumericDate) UnmarshalJSON(b []byte) (err error) {
 	if sec > maxEpoch || sec < -maxEpoch {
 		return fmt.Errorf("unix time epoch overflow: %d", sec)
 	}
-	date.Time = time.Unix(sec, ns)
+	date.Time = time.Unix(sec, ns).UTC()
 	return nil
 }
