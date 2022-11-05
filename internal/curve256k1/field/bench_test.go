@@ -41,3 +41,25 @@ func BenchmarkMul(b *testing.B) {
 		x.Mul(&x, &y)
 	}
 }
+
+func BenchmarkSquare(b *testing.B) {
+	var x Element
+	x.One()
+	x.Add(&x, &x)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x.Square(&x)
+	}
+}
+
+func BenchmarkInv(b *testing.B) {
+	var x Element
+	x.One()
+	x.Add(&x, &x)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x.Inv(&x)
+	}
+}
