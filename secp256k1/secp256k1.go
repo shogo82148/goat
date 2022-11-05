@@ -115,7 +115,7 @@ func (crv *secp256k1) ScalarBaseMult(k []byte) (x, y *big.Int) {
 }
 
 // CombinedMult returns [s1]G + [s2]P where G is the generator.
-// used by crypto/ecdsa package.
+// It's used through an interface upgrade in crypto/ecdsa.
 func (crv *secp256k1) CombinedMult(Px, Py *big.Int, s1, s2 []byte) (x, y *big.Int) {
 	// calculate [s1]G
 	var retj1 curve256k1.PointJacobian
