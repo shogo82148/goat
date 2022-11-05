@@ -189,6 +189,10 @@ func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	var z1z1, z2z2, u1, u2, s1, s2, tmp field.Element
 	var h, i, j, r, v, x3, y3, z3 field.Element
 
+	if a.Equal(b) == 1 {
+		return p.Double(a)
+	}
+
 	// Z1Z1 = Z1^2
 	z1z1.Square(&a.z)
 
