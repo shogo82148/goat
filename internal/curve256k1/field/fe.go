@@ -347,33 +347,33 @@ func (v *Element) Mul(a, b *Element) *Element {
 	r4 = c // r4 is now 0 or 1
 
 	// reduce again
-	l = r8 * 0x1000003d1 // r8 is 0 or 1, so it doesn't overflow
+	h, l = bits.Mul64(r8, 0x1000003d1)
 	r4, c = bits.Add64(r4, l, 0)
-	r5, c = bits.Add64(r5, 0, c)
+	r5, c = bits.Add64(r5, h, c)
 	r6, c = bits.Add64(r6, 0, c)
 	r7 += c // no additional carry
 
-	l = r7 * 0x1000003d1
+	h, l = bits.Mul64(r7, 0x1000003d1)
 	r3, c = bits.Add64(r3, l, 0)
-	r4, c = bits.Add64(r4, 0, c)
+	r4, c = bits.Add64(r4, h, c)
 	r5, c = bits.Add64(r5, 0, c)
 	r6 += c // no additional carry
 
-	l = r6 * 0x1000003d1
+	h, l = bits.Mul64(r6, 0x1000003d1)
 	r2, c = bits.Add64(r2, l, 0)
-	r3, c = bits.Add64(r3, 0, c)
+	r3, c = bits.Add64(r3, h, c)
 	r4, c = bits.Add64(r4, 0, c)
 	r5 += c // no additional carry
 
-	l = r5 * 0x1000003d1
+	h, l = bits.Mul64(r5, 0x1000003d1)
 	r1, c = bits.Add64(r1, l, 0)
-	r2, c = bits.Add64(r2, 0, c)
+	r2, c = bits.Add64(r2, h, c)
 	r3, c = bits.Add64(r3, 0, c)
 	r4 += c // no additional carry
 
-	l = r4 * 0x1000003d1
+	h, l = bits.Mul64(r4, 0x1000003d1)
 	r0, c = bits.Add64(r0, l, 0)
-	r1, c = bits.Add64(r1, 0, c)
+	r1, c = bits.Add64(r1, h, c)
 	r2, c = bits.Add64(r2, 0, c)
 	r3 += c // no additional carry
 
@@ -506,33 +506,33 @@ func (v *Element) Square(x *Element) *Element {
 	r4 = c // r4 is now 0 or 1
 
 	// reduce again
-	l = r8 * 0x1000003d1 // r8 is 0 or 1, so it doesn't overflow
+	h, l = bits.Mul64(r8, 0x1000003d1)
 	r4, c = bits.Add64(r4, l, 0)
-	r5, c = bits.Add64(r5, 0, c)
+	r5, c = bits.Add64(r5, h, c)
 	r6, c = bits.Add64(r6, 0, c)
 	r7 += c // no additional carry
 
-	l = r7 * 0x1000003d1
+	h, l = bits.Mul64(r7, 0x1000003d1)
 	r3, c = bits.Add64(r3, l, 0)
-	r4, c = bits.Add64(r4, 0, c)
+	r4, c = bits.Add64(r4, h, c)
 	r5, c = bits.Add64(r5, 0, c)
 	r6 += c // no additional carry
 
-	l = r6 * 0x1000003d1
+	h, l = bits.Mul64(r6, 0x1000003d1)
 	r2, c = bits.Add64(r2, l, 0)
-	r3, c = bits.Add64(r3, 0, c)
+	r3, c = bits.Add64(r3, h, c)
 	r4, c = bits.Add64(r4, 0, c)
 	r5 += c // no additional carry
 
-	l = r5 * 0x1000003d1
+	h, l = bits.Mul64(r5, 0x1000003d1)
 	r1, c = bits.Add64(r1, l, 0)
-	r2, c = bits.Add64(r2, 0, c)
+	r2, c = bits.Add64(r2, h, c)
 	r3, c = bits.Add64(r3, 0, c)
 	r4 += c // no additional carry
 
-	l = r4 * 0x1000003d1
+	h, l = bits.Mul64(r4, 0x1000003d1)
 	r0, c = bits.Add64(r0, l, 0)
-	r1, c = bits.Add64(r1, 0, c)
+	r1, c = bits.Add64(r1, h, c)
 	r2, c = bits.Add64(r2, 0, c)
 	r3 += c // no additional carry
 
