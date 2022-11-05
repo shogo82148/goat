@@ -189,10 +189,6 @@ func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	var z1z1, z2z2, u1, u2, s1, s2, tmp field.Element
 	var h, i, j, r, v, x3, y3, z3 field.Element
 
-	if a.Equal(b) == 1 {
-		return p.Double(a)
-	}
-
 	// Z1Z1 = Z1^2
 	z1z1.Square(&a.z)
 
@@ -250,12 +246,22 @@ func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	z3.Sub(&z3, &z2z2)
 	z3.Mul(&z3, &h)
 
+	// if a == b, return double a
+	eq := h.IsZero() & r.IsZero() // it equals a == b
+	var double PointJacobian
+	double.Double(a)
+	x3.Select(&double.x, &x3, eq)
+	y3.Select(&double.y, &y3, eq)
+	z3.Select(&double.z, &z3, eq)
+
+	// if b is zero, return a
 	var zero int
 	zero = b.z.IsZero()
 	x3.Select(&a.x, &x3, zero)
 	y3.Select(&a.y, &y3, zero)
 	z3.Select(&a.z, &z3, zero)
 
+	// if a is zero, return b
 	zero = a.z.IsZero()
 	x3.Select(&b.x, &x3, zero)
 	y3.Select(&b.y, &y3, zero)
@@ -312,7 +318,7 @@ func (p *PointJacobian) Double(v *PointJacobian) *PointJacobian {
 	z3.Mul(&v.y, &v.z)
 	z3.Add(&z3, &z3)
 
-	zero := v.z.Equal(&feZero)
+	zero := v.z.IsZero()
 	p.x.Select(&v.x, &x3, zero)
 	p.y.Select(&v.y, &y3, zero)
 	p.z.Select(&v.z, &z3, zero)
