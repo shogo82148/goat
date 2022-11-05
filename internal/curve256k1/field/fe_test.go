@@ -298,6 +298,47 @@ func TestMul_Quick(t *testing.T) {
 	}
 }
 
+func TestSquare(t *testing.T) {
+	tests := []struct {
+		x, z string
+	}{
+		{
+			x: "0000000000000000000000000000000000000000000000000000000000000001",
+			z: "0000000000000000000000000000000000000000000000000000000000000001",
+		},
+		{
+			x: "0000000000000000000000000000000000000000000000000000000100000000",
+			z: "0000000000000000000000000000000000000000000000010000000000000000",
+		},
+
+		// (-1) * (-1) = 1
+		{
+			x: "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2E",
+			z: "0000000000000000000000000000000000000000000000000000000000000001",
+		},
+
+		{
+			x: "a6abc0eebb2fdc881683b1bed2697711907ad3129224cb32c4b4f7f92107674a",
+			z: "6200a771b7e4bb2557e1550808897134864334cee6b05aef1c79097b1919478f",
+		},
+	}
+
+	for _, tc := range tests {
+		x := new(Element)
+		z := new(Element)
+		if err := x.SetBytes(decodeHex(tc.x)); err != nil {
+			t.Errorf("failed to decode x: %v", err)
+		}
+		if err := z.SetBytes(decodeHex(tc.z)); err != nil {
+			t.Errorf("failed to decode z: %v", err)
+		}
+		v := new(Element).Square(x)
+		if v.Equal(z) == 0 {
+			t.Errorf("%s ^ 2 = %s, but got %s", x, z, v)
+		}
+	}
+}
+
 func TestInv(t *testing.T) {
 	var v, z, one Element
 	one.One()
