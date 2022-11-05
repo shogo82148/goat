@@ -6,10 +6,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	_ "crypto/sha256" // for crypto.SHA256
 	"math/big"
 
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
+	"github.com/shogo82148/goat/secp256k1"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -21,6 +23,16 @@ var es256 = &Algorithm{
 
 func New256() sig.Algorithm {
 	return es256
+}
+
+var es256k = &Algorithm{
+	alg:  jwa.ES256K,
+	hash: crypto.SHA256,
+	crv:  secp256k1.Curve(),
+}
+
+func New256K() sig.Algorithm {
+	return es256k
 }
 
 var es384 = &Algorithm{
@@ -47,6 +59,7 @@ func init() {
 	jwa.RegisterSignatureAlgorithm(jwa.ES256, New256)
 	jwa.RegisterSignatureAlgorithm(jwa.ES384, New384)
 	jwa.RegisterSignatureAlgorithm(jwa.ES512, New512)
+	jwa.RegisterSignatureAlgorithm(jwa.ES256K, New256K)
 }
 
 var _ sig.Algorithm = (*Algorithm)(nil)
