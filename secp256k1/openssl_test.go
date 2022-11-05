@@ -89,7 +89,7 @@ func testVerifyOpenSSL(t *testing.T) {
 	}
 
 	// sign
-	r, s, err := signWithOpenSSL(privkeyPath, privkeyPath)
+	r, s, err := signWithOpenSSL(privkeyPath, messagePath)
 	if err != nil {
 		t.Error(err)
 		return
