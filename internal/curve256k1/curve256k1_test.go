@@ -156,6 +156,19 @@ func TestAdd(t *testing.T) {
 			y3: "8a4df4bfef46f25258af3528384481ac355b819a5f7fbd12e31a94a88dffef37",
 			z3: "c15d07f76e02b73695d4fecd8d91fe5aa9a93d58770d35da5e4dd8efadbe4ee7",
 		},
+
+		// in case of p1 == p2
+		{
+			x1: "79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14",
+			y1: "d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb",
+			z1: "0000000000000000000000000000000000000000000000000000000000000001",
+			x2: "79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14",
+			y2: "d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb",
+			z2: "0000000000000000000000000000000000000000000000000000000000000001",
+			x3: "5d22aa68d498ee29f8d1d7a0f7d73e2a5c46b961c0f1fe97ad8ede5f919a3db8",
+			y3: "f1a409e68bc80e4ec9f667868feb70403f13c991b2a54f6372815b0780d78b4f",
+			z3: "a72ea58024ebd536c38cf3200d248782b06e7aea94a97359a5d1cd8cb6cf0347",
+		},
 	}
 
 	for _, tc := range tests {
@@ -184,6 +197,33 @@ func TestAdd(t *testing.T) {
 				v.x.Bytes(), v.y.Bytes(), v.z.Bytes(),
 			)
 		}
+	}
+}
+
+func BenchmarkAdd(b *testing.B) {
+	var p1, p2, p3 PointJacobian
+	p1.x.Set(hex2element("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"))
+	p1.y.Set(hex2element("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+	p1.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
+	p2.x.Set(hex2element("3b5fc66637f4d6bce70db2eba1175f7401df788fc58d7099881983262dd0f62e"))
+	p2.y.Set(hex2element("f76e500a3ccd0cbd5e27bd746ceee92898d6f6fd5804c370ea2f14c0bbc47cbb"))
+	p2.z.Set(hex2element("721ce4b29855911c8fa0edeb95a00400a994a2fcf14aea11179a804deff71e2f"))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p3.Add(&p1, &p2)
+	}
+}
+
+func BenchmarkAddDouble(b *testing.B) {
+	var p1, p3 PointJacobian
+	p1.x.Set(hex2element("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"))
+	p1.y.Set(hex2element("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+	p1.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p3.Add(&p1, &p1)
 	}
 }
 
@@ -232,5 +272,17 @@ func TestDouble(t *testing.T) {
 				v.x.Bytes(), v.y.Bytes(), v.z.Bytes(),
 			)
 		}
+	}
+}
+
+func BenchmarkDouble(b *testing.B) {
+	var p1, p3 PointJacobian
+	p1.x.Set(hex2element("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"))
+	p1.y.Set(hex2element("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
+	p1.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		p3.Double(&p1)
 	}
 }

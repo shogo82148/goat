@@ -8,6 +8,7 @@ import (
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/secp256k1"
 )
 
 // RFC 7518 6.2.2. Parameters for Elliptic Curve Private Keys
@@ -21,6 +22,8 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		curve = elliptic.P384()
 	case jwa.P521:
 		curve = elliptic.P521()
+	case jwa.Secp256k1:
+		curve = secp256k1.Curve()
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
@@ -79,6 +82,8 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 		e.Set("crv", jwa.P384.String())
 	case elliptic.P521():
 		e.Set("crv", jwa.P521.String())
+	case secp256k1.Curve():
+		e.Set("crv", jwa.Secp256k1.String())
 	default:
 		panic("not reach")
 	}
@@ -116,6 +121,7 @@ func validateEcdsaPublicKey(key *ecdsa.PublicKey) error {
 	case elliptic.P256():
 	case elliptic.P384():
 	case elliptic.P521():
+	case secp256k1.Curve():
 	default:
 		return errors.New("jwk: unknown elliptic curve of ecdsa public key")
 	}

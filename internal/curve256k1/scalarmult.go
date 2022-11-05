@@ -72,7 +72,7 @@ func (p *PointJacobian) ScalarBaseMult(k []byte) *PointJacobian {
 
 	var v PointJacobian
 	v.Zero()
-	for i, j := 0, len(baseTable)-1; i < len(k); i++ {
+	for i, j := 0, len(baseTable)-1; i < len(s); i++ {
 		b := s[i]
 
 		// hi-nibble
