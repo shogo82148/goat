@@ -1,8 +1,11 @@
 package jwt_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
+	"time"
 
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/eddsa" // for jwa.EdDSA
@@ -58,4 +61,34 @@ func ExampleSign() {
 
 	// Output:
 	// eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OC9nb2F0In0.40CbHAJKHO_wM6YdpXjrK6b4duHoD14e9fyrUxUvOVGGK_lOCkQCfR0eJWYwLhUwAATHFTI0ppkh1cBidC8DDQ
+}
+
+func ExampleClaims_DecodeCustom() {
+	claims := new(jwt.Claims)
+	claims.Raw = map[string]any{
+		"string": "it is custom claim",
+		"bytes":  "YmFzZTY0LXJhd3VybCBlbmNvZGVkIGJ5dGUgc2VxdWVuY2U",
+		"time":   json.Number("1234567890"),
+		"bigint": "nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",
+	}
+
+	var myClaims struct {
+		String string    `jwt:"string"`
+		Bytes  []byte    `jwt:"bytes"`
+		Time   time.Time `jwt:"time"`
+		BigInt *big.Int  `jwt:"bigint"`
+	}
+	if err := claims.DecodeCustom(&myClaims); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(myClaims.String)
+	fmt.Println(string(myClaims.Bytes))
+	fmt.Println(myClaims.Time)
+	fmt.Println(myClaims.BigInt)
+	// Output:
+	// it is custom claim
+	// base64-rawurl encoded byte sequence
+	// 2009-02-13 23:31:30 +0000 UTC
+	// 71185727259945196030657158393116523760833600269775786460544228200423405551456
 }
