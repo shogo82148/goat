@@ -386,7 +386,161 @@ func (v *Element) Mul(a, b *Element) *Element {
 
 // Square sets v = x * x, and returns v.
 func (v *Element) Square(x *Element) *Element {
-	return v.Mul(x, x)
+	a0a0h, a0a0l := bits.Mul64(x.l0, x.l0)
+	a0a1h, a0a1l := bits.Mul64(x.l0, x.l1)
+	a0a2h, a0a2l := bits.Mul64(x.l0, x.l2)
+	a0a3h, a0a3l := bits.Mul64(x.l0, x.l3)
+
+	a1a1h, a1a1l := bits.Mul64(x.l1, x.l1)
+	a1a2h, a1a2l := bits.Mul64(x.l1, x.l2)
+	a1a3h, a1a3l := bits.Mul64(x.l1, x.l3)
+
+	a2a2h, a2a2l := bits.Mul64(x.l2, x.l2)
+	a2a3h, a2a3l := bits.Mul64(x.l2, x.l3)
+
+	a3a3h, a3a3l := bits.Mul64(x.l3, x.l3)
+
+	//                                 a3    a2    a1    a0  x
+	//                                 a3    a2    a1    a0  =
+	//                        -------------------------------
+	//                        a3a0h a2a0h a1a0h a0a0h        +
+	//                              a3a0l a2a0l a1a0l a0a0l  +
+	//                  a3a1h a2a1h a1a1h a0a1h              +
+	//                        a3a1l a2a1l a1a1l a0a1l        +
+	//            a3a2h a2a2h a1a2h a0a2h                    +
+	//                  a3a2l a2a2l a1a2l a0a2l              +
+	//      a3a3h a2a3h a1a3h a0a3h                          +
+	//            a3a3l a2a3l a1a3l a0a3l                    +
+	//   -----------------------------------------------------
+	//   r8    r7    r6    r5    r4    r3    r2    r1    r0
+	//
+	//                                 a3    a2    a1    a0  x
+	//                                 a3    a2    a1    a0  =
+	//                        -------------------------------
+	//      a3a3h a2a3h a1a3h a0a3h a0a3l a0a2l a0a1l a0a0l  +
+	//                        a0a3h a0a2h a0a1h a0a0h        +
+	//                        a1a3l a1a2l a1a1l a0a1l        +
+	//                  a1a3h a1a2h a1a1h a0a1h              +
+	//                  a2a3l a2a2l a1a2l a0a2l              +
+	//            a2a3h a2a2h a1a2h a0a2h                    +
+	//            a3a3l a2a3l a1a3l a0a3l                    +
+	//   -----------------------------------------------------
+	//   r8    r7    r6    r5    r4    r3    r2    r1    r0
+	r0, r1, r2, r3, r4, r5, r6, r7, r8 := a0a0l, a0a1l, a0a2l, a0a3l, a0a3h, a1a3h, a2a3h, a3a3h, uint64(0)
+
+	a0a1, c := bits.Add64(a0a1l, a0a0h, 0)
+	a1a1, c := bits.Add64(a1a1l, a0a1h, c)
+	a2a1, c := bits.Add64(a1a2l, a0a2h, c)
+	a3a1, a4a1 := bits.Add64(a1a3l, a0a3h, c)
+
+	a0a2, c := bits.Add64(a0a2l, a0a1h, 0)
+	a1a2, c := bits.Add64(a1a2l, a1a1h, c)
+	a2a2, c := bits.Add64(a2a2l, a1a2h, c)
+	a3a2, a4a2 := bits.Add64(a2a3l, a1a3h, c)
+
+	a0a3, c := bits.Add64(a0a3l, a0a2h, 0)
+	a1a3, c := bits.Add64(a1a3l, a1a2h, c)
+	a2a3, c := bits.Add64(a2a3l, a2a2h, c)
+	a3a3, a4a3 := bits.Add64(a3a3l, a2a3h, c)
+
+	r3, c = bits.Add64(r3, a0a3, 0)
+	r4, c = bits.Add64(r4, a1a3, c)
+	r5, c = bits.Add64(r5, a2a3, c)
+	r6, c = bits.Add64(r6, a3a3, c)
+	r7, c = bits.Add64(r7, a4a3, c)
+	r8 += c
+
+	r2, c = bits.Add64(r2, a0a2, c)
+	r3, c = bits.Add64(r3, a1a2, c)
+	r4, c = bits.Add64(r4, a2a2, c)
+	r5, c = bits.Add64(r5, a3a2, c)
+	r6, c = bits.Add64(r6, a4a2, c)
+	r7, c = bits.Add64(r7, 0, c)
+	r8 += c
+
+	r1, c = bits.Add64(r1, a0a1, 0)
+	r2, c = bits.Add64(r2, a1a1, c)
+	r3, c = bits.Add64(r3, a2a1, c)
+	r4, c = bits.Add64(r4, a3a1, c)
+	r5, c = bits.Add64(r5, a4a1, c)
+	r6, c = bits.Add64(r6, 0, c)
+	r7, c = bits.Add64(r7, 0, c)
+	r8 += c
+
+	// reduce
+	// 2^(256+n) = (2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1) * 2^n  mod p
+	var h, l uint64
+	h, l = bits.Mul64(r8, 0x1000003d1)
+	r4, c = bits.Add64(r4, l, 0)
+	r5, c = bits.Add64(r5, h, c)
+	r6, c = bits.Add64(r6, 0, c)
+	r7, c = bits.Add64(r7, 0, c)
+	r8 = c // r8 is now 0 or 1
+
+	h, l = bits.Mul64(r7, 0x1000003d1)
+	r3, c = bits.Add64(r3, l, 0)
+	r4, c = bits.Add64(r4, h, c)
+	r5, c = bits.Add64(r5, 0, c)
+	r6, c = bits.Add64(r6, 0, c)
+	r7 = c // r7 is now 0 or 1
+
+	h, l = bits.Mul64(r6, 0x1000003d1)
+	r2, c = bits.Add64(r2, l, 0)
+	r3, c = bits.Add64(r3, h, c)
+	r4, c = bits.Add64(r4, 0, c)
+	r5, c = bits.Add64(r5, 0, c)
+	r6 = c // r6 is now 0 or 1
+
+	h, l = bits.Mul64(r5, 0x1000003d1)
+	r1, c = bits.Add64(r1, l, 0)
+	r2, c = bits.Add64(r2, h, c)
+	r3, c = bits.Add64(r3, 0, c)
+	r4, c = bits.Add64(r4, 0, c)
+	r5 = c // r5 is now 0 or 1
+
+	h, l = bits.Mul64(r4, 0x1000003d1)
+	r0, c = bits.Add64(r0, l, 0)
+	r1, c = bits.Add64(r1, h, c)
+	r2, c = bits.Add64(r2, 0, c)
+	r3, c = bits.Add64(r3, 0, c)
+	r4 = c // r4 is now 0 or 1
+
+	// reduce again
+	h, l = bits.Mul64(r8, 0x1000003d1)
+	r4, c = bits.Add64(r4, l, 0)
+	r5, c = bits.Add64(r5, h, c)
+	r6, c = bits.Add64(r6, 0, c)
+	r7 += c // no additional carry
+
+	h, l = bits.Mul64(r7, 0x1000003d1)
+	r3, c = bits.Add64(r3, l, 0)
+	r4, c = bits.Add64(r4, h, c)
+	r5, c = bits.Add64(r5, 0, c)
+	r6 += c // no additional carry
+
+	h, l = bits.Mul64(r6, 0x1000003d1)
+	r2, c = bits.Add64(r2, l, 0)
+	r3, c = bits.Add64(r3, h, c)
+	r4, c = bits.Add64(r4, 0, c)
+	r5 += c // no additional carry
+
+	h, l = bits.Mul64(r5, 0x1000003d1)
+	r1, c = bits.Add64(r1, l, 0)
+	r2, c = bits.Add64(r2, h, c)
+	r3, c = bits.Add64(r3, 0, c)
+	r4 += c // no additional carry
+
+	h, l = bits.Mul64(r4, 0x1000003d1)
+	r0, c = bits.Add64(r0, l, 0)
+	r1, c = bits.Add64(r1, h, c)
+	r2, c = bits.Add64(r2, 0, c)
+	r3 += c // no additional carry
+
+	v.l0 = r0
+	v.l1 = r1
+	v.l2 = r2
+	v.l3 = r3
+	return v.reduce()
 }
 
 // Inv sets v = 1/z mod p, and returns v.
