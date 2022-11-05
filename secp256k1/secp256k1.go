@@ -113,3 +113,27 @@ func (crv *secp256k1) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	ret.FromJacobian(&retj)
 	return ret.ToBig(new(big.Int), new(big.Int))
 }
+
+// CombinedMult returns [s1]G + [s2]P where G is the generator.
+// used by crypto/ecdsa package.
+func (crv *secp256k1) CombinedMult(Px, Py *big.Int, s1, s2 []byte) (x, y *big.Int) {
+	// calculate [s1]G
+	var retj1 curve256k1.PointJacobian
+	retj1.ScalarBaseMult(s1)
+
+	var B curve256k1.Point
+	var Bj, retj2 curve256k1.PointJacobian
+	if _, err := B.NewPoint(Px, Py); err != nil {
+		panic("invalid point")
+	}
+
+	// calculate [s2]P
+	Bj.FromAffine(&B)
+	retj2.ScalarMult(&Bj, s2)
+
+	// add them
+	var ret curve256k1.Point
+	retj1.Add(&retj1, &retj2)
+	ret.FromJacobian(&retj1)
+	return ret.ToBig(new(big.Int), new(big.Int))
+}
