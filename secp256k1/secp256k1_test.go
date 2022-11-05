@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+func decodeHex(s string) []byte {
+	data, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}
+
 func TestVerify(t *testing.T) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
@@ -192,7 +200,7 @@ func TestScalarMult1(t *testing.T) {
 func TestScalarMultMinus1(t *testing.T) {
 	x := bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14")
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
-	k, _ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
+	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
 	xx, yy := crv.ScalarMult(x, y, k)
@@ -207,7 +215,7 @@ func TestScalarMultMinus1(t *testing.T) {
 func BenchmarkMult1(b *testing.B) {
 	x := bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14")
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
-	k, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
+	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
 	for i := 0; i < b.N; i++ {
@@ -218,7 +226,7 @@ func BenchmarkMult1(b *testing.B) {
 func BenchmarkMultMinus1(b *testing.B) {
 	x := bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14")
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
-	k, _ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
+	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
 	for i := 0; i < b.N; i++ {

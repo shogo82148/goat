@@ -74,7 +74,7 @@ func (crv *secp256k1) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 	pj1.FromAffine(&p1)
 	pj2.FromAffine(&p2)
 	pj3.Add(&pj1, &pj2)
-	p3.ToAffine(&pj3)
+	p3.FromJacobian(&pj3)
 	return p3.ToBig(new(big.Int), new(big.Int))
 }
 
@@ -87,7 +87,7 @@ func (crv *secp256k1) Double(x1, y1 *big.Int) (x, y *big.Int) {
 	}
 	pj1.FromAffine(&p1)
 	pj3.Double(&pj1)
-	p3.ToAffine(&pj3)
+	p3.FromJacobian(&pj3)
 	return p3.ToBig(new(big.Int), new(big.Int))
 }
 
@@ -100,12 +100,16 @@ func (crv *secp256k1) ScalarMult(Bx, By *big.Int, k []byte) (x, y *big.Int) {
 	}
 	Bj.FromAffine(&B)
 	retj.ScalarMult(&Bj, k)
-	ret.ToAffine(&retj)
+	ret.FromJacobian(&retj)
 	return ret.ToBig(new(big.Int), new(big.Int))
 }
 
 // ScalarBaseMult returns k*G, where G is the base point of the group
 // and k is an integer in big-endian form.
 func (crv *secp256k1) ScalarBaseMult(k []byte) (x, y *big.Int) {
-	return curve.ScalarMult(crv.params.Gx, crv.params.Gy, k)
+	var ret curve256k1.Point
+	var retj curve256k1.PointJacobian
+	retj.ScalarBaseMult(k)
+	ret.FromJacobian(&retj)
+	return ret.ToBig(new(big.Int), new(big.Int))
 }
