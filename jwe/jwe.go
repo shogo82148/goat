@@ -878,7 +878,7 @@ func Parse(data []byte) (*Message, error) {
 	}
 	idx3 += idx2 + 1
 	idx4 := bytes.IndexByte(data[idx3+1:], '.')
-	if idx3 < 0 {
+	if idx4 < 0 {
 		return nil, errors.New("jwe: failed to parse JWE: invalid format")
 	}
 	idx4 += idx3 + 1
