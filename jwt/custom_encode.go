@@ -13,6 +13,19 @@ import (
 )
 
 // EncodeCustom encodes custom claims from v.
+//
+// EncodeCustom works like [encoding/json.Marshal], with a few differences.
+// Due to the different value conversion rules,
+// the "jwt" key is used for structure field tags instead of the "json" key.
+//
+// The following conversions are made to match the general encoding of JWT claims:
+//
+//   - []byte is converted to base64 raw-url encoded string
+//   - big.Int is converted to big-endian base64 raw-url encoded string
+//   - *time.Time is converted to number in seconds from unix time epoch
+//
+// The tag must always be specified to avoid accidentally exposing the field.
+// Claim names are case sensitive.
 func (c *Claims) EncodeCustom(v any) error {
 	// sanity check of type
 	rv := reflect.ValueOf(v)

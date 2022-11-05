@@ -92,3 +92,31 @@ func ExampleClaims_DecodeCustom() {
 	// 2009-02-13 23:31:30 +0000 UTC
 	// 71185727259945196030657158393116523760833600269775786460544228200423405551456
 }
+
+func ExampleClaims_EncodeCustom() {
+	claims := new(jwt.Claims)
+
+	var myClaims struct {
+		String string    `jwt:"string"`
+		Bytes  []byte    `jwt:"bytes"`
+		Time   time.Time `jwt:"time"`
+		BigInt *big.Int  `jwt:"bigint"`
+	}
+	myClaims.String = "it is custom claim"
+	myClaims.Bytes = []byte("base64-rawurl encoded byte sequence")
+	myClaims.Time = time.Unix(1234567890, 0)
+	myClaims.BigInt, _ = new(big.Int).SetString("71185727259945196030657158393116523760833600269775786460544228200423405551456", 0)
+	if err := claims.EncodeCustom(myClaims); err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(claims.Raw["string"])
+	fmt.Println(claims.Raw["bytes"])
+	fmt.Println(claims.Raw["time"])
+	fmt.Println(claims.Raw["bigint"])
+	// Output:
+	// it is custom claim
+	// YmFzZTY0LXJhd3VybCBlbmNvZGVkIGJ5dGUgc2VxdWVuY2U
+	// 1234567890
+	// nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A
+}
