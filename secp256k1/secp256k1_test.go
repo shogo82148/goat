@@ -51,13 +51,16 @@ func TestSign(t *testing.T) {
 
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
-	r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
-		t.Error("verify failed")
+	for i := 0; i < 1024; i++ {
+		r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
+			t.Error("verify failed")
+		}
 	}
 }
 
