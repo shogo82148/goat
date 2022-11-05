@@ -243,7 +243,7 @@ func TestDecodeCustom(t *testing.T) {
 			want: &struct {
 				Time time.Time `jwt:"time"`
 			}{
-				Time: time.Unix(1300819380, 0),
+				Time: time.Unix(1300819380, 0).UTC(),
 			},
 		},
 
