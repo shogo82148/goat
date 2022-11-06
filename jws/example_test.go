@@ -39,3 +39,34 @@ func ExampleParse() {
 	// Output:
 	// Example of Ed25519 signing
 }
+
+func ExampleMessage_Verify() {
+	rawKey := `{"kty":"OKP","crv":"Ed25519",` +
+		`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
+	key, err := jwk.ParseKey([]byte(rawKey))
+	if err != nil {
+		log.Fatal(err)
+	}
+	raw := "eyJhbGciOiJFZERTQSJ9" +
+		"." +
+		"RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc" +
+		"." +
+		"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
+		"9g7sVvpAr_MuM0KAg"
+
+	msg, err := jws.Parse([]byte(raw))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, payload, err := msg.Verify(jws.FindKeyFunc(func(header, _ *jws.Header) (sig.SigningKey, error) {
+		alg := header.Algorithm().New()
+		return alg.NewSigningKey(key), nil
+	}))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(payload))
+	// Output:
+	// Example of Ed25519 signing
+}

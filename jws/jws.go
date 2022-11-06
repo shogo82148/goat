@@ -264,6 +264,7 @@ type Signature struct {
 	signature    []byte
 }
 
+// Parse parses a Compact Serialized JWS Signature.
 func Parse(data []byte) (*Message, error) {
 	// copy data
 	data = append([]byte(nil), data...)
