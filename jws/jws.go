@@ -71,9 +71,11 @@ type Header struct {
 	b64     bool
 }
 
+// NewHeader returns a new Header.
 func NewHeader() *Header {
 	return &Header{
 		b64: true,
+		Raw: map[string]any{},
 	}
 }
 
@@ -233,6 +235,7 @@ func (h *Header) MarshalJSON() ([]byte, error) {
 func NewMessage(payload []byte) *Message {
 	return &Message{
 		payload: append([]byte(nil), payload...),
+		encoded: false,
 	}
 }
 
@@ -241,6 +244,10 @@ type Message struct {
 	Signatures []*Signature
 
 	payload []byte
+
+	// whether payload is encoded.
+	// if it is true, implementations must encode payload according b64 header parameter.
+	encoded bool
 }
 
 // Signature is a signature of Message.
@@ -288,6 +295,7 @@ func Parse(data []byte) (*Message, error) {
 
 	return &Message{
 		payload: payload,
+		encoded: true,
 		Signatures: []*Signature{
 			{
 				protected:    &h,
@@ -385,6 +393,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 
 	*msg = Message{
 		payload:    payload,
+		encoded:    true,
 		Signatures: signatures,
 	}
 	return nil
@@ -592,7 +601,15 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 		buf = buf[:0]
 		buf = append(buf, sig.raw...)
 		buf = append(buf, '.')
-		buf = append(buf, msg.payload...)
+		if msg.encoded {
+			buf = append(buf, msg.payload...)
+		} else {
+			if sig.protected.b64 {
+				buf = append(buf, b64Encode(msg.payload)...)
+			} else {
+				buf = append(buf, msg.payload...)
+			}
+		}
 		err = key.Verify(buf, sig.signature)
 		if err == nil {
 			var ret []byte
@@ -623,11 +640,18 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	raw = b64Encode(raw)
 
 	// sign
-	b64payload := b64Encode(msg.payload) // TODO: see b64 parameter
-	buf := make([]byte, 0, len(b64payload)+len(raw)+1)
+	buf := make([]byte, 0, len(msg.payload)+len(raw)+1)
 	buf = append(buf, raw...)
 	buf = append(buf, '.')
-	buf = append(buf, b64payload...)
+	if msg.encoded {
+		buf = append(buf, msg.payload...)
+	} else {
+		if protected.b64 {
+			buf = append(buf, b64Encode(msg.payload)...)
+		} else {
+			buf = append(buf, msg.payload...)
+		}
+	}
 	signature, err := key.Sign(buf)
 	if err != nil {
 		return fmt.Errorf("jws: failed to sign: %w", err)
