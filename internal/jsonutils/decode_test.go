@@ -124,6 +124,50 @@ func TestDecoder_MustString(t *testing.T) {
 	}
 }
 
+func TestDecoder_GetBoolean(t *testing.T) {
+	raw := map[string]any{
+		"string": "it is a string",
+		"true":   true,
+		"false":  false,
+	}
+	var d *Decoder
+
+	// succeed
+	d = NewDecoder("jsonutils", raw)
+	if v, ok := d.GetBoolean("true"); !ok || !v {
+		t.Error("want a boolean value, but failed")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	d = NewDecoder("jsonutils", raw)
+	if v, ok := d.GetBoolean("false"); !ok || v {
+		t.Error("want a boolean value, but failed")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// key not found
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetBoolean("another_string"); ok {
+		t.Error("want not ok, but ok")
+	}
+	if err := d.Err(); err != nil {
+		t.Fatal(err)
+	}
+
+	// type error
+	d = NewDecoder("jsonutils", raw)
+	if _, ok := d.GetBoolean("string"); ok {
+		t.Error("want not ok, but got")
+	}
+	if err := d.Err(); err == nil {
+		t.Error("want some error, but not")
+	}
+}
+
 func TestDecoder_GetArray(t *testing.T) {
 	var d *Decoder
 	raw := map[string]any{

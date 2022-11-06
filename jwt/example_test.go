@@ -47,7 +47,7 @@ func ExampleSign() {
 	signingKey := jwa.EdDSA.New().NewSigningKey(key)
 
 	// prepare the header and the claims.
-	header := new(jws.Header)
+	header := jws.NewHeader()
 	header.SetAlgorithm(jwa.EdDSA)
 	claims := new(jwt.Claims)
 	claims.Issuer = "https://github.com/shogo82148/goat"
