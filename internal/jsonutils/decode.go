@@ -129,6 +129,28 @@ func (d *Decoder) MustString(name string) string {
 	return u
 }
 
+// GetString gets a boolean parameter.
+// If the parameter doesn't exist, it returns (false, false).
+func (d *Decoder) GetBoolean(name string) (bool, bool) {
+	v, ok := d.raw[name]
+	if !ok {
+		return false, false
+	}
+	u, ok := v.(bool)
+	if !ok {
+		if d.err == nil {
+			d.err = &typeError{
+				pkg:  d.pkg,
+				name: name,
+				want: "string",
+				got:  reflect.TypeOf(v),
+			}
+		}
+		return false, false
+	}
+	return u, true
+}
+
 // GetArray gets an array parameter.
 // If the parameter doesn't exist, it returns (nil, false).
 func (d *Decoder) GetArray(name string) ([]any, bool) {

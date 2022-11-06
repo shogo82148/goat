@@ -288,6 +288,10 @@ func TestVerify(t *testing.T) {
 			t.Errorf("unexpected payload: want %q, got %q", want, string(payload))
 		}
 	})
+
+	t.Run("RFC 7797 Section 4. Examples", func(t *testing.T) {
+
+	})
 }
 
 func TestParseJSON(t *testing.T) {
@@ -435,6 +439,41 @@ func TestParseJSON(t *testing.T) {
 			t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
 		}
 	})
+
+	// test for b64 header parameter.
+	t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
+		raw := `{` +
+			`"protected":` +
+			`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
+			`"payload":` +
+			`"$.02",` +
+			`"signature":` +
+			`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"` +
+			`}`
+		var msg Message
+		if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
+			t.Fatal(err)
+		}
+		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
+			rawKey := `{` +
+				`"kty":"oct",` +
+				`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+				`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+				`}`
+			key, err := jwk.ParseKey([]byte(rawKey))
+			if err != nil {
+				return nil, err
+			}
+			return protected.Algorithm().New().NewSigningKey(key), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := []byte(`$.02`)
+		if !bytes.Equal(payload, want) {
+			t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
+		}
+	})
 }
 
 func TestSign(t *testing.T) {
@@ -448,7 +487,7 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.HS256.New().NewSigningKey(key)
-		h := new(Header)
+		h := NewHeader()
 		h.SetAlgorithm(jwa.HS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
@@ -511,7 +550,7 @@ func TestSign(t *testing.T) {
 			t.Fatal(err)
 		}
 		k := jwa.RS256.New().NewSigningKey(key)
-		h := new(Header)
+		h := NewHeader()
 		h.SetAlgorithm(jwa.RS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
@@ -544,7 +583,7 @@ func TestSign(t *testing.T) {
 	})
 
 	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
-		h := new(Header)
+		h := NewHeader()
 		h.SetAlgorithm(jwa.None)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +

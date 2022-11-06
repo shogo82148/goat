@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -19,7 +20,22 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
+// shorthand for base64.RawURLEncoding
 var b64 = base64.RawURLEncoding
+
+var knownParams = [...]string{
+	jwa.AlgorithmKey,
+	jwa.JWKSetURLKey,
+	jwa.JSONWebKey,
+	jwa.KeyIDKey,
+	jwa.X509URLKey,
+	jwa.X509CertificateChainKey,
+	jwa.X509CertificateSHA1Thumbprint,
+	jwa.X509CertificateSHA256Thumbprint,
+	jwa.TypeKey,
+	jwa.CriticalKey,
+	jwa.Base64URLEncodePayloadKey,
+}
 
 type jsonJWS struct {
 	Payload    *string         `json:"payload"`
@@ -52,6 +68,13 @@ type Header struct {
 	typ     string
 	cty     string
 	crit    []string
+	b64     bool
+}
+
+func NewHeader() *Header {
+	return &Header{
+		b64: true,
+	}
 }
 
 // Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
@@ -144,13 +167,43 @@ func (h *Header) SetContentType(cty string) {
 	h.cty = cty
 }
 
-// Critical is 4.1.11. "crit" (Critical) Header Parameter.
+// Critical gets RFC 7515 Section 4.1.11. "crit" (Critical) Header Parameter.
 func (h *Header) Critical() []string {
 	return h.crit
 }
 
+// SetCritical sets RFC 7515 Section 4.1.11. "crit" (Critical) Header Parameter.
 func (h *Header) SetCritical(crit []string) {
-	h.crit = crit
+	h.crit = make([]string, 0, len(crit))
+LOOP:
+	for _, param1 := range crit {
+		for _, param2 := range h.crit {
+			if param1 == param2 {
+				continue LOOP
+			}
+		}
+		h.crit = append(h.crit, param1)
+	}
+	sort.Strings(h.crit)
+}
+
+// Base64 gets RFC 7797 Section 3. The "b64" Header Parameter.
+func (h *Header) Base64() bool {
+	return h.b64
+}
+
+// SetBase64 sets RFC 7797 Section 3. The "b64" Header Parameter.
+// If b64 is false, it adds "b64" into "crit" (Critical) Header Parameter.
+func (h *Header) SetBase64(b64 bool) {
+	h.b64 = b64
+	if !b64 {
+		for _, param := range h.crit {
+			if param == "b64" {
+				return // "b64" is already contained.
+			}
+		}
+		h.crit = append(h.crit, "b64")
+	}
 }
 
 func (h *Header) UnmarshalJSON(data []byte) error {
@@ -179,8 +232,7 @@ func (h *Header) MarshalJSON() ([]byte, error) {
 // NewMessage returns a new Message that has no signature.
 func NewMessage(payload []byte) *Message {
 	return &Message{
-		b64payload: b64Encode(payload),
-		payload:    append([]byte(nil), payload...),
+		payload: append([]byte(nil), payload...),
 	}
 }
 
@@ -188,8 +240,7 @@ func NewMessage(payload []byte) *Message {
 type Message struct {
 	Signatures []*Signature
 
-	b64payload []byte
-	payload    []byte
+	payload []byte
 }
 
 // Signature is a signature of Message.
@@ -216,7 +267,7 @@ func Parse(data []byte) (*Message, error) {
 	}
 	idx2 += idx1 + 1
 	b64header := data[:idx1]
-	b64payload := data[idx1+1 : idx2]
+	payload := data[idx1+1 : idx2]
 	b64signature := data[idx2+1:]
 
 	// decode header
@@ -229,12 +280,6 @@ func Parse(data []byte) (*Message, error) {
 		return nil, fmt.Errorf("jws: failed to parse JOSE header: %w", err)
 	}
 
-	// decode payload
-	payload, err := b64Decode(b64payload)
-	if err != nil {
-		return nil, fmt.Errorf("jws: failed to parse payload: %w", err)
-	}
-
 	// decode signature
 	signature, err := b64Decode(b64signature)
 	if err != nil {
@@ -242,8 +287,7 @@ func Parse(data []byte) (*Message, error) {
 	}
 
 	return &Message{
-		b64payload: b64payload,
-		payload:    payload,
+		payload: payload,
 		Signatures: []*Signature{
 			{
 				protected:    &h,
@@ -269,10 +313,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	if jws.Payload == nil {
 		return errors.New("jws: failed to parse JWS: payload is missing")
 	}
-	payload, err := b64.DecodeString(*jws.Payload)
-	if err != nil {
-		return fmt.Errorf("jws: failed to parse payload: %w", err)
-	}
+	payload := []byte(*jws.Payload)
 
 	hasSigs := jws.Signatures != nil
 	flattened := jws.Signature != nil
@@ -299,6 +340,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	signatures := make([]*Signature, 0, len(jws.Signatures))
 	for _, sig := range sigs {
 		// decode protected header
+		var err error
 		var protected *Header
 		if sig.Protected != nil {
 			raw, err := b64.DecodeString(*sig.Protected)
@@ -342,7 +384,6 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	}
 
 	*msg = Message{
-		b64payload: []byte(*jws.Payload),
 		payload:    payload,
 		Signatures: signatures,
 	}
@@ -419,6 +460,22 @@ func decodeHeader(raw map[string]any) (*Header, error) {
 	h.typ, _ = d.GetString(jwa.TypeKey)
 	h.cty, _ = d.GetString(jwa.ContentTypeKey)
 	h.crit, _ = d.GetStringArray(jwa.CriticalKey)
+	if b64, ok := d.GetBoolean(jwa.Base64URLEncodePayloadKey); ok {
+		h.b64 = b64
+	} else {
+		h.b64 = true // the default value is true
+	}
+
+	// verify critical parameter
+CRIT_LOOP:
+	for _, param1 := range h.crit {
+		for _, param2 := range knownParams {
+			if param1 == param2 {
+				continue CRIT_LOOP
+			}
+		}
+		d.SaveError(fmt.Errorf("jws: unknown parameter is in crit: %q", param1))
+	}
 
 	if err := d.Err(); err != nil {
 		return nil, err
@@ -490,6 +547,10 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		e.Set(jwa.ContentTypeKey, cty)
 	}
 
+	if b64 := h.b64; !b64 {
+		e.Set(jwa.Base64URLEncodePayloadKey, b64)
+	}
+
 	if crit := h.crit; len(crit) > 0 {
 		e.Set(jwa.CriticalKey, crit)
 	}
@@ -531,10 +592,19 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 		buf = buf[:0]
 		buf = append(buf, sig.raw...)
 		buf = append(buf, '.')
-		buf = append(buf, msg.b64payload...)
+		buf = append(buf, msg.payload...)
 		err = key.Verify(buf, sig.signature)
 		if err == nil {
-			return sig.protected, msg.payload, nil
+			var ret []byte
+			if sig.protected.b64 {
+				ret, err = b64Decode(msg.payload)
+				if err != nil {
+					return nil, nil, errors.New("jws: failed to verify the message")
+				}
+			} else {
+				ret = msg.payload
+			}
+			return sig.protected, ret, nil
 		}
 	}
 	return nil, nil, errors.New("jws: failed to verify the message")
@@ -553,10 +623,11 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	raw = b64Encode(raw)
 
 	// sign
-	buf := make([]byte, 0, len(msg.b64payload)+len(raw)+1)
+	b64payload := b64Encode(msg.payload) // TODO: see b64 parameter
+	buf := make([]byte, 0, len(b64payload)+len(raw)+1)
 	buf = append(buf, raw...)
 	buf = append(buf, '.')
-	buf = append(buf, msg.b64payload...)
+	buf = append(buf, b64payload...)
 	signature, err := key.Sign(buf)
 	if err != nil {
 		return fmt.Errorf("jws: failed to sign: %w", err)
@@ -578,10 +649,11 @@ func (msg *Message) Compact() ([]byte, error) {
 	}
 	sig := msg.Signatures[0]
 
-	buf := make([]byte, 0, len(sig.raw)+len(msg.b64payload)+len(sig.b64signature)+2)
+	b64payload := b64Encode(msg.payload) // TODO: see b64 parameter
+	buf := make([]byte, 0, len(sig.raw)+len(b64payload)+len(sig.b64signature)+2)
 	buf = append(buf, sig.raw...)
 	buf = append(buf, '.')
-	buf = append(buf, msg.b64payload...)
+	buf = append(buf, b64payload...)
 	buf = append(buf, '.')
 	buf = append(buf, sig.b64signature...)
 	return buf, nil
