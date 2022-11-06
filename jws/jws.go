@@ -234,8 +234,16 @@ func (h *Header) MarshalJSON() ([]byte, error) {
 // NewMessage returns a new Message that has no signature.
 func NewMessage(payload []byte) *Message {
 	return &Message{
+		payload: b64Encode(payload),
+		b64:     true,
+	}
+}
+
+// NewRawMessage returns a new Message that has no signature.
+func NewRawMessage(payload []byte) *Message {
+	return &Message{
 		payload: append([]byte(nil), payload...),
-		encoded: false,
+		b64:     false,
 	}
 }
 
@@ -244,10 +252,7 @@ type Message struct {
 	Signatures []*Signature
 
 	payload []byte
-
-	// whether payload is encoded.
-	// if it is true, implementations must encode payload according b64 header parameter.
-	encoded bool
+	b64     bool
 }
 
 // Signature is a signature of Message.
@@ -295,7 +300,7 @@ func Parse(data []byte) (*Message, error) {
 
 	return &Message{
 		payload: payload,
-		encoded: true,
+		b64:     h.b64,
 		Signatures: []*Signature{
 			{
 				protected:    &h,
@@ -393,7 +398,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 
 	*msg = Message{
 		payload:    payload,
-		encoded:    true,
+		b64:        signatures[0].protected.b64,
 		Signatures: signatures,
 	}
 	return nil
@@ -601,15 +606,7 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 		buf = buf[:0]
 		buf = append(buf, sig.raw...)
 		buf = append(buf, '.')
-		if msg.encoded {
-			buf = append(buf, msg.payload...)
-		} else {
-			if sig.protected.b64 {
-				buf = append(buf, b64Encode(msg.payload)...)
-			} else {
-				buf = append(buf, msg.payload...)
-			}
-		}
+		buf = append(buf, msg.payload...)
 		err = key.Verify(buf, sig.signature)
 		if err == nil {
 			var ret []byte
@@ -643,15 +640,7 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	buf := make([]byte, 0, len(msg.payload)+len(raw)+1)
 	buf = append(buf, raw...)
 	buf = append(buf, '.')
-	if msg.encoded {
-		buf = append(buf, msg.payload...)
-	} else {
-		if protected.b64 {
-			buf = append(buf, b64Encode(msg.payload)...)
-		} else {
-			buf = append(buf, msg.payload...)
-		}
-	}
+	buf = append(buf, msg.payload...)
 	signature, err := key.Sign(buf)
 	if err != nil {
 		return fmt.Errorf("jws: failed to sign: %w", err)
@@ -673,11 +662,10 @@ func (msg *Message) Compact() ([]byte, error) {
 	}
 	sig := msg.Signatures[0]
 
-	b64payload := b64Encode(msg.payload) // TODO: see b64 parameter
-	buf := make([]byte, 0, len(sig.raw)+len(b64payload)+len(sig.b64signature)+2)
+	buf := make([]byte, 0, len(sig.raw)+len(msg.payload)+len(sig.b64signature)+2)
 	buf = append(buf, sig.raw...)
 	buf = append(buf, '.')
-	buf = append(buf, b64payload...)
+	buf = append(buf, msg.payload...)
 	buf = append(buf, '.')
 	buf = append(buf, sig.b64signature...)
 	return buf, nil
