@@ -288,10 +288,6 @@ func TestVerify(t *testing.T) {
 			t.Errorf("unexpected payload: want %q, got %q", want, string(payload))
 		}
 	})
-
-	t.Run("RFC 7797 Section 4. Examples", func(t *testing.T) {
-
-	})
 }
 
 func TestParseJSON(t *testing.T) {
@@ -605,6 +601,37 @@ func TestSign(t *testing.T) {
 			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
 			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 			"."
+		if string(got) != want {
+			t.Errorf("want %s, got %s", want, got)
+		}
+	})
+
+	t.Run("RFC 7797 Section 4.2. Example with Header Parameter", func(t *testing.T) {
+		rawKey := `{` +
+			`"kty":"oct",` +
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		k := jwa.HS256.New().NewSigningKey(key)
+		h := NewHeader()
+		h.SetAlgorithm(jwa.HS256)
+		h.SetType("JWT")
+		msg := NewRawMessage([]byte("$.02"))
+		if err := msg.Sign(h, nil, k); err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg.Compact()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+			"." +
+			"." +
+			"oa1M-6Wbmk9q4SheILHROv561Ba7U1gVKuIkXZiJcic"
 		if string(got) != want {
 			t.Errorf("want %s, got %s", want, got)
 		}

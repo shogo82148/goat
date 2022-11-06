@@ -662,6 +662,14 @@ func (msg *Message) Compact() ([]byte, error) {
 	}
 	sig := msg.Signatures[0]
 
+	if !msg.b64 && bytes.IndexByte(msg.payload, '.') >= 0 {
+		buf := make([]byte, 0, len(sig.raw)+len(sig.b64signature)+2)
+		buf = append(buf, sig.raw...)
+		buf = append(buf, '.')
+		buf = append(buf, '.')
+		buf = append(buf, sig.b64signature...)
+		return buf, nil
+	}
 	buf := make([]byte, 0, len(sig.raw)+len(msg.payload)+len(sig.b64signature)+2)
 	buf = append(buf, sig.raw...)
 	buf = append(buf, '.')
