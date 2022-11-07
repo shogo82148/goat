@@ -405,6 +405,33 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (msg *Message) MarshalJSON() ([]byte, error) {
+	raw := map[string]any{
+		"payload": string(msg.payload),
+	}
+	if len(msg.Signatures) == 1 {
+		// Flattened JWS JSON Serialization
+		sig := msg.Signatures[0]
+		raw["protected"] = string(sig.raw)
+		raw["signature"] = string(sig.b64signature)
+	} else {
+		// Complete JWS JSON Serialization Representation
+		signatures := make([]any, 0, len(msg.Signatures))
+		for _, sig := range msg.Signatures {
+			raw := map[string]any{
+				"protected": string(sig.raw),
+				"signature": string(sig.b64signature),
+			}
+			if sig.header != nil {
+				raw["header"] = sig.header
+			}
+			signatures = append(signatures, raw)
+		}
+		raw["signatures"] = signatures
+	}
+	return json.Marshal(raw)
+}
+
 func decodeHeader(raw map[string]any) (*Header, error) {
 	d := jsonutils.NewDecoder("jws", raw)
 	h := &Header{
