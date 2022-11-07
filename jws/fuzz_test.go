@@ -131,6 +131,9 @@ func FuzzJWS(f *testing.F) {
 
 		var header1 *Header
 		protected1, payload1, err := msg1.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
+			if !protected.Algorithm().Available() {
+				return nil, errors.New("algorithm not available")
+			}
 			header1 = header
 			return protected.Algorithm().New().NewSigningKey(key), nil
 		}))
@@ -153,6 +156,9 @@ func FuzzJWS(f *testing.F) {
 			t.Fatal(err)
 		}
 		_, payload3, err := msg1.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
+			if !protected.Algorithm().Available() {
+				return nil, errors.New("algorithm not available")
+			}
 			return protected.Algorithm().New().NewSigningKey(key), nil
 		}))
 		if err != nil {
