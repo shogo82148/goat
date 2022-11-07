@@ -141,6 +141,10 @@ func FuzzJWS(f *testing.F) {
 			return
 		}
 
+		if key.PrivateKey() == nil {
+			return // the key doesn't support signing, we skip it.
+		}
+
 		msg2 := NewMessage(payload1)
 		if err := msg2.Sign(protected1, header1, protected1.Algorithm().New().NewSigningKey(key)); err != nil {
 			t.Fatal(err)
