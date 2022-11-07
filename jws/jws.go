@@ -37,20 +37,6 @@ var knownParams = [...]string{
 	jwa.Base64URLEncodePayloadKey,
 }
 
-type jsonJWS struct {
-	Payload    *string         `json:"payload"`
-	Protected  *string         `json:"protected,omitempty"`
-	Header     map[string]any  `json:"header,omitempty"`
-	Signature  *string         `json:"signature,omitempty"`
-	Signatures []jsonSignature `json:"signatures,omitempty"`
-}
-
-type jsonSignature struct {
-	Protected *string        `json:"protected,omitempty"`
-	Header    map[string]any `json:"header,omitempty"`
-	Signature *string        `json:"signature"`
-}
-
 // Header is a decoded JSON Object Signing and Encryption (JOSE) Header.
 type Header struct {
 	// Raw is the raw data of JSON-decoded JOSE header.
@@ -316,21 +302,25 @@ func Parse(data []byte) (*Message, error) {
 // UnmarshalJSON implements [encoding/json.Unmarshaler].
 // It parses data as JSON Serialized JWS.
 func (msg *Message) UnmarshalJSON(data []byte) error {
-	var jws jsonJWS
+	var raw map[string]any
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
-	if err := dec.Decode(&jws); err != nil {
+	if err := dec.Decode(&raw); err != nil {
 		return fmt.Errorf("jws: failed to parse JWS: %w", err)
 	}
 
 	// decode payload
-	if jws.Payload == nil {
+	payloadAny, ok := raw["payload"]
+	if !ok {
 		return errors.New("jws: failed to parse JWS: payload is missing")
 	}
-	payload := []byte(*jws.Payload)
+	payload, ok := payloadAny.(string)
+	if !ok {
+		return fmt.Errorf("jws: invalid type of payload: %T", payloadAny)
+	}
 
-	hasSigs := jws.Signatures != nil
-	flattened := jws.Signature != nil
+	sigsAny, hasSigs := raw["signatures"]
+	sigAny, flattened := raw["signature"]
 
 	if hasSigs && flattened {
 		return errors.New("jws: failed to parse JWS: both signatures and signature are set")
@@ -339,51 +329,74 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		return errors.New("jws: failed to parse JWS: neither signatures nor signature are set")
 	}
 
-	sigs := jws.Signatures
 	if flattened {
-		sigs = []jsonSignature{
-			{
-				Protected: jws.Protected,
-				Header:    jws.Header,
-				Signature: jws.Signature,
-			},
+		protected, ok := raw["protected"]
+		if !ok {
+			return errors.New("jws: failed to parse JWS: protected header is missing")
 		}
+		sigs := map[string]any{
+			"protected": protected,
+			"signature": sigAny,
+		}
+		if header, ok := raw["header"]; ok {
+			sigs["header"] = header
+		}
+		sigsAny = []any{sigs}
 	}
 
+	sigsArray, ok := sigsAny.([]any)
+	if !ok {
+		return fmt.Errorf("jws: invalid type of signatures: %T", sigsAny)
+	}
 	// decode signatures
-	signatures := make([]*Signature, 0, len(jws.Signatures))
-	for _, sig := range sigs {
+	signatures := make([]*Signature, 0, len(sigsArray))
+	for _, sigAny := range sigsArray {
+		sigObject, ok := sigAny.(map[string]any)
+		if !ok {
+			return fmt.Errorf("jws: invalid type of signatures[]: %T", sigAny)
+		}
+
 		// decode protected header
-		var err error
-		var protected *Header
-		if sig.Protected != nil {
-			raw, err := b64.DecodeString(*sig.Protected)
-			if err != nil {
-				return fmt.Errorf("jws: failed to parse protected header: %w", err)
-			}
-			protected = new(Header)
-			if err := protected.UnmarshalJSON(raw); err != nil {
-				return fmt.Errorf("jws: failed to parse protected header: %w", err)
-			}
+		protectedAny, ok := sigObject["protected"]
+		if !ok {
+			return errors.New("jws: protected header is missing")
+		}
+		protectedString, ok := protectedAny.(string)
+		if !ok {
+			return fmt.Errorf("jws: invalid type of signatures[].protected: %T", protectedAny)
+		}
+		raw, err := b64.DecodeString(protectedString)
+		if err != nil {
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
+		}
+		protected := NewHeader()
+		if err := protected.UnmarshalJSON(raw); err != nil {
+			return fmt.Errorf("jws: failed to parse protected header: %w", err)
 		}
 
 		// decode unprotected header
 		var header *Header
-		if sig.Header != nil {
-			header, err = decodeHeader(sig.Header)
-			if err != nil {
-				return fmt.Errorf("jws: failed to parse unprotected header: %w", err)
+		if unprotectedAny, ok := sigObject["header"]; ok {
+			unprotectedObject, ok := unprotectedAny.(map[string]any)
+			if !ok {
+				return fmt.Errorf("jws: invalid type of signatures[].header: %T", unprotectedAny)
 			}
-		}
-		if protected == nil && header == nil {
-			return errors.New("jws: failed to parse JWS: both protected and unprotected header are missing")
+			header, err = decodeHeader(unprotectedObject)
+			if err != nil {
+				return fmt.Errorf("jws: failed to parse header: %w", err)
+			}
 		}
 
 		// decode signature
-		if sig.Signature == nil {
+		signatureAny, ok := sigObject["signature"]
+		if !ok {
 			return errors.New("jws: failed to parse signature: signature is missing")
 		}
-		signature, err := b64.DecodeString(*sig.Signature)
+		signatureString, ok := signatureAny.(string)
+		if !ok {
+			return fmt.Errorf("jws: invalid type of signatures[].signature: %T", signatureAny)
+		}
+		signature, err := b64.DecodeString(signatureString)
 		if err != nil {
 			return fmt.Errorf("jws: failed to parse signature: %w", err)
 		}
@@ -391,14 +404,14 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		signatures = append(signatures, &Signature{
 			protected:    protected,
 			header:       header,
-			raw:          []byte(*sig.Protected),
-			b64signature: []byte(*sig.Signature),
+			raw:          []byte(protectedString),
+			b64signature: []byte(signatureString),
 			signature:    signature,
 		})
 	}
 
 	*msg = Message{
-		payload:    payload,
+		payload:    []byte(payload),
 		b64:        signatures[0].protected.b64,
 		Signatures: signatures,
 	}

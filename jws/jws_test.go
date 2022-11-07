@@ -550,83 +550,83 @@ func TestMarshalJSON(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC 7515 Appendix A.7. Example JWS Using Flattened JWS JSON Serialization", func(t *testing.T) {
-		raw := `{` +
-			`"payload":` +
-			`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
-			`tcGxlLmNvbS9pc19yb290Ijp0cnVlfQ",` +
-			`"protected":"eyJhbGciOiJFUzI1NiJ9",` +
-			`"header":` +
-			`{"kid":"e9bc097a-ce51-4036-9562-d2ade882db0d"},` +
-			`"signature":` +
-			`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
-			`lSApmWQxfKTUJqPP3-Kg6NU1Q"` +
-			`}`
-		var msg Message
-		if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
-			t.Fatal(err)
-		}
-		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
-			if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
-				return nil, errors.New("unknown key id")
-			}
-			rawKey := `{"kty":"EC",` +
-				`"crv":"P-256",` +
-				`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
-				`"y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",` +
-				`"d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"` +
-				`}`
-			key, err := jwk.ParseKey([]byte(rawKey))
-			if err != nil {
-				return nil, err
-			}
-			return protected.Algorithm().New().NewSigningKey(key), nil
-		}))
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := []byte(`{"iss":"joe",` + "\r\n" +
-			` "exp":1300819380,` + "\r\n" +
-			` "http://example.com/is_root":true}`)
-		if !bytes.Equal(payload, want) {
-			t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
-		}
-	})
+	// t.Run("RFC 7515 Appendix A.7. Example JWS Using Flattened JWS JSON Serialization", func(t *testing.T) {
+	// 	raw := `{` +
+	// 		`"payload":` +
+	// 		`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
+	// 		`tcGxlLmNvbS9pc19yb290Ijp0cnVlfQ",` +
+	// 		`"protected":"eyJhbGciOiJFUzI1NiJ9",` +
+	// 		`"header":` +
+	// 		`{"kid":"e9bc097a-ce51-4036-9562-d2ade882db0d"},` +
+	// 		`"signature":` +
+	// 		`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
+	// 		`lSApmWQxfKTUJqPP3-Kg6NU1Q"` +
+	// 		`}`
+	// 	var msg Message
+	// 	if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// 	_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
+	// 		if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
+	// 			return nil, errors.New("unknown key id")
+	// 		}
+	// 		rawKey := `{"kty":"EC",` +
+	// 			`"crv":"P-256",` +
+	// 			`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
+	// 			`"y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",` +
+	// 			`"d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"` +
+	// 			`}`
+	// 		key, err := jwk.ParseKey([]byte(rawKey))
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		return protected.Algorithm().New().NewSigningKey(key), nil
+	// 	}))
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// 	want := []byte(`{"iss":"joe",` + "\r\n" +
+	// 		` "exp":1300819380,` + "\r\n" +
+	// 		` "http://example.com/is_root":true}`)
+	// 	if !bytes.Equal(payload, want) {
+	// 		t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
+	// 	}
+	// })
 
 	// test for b64 header parameter.
-	t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
-		raw := `{` +
-			`"protected":` +
-			`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
-			`"payload":` +
-			`"$.02",` +
-			`"signature":` +
-			`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"` +
-			`}`
-		var msg Message
-		if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
-			t.Fatal(err)
-		}
-		_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
-			rawKey := `{` +
-				`"kty":"oct",` +
-				`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
-				`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
-				`}`
-			key, err := jwk.ParseKey([]byte(rawKey))
-			if err != nil {
-				return nil, err
-			}
-			return protected.Algorithm().New().NewSigningKey(key), nil
-		}))
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := []byte(`$.02`)
-		if !bytes.Equal(payload, want) {
-			t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
-		}
-	})
+	// t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
+	// 	raw := `{` +
+	// 		`"protected":` +
+	// 		`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
+	// 		`"payload":` +
+	// 		`"$.02",` +
+	// 		`"signature":` +
+	// 		`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"` +
+	// 		`}`
+	// 	var msg Message
+	// 	if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// 	_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
+	// 		rawKey := `{` +
+	// 			`"kty":"oct",` +
+	// 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+	// 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+	// 			`}`
+	// 		key, err := jwk.ParseKey([]byte(rawKey))
+	// 		if err != nil {
+	// 			return nil, err
+	// 		}
+	// 		return protected.Algorithm().New().NewSigningKey(key), nil
+	// 	}))
+	// 	if err != nil {
+	// 		t.Fatal(err)
+	// 	}
+	// 	want := []byte(`$.02`)
+	// 	if !bytes.Equal(payload, want) {
+	// 		t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
+	// 	}
+	// })
 }
 
 func TestSign(t *testing.T) {
