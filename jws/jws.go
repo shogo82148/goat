@@ -264,6 +264,7 @@ type Signature struct {
 	signature    []byte
 }
 
+// Parse parses a Compact Serialized JWS Signature.
 func Parse(data []byte) (*Message, error) {
 	// copy data
 	data = append([]byte(nil), data...)
@@ -624,6 +625,7 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 	return nil, nil, errors.New("jws: failed to verify the message")
 }
 
+// Sign adds a new signature signed by key.
 func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	// encode the header
 	h1, err := encodeHeader(protected)
@@ -656,6 +658,7 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	return nil
 }
 
+// Compact encodes JWS Signature into Compact Serialization.
 func (msg *Message) Compact() ([]byte, error) {
 	if len(msg.Signatures) != 1 {
 		return nil, fmt.Errorf("jws: invalid number of signatures: %d", len(msg.Signatures))
