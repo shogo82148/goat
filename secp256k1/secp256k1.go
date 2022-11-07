@@ -1,3 +1,4 @@
+// Package secp256k1 implements the standard secp256k1 elliptic curve over prime fields.
 package secp256k1
 
 // based on https://tech.ginco.io/post/secp256k1-golang-implementation/
@@ -36,6 +37,11 @@ func bigHex(s string) *big.Int {
 	return i
 }
 
+// Curve returns the standard secp256k1 elliptic curve.
+//
+// Multiple invocations of this function will return the same value, so it can be used for equality checks and switch statements.
+//
+// The cryptographic operations are implemented using constant-time algorithms.
 func Curve() elliptic.Curve {
 	initonce.Do(initCurve)
 	return &curve
