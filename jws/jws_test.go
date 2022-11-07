@@ -585,39 +585,42 @@ func TestMarshalJSON(t *testing.T) {
 	})
 
 	// test for b64 header parameter.
-	// t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
-	// 	raw := `{` +
-	// 		`"protected":` +
-	// 		`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
-	// 		`"payload":` +
-	// 		`"$.02",` +
-	// 		`"signature":` +
-	// 		`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"` +
-	// 		`}`
-	// 	var msg Message
-	// 	if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	// 	_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
-	// 		rawKey := `{` +
-	// 			`"kty":"oct",` +
-	// 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
-	// 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
-	// 			`}`
-	// 		key, err := jwk.ParseKey([]byte(rawKey))
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return protected.Algorithm().New().NewSigningKey(key), nil
-	// 	}))
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	// 	want := []byte(`$.02`)
-	// 	if !bytes.Equal(payload, want) {
-	// 		t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
-	// 	}
-	// })
+	t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
+		msg := NewRawMessage([]byte("$.02"))
+		header := NewHeader()
+		header.SetAlgorithm(jwa.HS256)
+		header.SetBase64(false)
+
+		rawKey := `{` +
+			`"kty":"oct",` +
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if err := msg.Sign(header, nil, jwa.HS256.New().NewSigningKey(key)); err != nil {
+			t.Fatal(err)
+		}
+
+		got, err := msg.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := `{` +
+			`"payload":` +
+			`"$.02",` +
+			`"protected":` +
+			`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
+			`"signature":` +
+			`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"` +
+			`}`
+		if string(got) != want {
+			t.Errorf("want %s, got %s", want, got)
+		}
+	})
 }
 
 func TestSign(t *testing.T) {
