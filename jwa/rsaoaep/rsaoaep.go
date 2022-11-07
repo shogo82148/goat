@@ -16,6 +16,7 @@ var alg = &Algorithm{
 	hash: crypto.SHA1,
 }
 
+// New returns RSAES OAEP key encryption algorithm.
 func New() keymanage.Algorithm {
 	return alg
 }
@@ -24,6 +25,7 @@ var alg256 = &Algorithm{
 	hash: crypto.SHA256,
 }
 
+// New256 returns RSAES OAEP using SHA-256 key encryption algorithm.
 func New256() keymanage.Algorithm {
 	return alg256
 }

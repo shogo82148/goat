@@ -34,7 +34,7 @@ func TestDecrypt(t *testing.T) {
 		246, 17, 244, 190, 4, 95, 98, 3, 231, 0, 115, 157, 242, 203, 100,
 		191,
 	}
-	enc := New128CBC_HS256()
+	enc := New128HS256()
 	got, err := enc.Decrypt(cek, iv, aad, ciphertext, authTag)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestEncrypt(t *testing.T) {
 		112, 114, 111, 115, 112, 101, 114, 46,
 	}
 
-	enc := New128CBC_HS256()
+	enc := New128HS256()
 	ciphertext, authTag, err := enc.Encrypt(cek, iv, aad, plaintext)
 	if err != nil {
 		t.Fatal(err)

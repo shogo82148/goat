@@ -15,42 +15,46 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-var es256 = &Algorithm{
+var es256 = &algorithm{
 	alg:  jwa.ES256,
 	hash: crypto.SHA256,
 	crv:  elliptic.P256(),
 }
 
+// New256 returns ECDSA using P-256 and SHA-256.
 func New256() sig.Algorithm {
 	return es256
 }
 
-var es256k = &Algorithm{
+var es256k = &algorithm{
 	alg:  jwa.ES256K,
 	hash: crypto.SHA256,
 	crv:  secp256k1.Curve(),
 }
 
+// New256K returns ECDSA using secp256k1 and SHA-256.
 func New256K() sig.Algorithm {
 	return es256k
 }
 
-var es384 = &Algorithm{
+var es384 = &algorithm{
 	alg:  jwa.ES384,
 	hash: crypto.SHA384,
 	crv:  elliptic.P384(),
 }
 
+// New384 returns ECDSA using P-384 and SHA-384.
 func New384() sig.Algorithm {
 	return es384
 }
 
-var es512 = &Algorithm{
+var es512 = &algorithm{
 	alg:  jwa.ES512,
 	hash: crypto.SHA512,
 	crv:  elliptic.P521(),
 }
 
+// New512 returns ECDSA using P-521 and SHA-512.
 func New512() sig.Algorithm {
 	return es512
 }
@@ -62,17 +66,17 @@ func init() {
 	jwa.RegisterSignatureAlgorithm(jwa.ES256K, New256K)
 }
 
-var _ sig.Algorithm = (*Algorithm)(nil)
+var _ sig.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
 	crv  elliptic.Curve
 }
 
-var _ sig.SigningKey = (*SigningKey)(nil)
+var _ sig.SigningKey = (*signingKey)(nil)
 
-type SigningKey struct {
+type signingKey struct {
 	hash      crypto.Hash
 	priv      *ecdsa.PrivateKey
 	pub       *ecdsa.PublicKey
@@ -81,8 +85,8 @@ type SigningKey struct {
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
-	k := &SigningKey{
+func (alg *algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+	k := &signingKey{
 		hash:      alg.hash,
 		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
 		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
@@ -118,7 +122,7 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
+func (key *signingKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
@@ -146,7 +150,7 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Verify(payload, signature []byte) error {
+func (key *signingKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}

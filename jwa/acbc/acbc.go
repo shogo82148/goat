@@ -15,55 +15,58 @@ import (
 	"github.com/shogo82148/goat/jwa"
 )
 
-var a128cbc_hs256 = &Algorithm{
+var a128cbc_hs256 = &algorithm{
 	encKeyLen: 16,
 	macKeyLen: 16,
 	hash:      crypto.SHA256,
 	tLen:      16,
 }
 
-func New128CBC_HS256() enc.Algorithm {
+// New128HS256 returns AES_128_CBC_HMAC_SHA_256 authenticated encryption algorithm.
+func New128HS256() enc.Algorithm {
 	return a128cbc_hs256
 }
 
-var a192cbc_hs384 = &Algorithm{
+var a192cbc_hs384 = &algorithm{
 	encKeyLen: 24,
 	macKeyLen: 24,
 	hash:      crypto.SHA384,
 	tLen:      24,
 }
 
-func New192CBC_HS384() enc.Algorithm {
+// New192HS384 returns AES_192_CBC_HMAC_SHA_384 authenticated encryption algorithm.
+func New192HS384() enc.Algorithm {
 	return a192cbc_hs384
 }
 
-var a256cbc_hs512 = &Algorithm{
+var a256cbc_hs512 = &algorithm{
 	encKeyLen: 32,
 	macKeyLen: 32,
 	hash:      crypto.SHA512,
 	tLen:      32,
 }
 
-func New256CBC_HS512() enc.Algorithm {
+// New256HS512 returns AES_256_CBC_HMAC_SHA_512 authenticated encryption algorithm.
+func New256HS512() enc.Algorithm {
 	return a256cbc_hs512
 }
 
 func init() {
-	jwa.RegisterEncryptionAlgorithm(jwa.A128CBC_HS256, New128CBC_HS256)
-	jwa.RegisterEncryptionAlgorithm(jwa.A192CBC_HS384, New192CBC_HS384)
-	jwa.RegisterEncryptionAlgorithm(jwa.A256CBC_HS512, New256CBC_HS512)
+	jwa.RegisterEncryptionAlgorithm(jwa.A128CBC_HS256, New128HS256)
+	jwa.RegisterEncryptionAlgorithm(jwa.A192CBC_HS384, New192HS384)
+	jwa.RegisterEncryptionAlgorithm(jwa.A256CBC_HS512, New256HS512)
 }
 
-var _ enc.Algorithm = (*Algorithm)(nil)
+var _ enc.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	encKeyLen int
 	macKeyLen int
 	hash      crypto.Hash
 	tLen      int
 }
 
-func (alg *Algorithm) GenerateCEK() ([]byte, error) {
+func (alg *algorithm) GenerateCEK() ([]byte, error) {
 	cek := make([]byte, alg.encKeyLen+alg.macKeyLen)
 	_, err := rand.Read(cek)
 	if err != nil {
@@ -72,7 +75,7 @@ func (alg *Algorithm) GenerateCEK() ([]byte, error) {
 	return cek, nil
 }
 
-func (alg *Algorithm) GenerateIV() ([]byte, error) {
+func (alg *algorithm) GenerateIV() ([]byte, error) {
 	iv := make([]byte, aes.BlockSize)
 	_, err := rand.Read(iv)
 	if err != nil {
@@ -81,7 +84,7 @@ func (alg *Algorithm) GenerateIV() ([]byte, error) {
 	return iv, nil
 }
 
-func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
+func (alg *algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
 	if len(cek) != alg.macKeyLen+alg.encKeyLen {
 		return nil, errors.New("acbc: invalid content encryption key")
 	}
@@ -93,6 +96,9 @@ func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plainte
 	block, err := aes.NewCipher(enc)
 	if err != nil {
 		return nil, err
+	}
+	if len(iv) != block.BlockSize() {
+		return nil, errors.New("acbc: invalid size of iv")
 	}
 	mode := cipher.NewCBCDecrypter(block, iv)
 	size := block.BlockSize()
@@ -115,12 +121,18 @@ func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plainte
 	return
 }
 
-func (alg *Algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error) {
+func (alg *algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error) {
+	if len(cek) != alg.macKeyLen+alg.encKeyLen {
+		return nil, nil, errors.New("acbc: invalid content encryption key")
+	}
 	mac := cek[:alg.macKeyLen]
 	enc := cek[alg.macKeyLen:]
 	block, err := aes.NewCipher(enc)
 	if err != nil {
 		return nil, nil, err
+	}
+	if len(iv) != block.BlockSize() {
+		return nil, nil, errors.New("acbc: invalid size of iv")
 	}
 
 	// encrypt
@@ -203,7 +215,7 @@ func padding(data []byte, size int) []byte {
 	return ret
 }
 
-func (alg *Algorithm) calcAuthTag(mac, aad, iv, ciphertext []byte) []byte {
+func (alg *algorithm) calcAuthTag(mac, aad, iv, ciphertext []byte) []byte {
 	w := hmac.New(alg.hash.New, mac)
 	w.Write(aad)
 	w.Write(iv)

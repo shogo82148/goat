@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/pbkdf2"
 )
 
-var a128kw = &Algorithm{
+var a128kw = &algorithm{
 	name: string(jwa.PBES2_HS256_A128KW),
 	hash: crypto.SHA256.New,
 	size: 16,
@@ -27,7 +27,7 @@ func NewHS256A128KW() keymanage.Algorithm {
 	return a128kw
 }
 
-var a192kw = &Algorithm{
+var a192kw = &algorithm{
 	name: string(jwa.PBES2_HS384_A192KW),
 	hash: crypto.SHA384.New,
 	size: 24,
@@ -39,7 +39,7 @@ func NewHS384A192KW() keymanage.Algorithm {
 	return a192kw
 }
 
-var a256kw = &Algorithm{
+var a256kw = &algorithm{
 	name: string(jwa.PBES2_HS512_A256KW),
 	hash: crypto.SHA512.New,
 	size: 32,
@@ -57,32 +57,32 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.PBES2_HS512_A256KW, NewHS512A256KW)
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	name string
 	hash func() hash.Hash
 	size int
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	priv, ok := privateKey.([]byte)
 	if !ok {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("pbes2: invalid option type: %T", privateKey))
 	}
-	return &KeyWrapper{
+	return &keyWrapper{
 		alg:       alg,
 		key:       priv,
 		canDerive: jwktypes.CanUseFor(key, jwktypes.KeyOpDeriveKey),
 	}
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 
-type KeyWrapper struct {
-	alg       *Algorithm
+type keyWrapper struct {
+	alg       *algorithm
 	key       []byte
 	canDerive bool
 }
@@ -103,7 +103,7 @@ type PBES2CountSetter interface {
 	SetPBES2Count(p2c int)
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
 		return nil, fmt.Errorf("pbse2: key derive operation is not allowed")
 	}
@@ -138,7 +138,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return w.wrapKey(p2s, p2c, cek, opts)
 }
 
-func (w *KeyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []byte, err error) {
+func (w *keyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []byte, err error) {
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
@@ -152,7 +152,7 @@ func (w *KeyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []
 	return data, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
 		return nil, fmt.Errorf("pbse2: key derive operation is not allowed")
 	}
@@ -168,7 +168,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return w.unwrapKey(p2s.PBES2SaltInput(), p2c.PBES2Count(), data, opts)
 }
 
-func (w *KeyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]byte, error) {
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
