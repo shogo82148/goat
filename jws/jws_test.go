@@ -521,6 +521,40 @@ func TestMarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		protected := NewHeader()
+		protected.SetAlgorithm(jwa.ES256)
+		header := NewHeader()
+		header.SetKeyID("e9bc097a-ce51-4036-9562-d2ade882db0d")
+		rawKey2 := `{"kty":"EC",` +
+			`"crv":"P-256",` +
+			`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
+			`"y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",` +
+			`"d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"` +
+			`}`
+		key2, err := jwk.ParseKey([]byte(rawKey2))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := msg.Sign(protected, header, jwa.ES256.New().NewSigningKey(key2)); err != nil {
+			t.Fatal(err)
+		}
+
+		data, err := msg.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var tmp any
+		if err := json.Unmarshal(data, &tmp); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("RFC 7515 Appendix A.7. Example JWS Using Flattened JWS JSON Serialization", func(t *testing.T) {
+		msg := NewMessage([]byte(`{"iss":"joe",` + "\r\n" +
+			` "exp":1300819380,` + "\r\n" +
+			` "http://example.com/is_root":true}`))
+
 		protected2 := NewHeader()
 		protected2.SetAlgorithm(jwa.ES256)
 		header2 := NewHeader()
@@ -549,49 +583,6 @@ func TestMarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-
-	// t.Run("RFC 7515 Appendix A.7. Example JWS Using Flattened JWS JSON Serialization", func(t *testing.T) {
-	// 	raw := `{` +
-	// 		`"payload":` +
-	// 		`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
-	// 		`tcGxlLmNvbS9pc19yb290Ijp0cnVlfQ",` +
-	// 		`"protected":"eyJhbGciOiJFUzI1NiJ9",` +
-	// 		`"header":` +
-	// 		`{"kid":"e9bc097a-ce51-4036-9562-d2ade882db0d"},` +
-	// 		`"signature":` +
-	// 		`"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8IS` +
-	// 		`lSApmWQxfKTUJqPP3-Kg6NU1Q"` +
-	// 		`}`
-	// 	var msg Message
-	// 	if err := msg.UnmarshalJSON([]byte(raw)); err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	// 	_, payload, err := msg.Verify(FindKeyFunc(func(protected, header *Header) (sig.SigningKey, error) {
-	// 		if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
-	// 			return nil, errors.New("unknown key id")
-	// 		}
-	// 		rawKey := `{"kty":"EC",` +
-	// 			`"crv":"P-256",` +
-	// 			`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
-	// 			`"y":"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0",` +
-	// 			`"d":"jpsQnnGQmL-YBIffH1136cspYG6-0iY7X1fCE9-E9LI"` +
-	// 			`}`
-	// 		key, err := jwk.ParseKey([]byte(rawKey))
-	// 		if err != nil {
-	// 			return nil, err
-	// 		}
-	// 		return protected.Algorithm().New().NewSigningKey(key), nil
-	// 	}))
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	// 	want := []byte(`{"iss":"joe",` + "\r\n" +
-	// 		` "exp":1300819380,` + "\r\n" +
-	// 		` "http://example.com/is_root":true}`)
-	// 	if !bytes.Equal(payload, want) {
-	// 		t.Errorf("unexpected payload: want %q, got %q", string(want), string(payload))
-	// 	}
-	// })
 
 	// test for b64 header parameter.
 	// t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
