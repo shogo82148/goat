@@ -625,6 +625,7 @@ func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
 	return nil, nil, errors.New("jws: failed to verify the message")
 }
 
+// Sign adds a new signature signed by key.
 func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	// encode the header
 	h1, err := encodeHeader(protected)
