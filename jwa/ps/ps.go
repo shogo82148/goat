@@ -12,7 +12,7 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-var ps256 = &Algorithm{
+var ps256 = &algorithm{
 	alg:  jwa.PS256,
 	hash: crypto.SHA256,
 }
@@ -25,7 +25,7 @@ func New256() sig.Algorithm {
 	return ps256
 }
 
-var ps384 = &Algorithm{
+var ps384 = &algorithm{
 	alg:  jwa.PS384,
 	hash: crypto.SHA384,
 }
@@ -38,7 +38,7 @@ func New384() sig.Algorithm {
 	return ps384
 }
 
-var ps512 = &Algorithm{
+var ps512 = &algorithm{
 	alg:  jwa.PS512,
 	hash: crypto.SHA512,
 }
@@ -51,7 +51,7 @@ func New512() sig.Algorithm {
 	return ps512
 }
 
-var ps256w = &Algorithm{
+var ps256w = &algorithm{
 	alg:  jwa.RS256,
 	hash: crypto.SHA256,
 	weak: true,
@@ -64,7 +64,7 @@ func New256Weak() sig.Algorithm {
 	return ps256w
 }
 
-var ps384w = &Algorithm{
+var ps384w = &algorithm{
 	alg:  jwa.RS384,
 	hash: crypto.SHA384,
 	weak: true,
@@ -77,7 +77,7 @@ func New384Weak() sig.Algorithm {
 	return ps384w
 }
 
-var ps512w = &Algorithm{
+var ps512w = &algorithm{
 	alg:  jwa.RS512,
 	hash: crypto.SHA512,
 	weak: true,
@@ -96,17 +96,17 @@ func init() {
 	jwa.RegisterSignatureAlgorithm(jwa.PS512, New512)
 }
 
-var _ sig.Algorithm = (*Algorithm)(nil)
+var _ sig.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
 	weak bool
 }
 
-var _ sig.SigningKey = (*SigningKey)(nil)
+var _ sig.SigningKey = (*signingKey)(nil)
 
-type SigningKey struct {
+type signingKey struct {
 	hash       crypto.Hash
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
@@ -115,11 +115,11 @@ type SigningKey struct {
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+func (alg *algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
 
-	k := &SigningKey{
+	k := &signingKey{
 		hash:      alg.hash,
 		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
 		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
@@ -149,7 +149,7 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
+func (key *signingKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
@@ -164,7 +164,7 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Verify(payload, signature []byte) error {
+func (key *signingKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}

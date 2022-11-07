@@ -129,7 +129,7 @@ func TestCEKSize_and_IVSize(t *testing.T) {
 }
 
 func TestGenerateIV(t *testing.T) {
-	enc := &Algorithm{
+	enc := &algorithm{
 		keyLen: 16,
 	}
 

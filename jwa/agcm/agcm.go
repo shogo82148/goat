@@ -14,20 +14,23 @@ import (
 
 const nonceSize = 12
 
+// New128 returns AES GCM encryption algorithm using 128-bit key.
 func New128() enc.Algorithm {
-	return &Algorithm{
+	return &algorithm{
 		keyLen: 16,
 	}
 }
 
+// New192 returns AES GCM encryption algorithm using 192-bit key.
 func New192() enc.Algorithm {
-	return &Algorithm{
+	return &algorithm{
 		keyLen: 24,
 	}
 }
 
+// New256 returns AES GCM encryption algorithm using 256-bit key.
 func New256() enc.Algorithm {
-	return &Algorithm{
+	return &algorithm{
 		keyLen: 32,
 	}
 }
@@ -38,16 +41,16 @@ func init() {
 	jwa.RegisterEncryptionAlgorithm(jwa.A256GCM, New256)
 }
 
-var _ enc.Algorithm = (*Algorithm)(nil)
+var _ enc.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	keyLen int
 
 	mask    [nonceSize]byte
 	counter uint64
 }
 
-func (alg *Algorithm) GenerateCEK() ([]byte, error) {
+func (alg *algorithm) GenerateCEK() ([]byte, error) {
 	cek := make([]byte, alg.keyLen)
 	_, err := rand.Read(cek)
 	if err != nil {
@@ -57,7 +60,7 @@ func (alg *Algorithm) GenerateCEK() ([]byte, error) {
 	return cek, nil
 }
 
-func (alg *Algorithm) GenerateIV() ([]byte, error) {
+func (alg *algorithm) GenerateIV() ([]byte, error) {
 	c := alg.counter
 	if c == 0 {
 		_, err := rand.Read(alg.mask[:])
@@ -84,7 +87,7 @@ func (alg *Algorithm) GenerateIV() ([]byte, error) {
 	return iv[:], nil
 }
 
-func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
+func (alg *algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plaintext []byte, err error) {
 	// decrypt
 	block, err := aes.NewCipher(cek)
 	if err != nil {
@@ -102,7 +105,7 @@ func (alg *Algorithm) Decrypt(cek, iv, aad, ciphertext, authTag []byte) (plainte
 	return aead.Open(buf[:0], iv, buf, aad)
 }
 
-func (alg *Algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error) {
+func (alg *algorithm) Encrypt(cek, iv, aad, plaintext []byte) (ciphertext, authTag []byte, err error) {
 	// verify parameters
 	if len(cek) != alg.keyLen {
 		return nil, nil, fmt.Errorf("agcm: the size of CEK must be %d bytes, but got: %d", alg.keyLen, len(cek))

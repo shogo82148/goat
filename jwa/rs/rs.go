@@ -12,7 +12,7 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-var rs256 = &Algorithm{
+var rs256 = &algorithm{
 	alg:  jwa.RS256,
 	hash: crypto.SHA256,
 }
@@ -25,7 +25,7 @@ func New256() sig.Algorithm {
 	return rs256
 }
 
-var rs384 = &Algorithm{
+var rs384 = &algorithm{
 	alg:  jwa.RS384,
 	hash: crypto.SHA384,
 }
@@ -38,7 +38,7 @@ func New384() sig.Algorithm {
 	return rs384
 }
 
-var rs512 = &Algorithm{
+var rs512 = &algorithm{
 	alg:  jwa.RS512,
 	hash: crypto.SHA512,
 }
@@ -51,7 +51,7 @@ func New512() sig.Algorithm {
 	return rs512
 }
 
-var rs256w = &Algorithm{
+var rs256w = &algorithm{
 	alg:  jwa.RS256,
 	hash: crypto.SHA256,
 	weak: true,
@@ -64,7 +64,7 @@ func New256Weak() sig.Algorithm {
 	return rs256w
 }
 
-var rs384w = &Algorithm{
+var rs384w = &algorithm{
 	alg:  jwa.RS384,
 	hash: crypto.SHA384,
 	weak: true,
@@ -77,7 +77,7 @@ func New384Weak() sig.Algorithm {
 	return rs384w
 }
 
-var rs512w = &Algorithm{
+var rs512w = &algorithm{
 	alg:  jwa.RS512,
 	hash: crypto.SHA512,
 	weak: true,
@@ -96,22 +96,22 @@ func init() {
 	jwa.RegisterSignatureAlgorithm(jwa.RS512, New512)
 }
 
-var _ sig.Algorithm = (*Algorithm)(nil)
+var _ sig.Algorithm = (*algorithm)(nil)
 
-// Algorithm is RSASSA-PKCS1-v1_5.
+// algorithm is RSASSA-PKCS1-v1_5.
 //
 // By default, using weak keys less 2048 bits fails.
 // If you want to use weak keys, use New256Weak, New384Weak, and New512Weak instead of
 // New256, New384, and New512.
-type Algorithm struct {
+type algorithm struct {
 	alg  jwa.SignatureAlgorithm
 	hash crypto.Hash
 	weak bool
 }
 
-var _ sig.SigningKey = (*SigningKey)(nil)
+var _ sig.SigningKey = (*signingKey)(nil)
 
-type SigningKey struct {
+type signingKey struct {
 	hash       crypto.Hash
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
@@ -120,11 +120,11 @@ type SigningKey struct {
 }
 
 // NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
-func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
+func (alg *algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	priv := key.PrivateKey()
 	pub := key.PublicKey()
 
-	k := &SigningKey{
+	k := &signingKey{
 		hash:      alg.hash,
 		canSign:   jwktypes.CanUseFor(key, jwktypes.KeyOpSign),
 		canVerify: jwktypes.CanUseFor(key, jwktypes.KeyOpVerify),
@@ -154,7 +154,7 @@ func (alg *Algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 }
 
 // Sign implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
+func (key *signingKey) Sign(payload []byte) (signature []byte, err error) {
 	if !key.hash.Available() {
 		return nil, sig.ErrHashUnavailable
 	}
@@ -169,7 +169,7 @@ func (key *SigningKey) Sign(payload []byte) (signature []byte, err error) {
 }
 
 // Verify implements [github.com/shogo82148/goat/sig.Key].
-func (key *SigningKey) Verify(payload, signature []byte) error {
+func (key *signingKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}

@@ -136,7 +136,7 @@ const (
 	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
 	RSA1_5 KeyManagementAlgorithm = "RSA1_5"
 
-	// RSA_OAEP is RSAES OAEP using.
+	// RSA_OAEP is RSAES OAEP.
 	// import github.com/shogo82148/goat/jwa/rsapoaep
 	RSA_OAEP KeyManagementAlgorithm = "RSA-OAEP"
 

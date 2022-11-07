@@ -12,26 +12,29 @@ import (
 	"github.com/shogo82148/goat/keymanage"
 )
 
-var a128 = &Algorithm{
+var a128 = &algorithm{
 	keySize: 16,
 }
 
+// New128 returns AES Key Wrap algorithm with default initial value using 128-bit key.
 func New128() keymanage.Algorithm {
 	return a128
 }
 
-var a192 = &Algorithm{
+var a192 = &algorithm{
 	keySize: 24,
 }
 
+// New192 returns AES Key Wrap algorithm with default initial value using 192-bit key.
 func New192() keymanage.Algorithm {
 	return a192
 }
 
-var a256 = &Algorithm{
+var a256 = &algorithm{
 	keySize: 32,
 }
 
+// New256 returns AES Key Wrap algorithm with default initial value using 256-bit key.
 func New256() keymanage.Algorithm {
 	return a256
 }
@@ -45,7 +48,7 @@ func init() {
 func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {
 	switch len(privateKey) {
 	case 16, 24, 32:
-		return &KeyWrapper{
+		return &keyWrapper{
 			key:       privateKey,
 			canWrap:   true,
 			canUnwrap: true,
@@ -54,17 +57,13 @@ func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {
 	return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d", len(privateKey)))
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	keySize int
 }
 
-type Options struct {
-	Key []byte
-}
-
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	priv, ok := privateKey.([]byte)
 	if !ok {
@@ -73,16 +72,16 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	if len(priv) != alg.keySize {
 		return keymanage.NewInvalidKeyWrapper(fmt.Errorf("akw: invalid key size: %d is required but got %d", alg.keySize, len(priv)))
 	}
-	return &KeyWrapper{
+	return &keyWrapper{
 		key:       priv,
 		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
 		canUnwrap: jwktypes.CanUseFor(key, jwktypes.KeyOpUnwrapKey),
 	}
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 
-type KeyWrapper struct {
+type keyWrapper struct {
 	key       []byte
 	canWrap   bool
 	canUnwrap bool
@@ -95,7 +94,7 @@ const chunkLen = 8
 
 // WrapKey wraps cek with AWS Key Wrap algorithm
 // defined in RFC 3394.
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if len(cek)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(cek))
 	}
@@ -145,7 +144,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 
 // UnwrapKey unwraps cek with AWS Key Wrap algorithm
 // defined in RFC 3394.
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if len(data)%chunkLen != 0 {
 		return nil, fmt.Errorf("akw: invalid CEK length: %d", len(data))
 	}
