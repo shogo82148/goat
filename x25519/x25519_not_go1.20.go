@@ -31,7 +31,6 @@ func GenerateKey(rand io.Reader) (PublicKey, PrivateKey, error) {
 	return publicKey, privateKey, nil
 }
 
-
 // NewKeyFromSeed calculates a private key from a seed. It will panic if
 // len(seed) is not SeedSize. This function is provided for interoperability
 // with RFC 8032. RFC 8032's private keys correspond to seeds in this
@@ -43,5 +42,5 @@ func NewKeyFromSeed(seed []byte) PrivateKey {
 // X25519 returns the result of the scalar multiplication (scalar * point),
 // according to RFC 7748, Section 5. scalar, point and the return value are slices of 32 bytes.
 func X25519(scalar, point []byte) ([]byte, error) {
-	return x25519Legacy(scalar, point []byte)
+	return x25519Legacy(scalar, point)
 }
