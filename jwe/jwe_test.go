@@ -597,6 +597,57 @@ func TestEncrypt(t *testing.T) {
 	})
 }
 
+func TestNewMessage(t *testing.T) {
+	// https://github.com/lestrrat-go/jwx
+	// $ echo 'Hello JWE!' > input.txt
+	// $ jwx jwk generate --type oct --keysize 16 > oct.json
+	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
+	t.Run("jwx A128GCMKW compressed", func(t *testing.T) {
+		header := &Header{}
+		header.SetAlgorithm(jwa.A128GCMKW)
+		header.SetCompressionAlgorithm(jwa.DEF)
+		alg := header.Algorithm().New()
+		plaintext := "Hello JWE!\n"
+		msg1, err := NewMessage(jwa.A128GCM, header, []byte(plaintext))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rawKey := `{` +
+			`"k": "5zDzOzDfceBkTJHEec_s0g",` +
+			`"kty": "oct"` +
+			`}`
+		k, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		key := alg.NewKeyWrapper(k)
+		if err = msg1.Encrypt(key, nil); err != nil {
+			t.Fatal(err)
+		}
+
+		ciphertext, err := msg1.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		msg2, err := ParseJSON(ciphertext)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := msg2.Decrypt(FindKeyWrapperFunc(func(protected, unprotected, recipient *Header) (wrapper keymanage.KeyWrapper, err error) {
+			return alg.NewKeyWrapper(k), nil
+		}))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if string(got) != plaintext {
+			t.Errorf("want %s, got %s", plaintext, got)
+		}
+	})
+}
+
 func TestParseJSON(t *testing.T) {
 	raw := `{` +
 		`"protected":` +
