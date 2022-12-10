@@ -126,135 +126,6 @@ func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
 	key.x5tS256 = x5tS256
 }
 
-// NewPrivateKey returns a new JWK from the private key.
-//
-// key must be one of *ecdsa.PrivateKey, *rsa.PrivateKey, ed25519.PrivateKey,
-// x25519.PrivateKey, ed448.PrivateKey, x448.PrivateKey, or []byte.
-func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
-	switch key := key.(type) {
-	case *ecdsa.PrivateKey:
-		if err := validateEcdsaPrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.EC,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case *rsa.PrivateKey:
-		if err := validateRSAPrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.RSA,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case ed25519.PrivateKey:
-		if err := validateEd25519PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.OKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case x25519.PrivateKey:
-		if err := validateX25519PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.OKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case ed448.PrivateKey:
-		if err := validateEd448PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.OKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case x448.PrivateKey:
-		if err := validateX448PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.OKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case []byte:
-		return &Key{
-			kty:  jwa.Oct,
-			priv: append([]byte(nil), key...),
-		}, nil
-	default:
-		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
-	}
-}
-
-// NewPublicKey returns a new JWK from the public key.
-//
-// key must be one of *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey,
-// x25519.PublicKey, ed448.PublicKey, or x448.PublicKey.
-func NewPublicKey(key crypto.PublicKey) (*Key, error) {
-	switch key := key.(type) {
-	case *ecdsa.PublicKey:
-		if err := validateEcdsaPublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.EC,
-			pub: key,
-		}, nil
-	case *rsa.PublicKey:
-		if err := validateRSAPublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.RSA,
-			pub: key,
-		}, nil
-	case ed25519.PublicKey:
-		if err := validateEd25519PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.OKP,
-			pub: key,
-		}, nil
-	case x25519.PublicKey:
-		if err := validateX25519PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.OKP,
-			pub: key,
-		}, nil
-	case ed448.PublicKey:
-		if err := validateEd448PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.OKP,
-			pub: key,
-		}, nil
-	case x448.PublicKey:
-		if err := validateX448PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.OKP,
-			pub: key,
-		}, nil
-	default:
-		return nil, fmt.Errorf("jwk: unknown public key type: %T", key)
-	}
-}
-
 // decode common parameters such as certificate and thumbprints, etc.
 func decodeCommonParameters(d *jsonutils.Decoder, key *Key) {
 	key.kty = jwa.KeyType(d.MustString("kty"))
@@ -414,6 +285,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, fmt.Errorf("jwk: public key type is mismatch for ed25519: %T", key.pub)
 		}
 		encodeEd25519Key(e, priv, pub)
+	case *ecdhPrivateKey:
+		pub, ok := key.pub.(*ecdhPublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for ecdh: %T", key.pub)
+		}
+		encodeECDHKey(e, priv, pub)
 	case x25519.PrivateKey:
 		pub, ok := key.pub.(x25519.PublicKey)
 		if !ok {
@@ -446,6 +323,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeRSAKey(e, nil, pub)
 		case ed25519.PublicKey:
 			encodeEd25519Key(e, nil, pub)
+		case *ecdhPublicKey:
+			encodeECDHKey(e, nil, pub)
 		case x25519.PublicKey:
 			encodeX25519Key(e, nil, pub)
 		case ed448.PublicKey:
