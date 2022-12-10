@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/shogo82148/goat/ed448"
+	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/x25519"
 	"github.com/shogo82148/goat/x448"
