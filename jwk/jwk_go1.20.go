@@ -59,17 +59,23 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 		switch key.Curve() {
 		case ecdh.P256(), ecdh.P384(), ecdh.P521():
 			return &Key{
-				kty:    jwa.EC,
-				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
-				priv:   key,
-				pub:    key.PublicKey(),
+				kty: jwa.EC,
+				keyOps: []jwktypes.KeyOp{
+					jwktypes.KeyOpDeriveKey,
+					jwktypes.KeyOpDeriveBits,
+				},
+				priv: key,
+				pub:  key.PublicKey(),
 			}, nil
 		case ecdh.X25519():
 			return &Key{
-				kty:    jwa.OKP,
-				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
-				priv:   key,
-				pub:    key.PublicKey(),
+				kty: jwa.OKP,
+				keyOps: []jwktypes.KeyOp{
+					jwktypes.KeyOpDeriveKey,
+					jwktypes.KeyOpDeriveBits,
+				},
+				priv: key,
+				pub:  key.PublicKey(),
 			}, nil
 		default:
 			return nil, fmt.Errorf("jwk: unknown ecdh curve: %s", key.Curve())
