@@ -3,6 +3,7 @@
 package ecdhes
 
 import (
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"fmt"
 
@@ -29,7 +30,7 @@ func deriveZ(priv, pub any) ([]byte, error) {
 	case x448.PrivateKey:
 		pubkey, ok := pub.(x448.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("ecdhes: want z447.PublicKey but got %T", pub)
+			return nil, fmt.Errorf("ecdhes: want x447.PublicKey but got %T", pub)
 		}
 		return x448.X448(priv[:x448.SeedSize], pubkey)
 	case *ecdsa.PrivateKey:
@@ -46,6 +47,12 @@ func deriveZ(priv, pub any) ([]byte, error) {
 			return nil, err
 		}
 		return privECDH.ECDH(pubECDH)
+	case *ecdh.PrivateKey:
+		pubkey, ok := pub.(*ecdh.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want *ecdh.PublicKey but got %T", pub)
+		}
+		return priv.ECDH(pubkey)
 	default:
 		return nil, fmt.Errorf("ecdhes: unknown private key type: %T", priv)
 	}
