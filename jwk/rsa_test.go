@@ -731,6 +731,10 @@ func TestParseKey_RSA_Invalid(t *testing.T) {
 				`"p":"00",` +
 				`"q":"00"}`,
 		},
+		{
+			name: "https://github.com/shogo82148/goat/pull/111",
+			data: `{"kty":"RSA","n":"","e":"00"}`,
+		},
 	}
 
 	for _, key := range keys {
