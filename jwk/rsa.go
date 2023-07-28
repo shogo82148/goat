@@ -162,7 +162,7 @@ func validateRSAPrivateKey(key *rsa.PrivateKey) error {
 
 // sanity check of public key
 func validateRSAPublicKey(key *rsa.PublicKey) error {
-	if key.N == nil {
+	if key.N == nil || key.N.Sign() <= 0 {
 		return errors.New("jwk: invalid rsa modulus")
 	}
 	if key.E < 2 || key.E > 1<<32-1 {
