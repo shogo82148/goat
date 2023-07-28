@@ -788,3 +788,43 @@ func TestSign(t *testing.T) {
 		}
 	})
 }
+
+func TestKeyTypeMissmatch(t *testing.T) {
+	// from RFC7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256
+	raw := []byte(
+		"eyJhbGciOiJFUzI1NiJ9" + // {"alg":"ES256"}
+			"." +
+			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+			"." +
+			"DtEhU3ljbEg8L38VWAfUAqOyKAM6-Xx-F4GawxaepmXFCgfTjDxw5djxLa8ISlSA" +
+			"pmWQxfKTUJqPP3-Kg6NU1Q",
+	)
+
+	// RFC 7517 A.1. Example Public Keys (RSA)
+	rawKey := `{"kty":"RSA",` +
+		`"n":"0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx` +
+		`4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMs` +
+		`tn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2` +
+		`QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbI` +
+		`SD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqb` +
+		`w0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",` +
+		`"e":"AQAB",` +
+		`"alg":"RS256",` +
+		`"kid":"2011-04-29"}`
+	key, err := jwk.ParseKey([]byte(rawKey))
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = msg.Verify(FindKeyFunc(func(header, _ *Header) (sig.SigningKey, error) {
+		alg := header.Algorithm().New()
+		return alg.NewSigningKey(key), nil
+	}))
+	if err == nil {
+		t.Error("want error, got nil")
+	}
+}

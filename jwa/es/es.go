@@ -154,7 +154,7 @@ func (key *signingKey) Verify(payload, signature []byte) error {
 	if !key.hash.Available() {
 		return sig.ErrHashUnavailable
 	}
-	if !key.canVerify {
+	if key.pub == nil || !key.canVerify {
 		return sig.ErrSignUnavailable
 	}
 
