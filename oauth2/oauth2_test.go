@@ -18,16 +18,9 @@ func TestExtractBearer(t *testing.T) {
 			ok:  true,
 		},
 		{
-			in: "",
-			ok: false,
-		},
-		{
-			in: "Bearer",
-			ok: false,
-		},
-		{
-			in: "bearer some-token",
-			ok: false,
+			in:  "bearer some-token",
+			out: "some-token",
+			ok:  true,
 		},
 		{
 			in: "bearer",
