@@ -9,10 +9,16 @@ import (
 func ExtractBearer(req *http.Request) (bearer string, ok bool) {
 	const prefix = "Bearer "
 	credentials := req.Header.Get("Authorization")
+	if len(credentials) < len(prefix) {
+		return "", false
+	}
 
-	// RFC 6750 says "Unless otherwise noted, all the protocol
-	// parameter names and values are case sensitive."
-	if !strings.HasPrefix(credentials, prefix) {
+	// RFC 9110 Section 11.1. Authentication Scheme:
+	// > It uses a case-insensitive token to identify the authentication scheme:
+	// >
+	// >     auth-scheme    = token
+	// >
+	if !strings.EqualFold(credentials[:len(prefix)], prefix) {
 		return "", false
 	}
 
