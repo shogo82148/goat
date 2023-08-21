@@ -7,7 +7,7 @@ import (
 	"github.com/shogo82148/goat/jwa"
 )
 
-// RFC8037 2.  Key Type "OKP"
+// RFC 8037 Section 2.  Key Type "OKP"
 func parseOKPKey(d *jsonutils.Decoder, key *Key) {
 	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {

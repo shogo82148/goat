@@ -1,4 +1,5 @@
 # goat
+
 Go Authentication Toolkit
 
 [![Coverage Status](https://coveralls.io/repos/github/shogo82148/goat/badge.svg)](https://coveralls.io/github/shogo82148/goat)
@@ -7,7 +8,7 @@ Go Authentication Toolkit
 
 ## References
 
-### Normative References
+- [RFC 3394 Advanced Encryption Standard (AES) Key Wrap Algorithm](https://www.rfc-editor.org/rfc/rfc3394)
 - [RFC 7515 JSON Web Signature (JWS)](https://www.rfc-editor.org/rfc/rfc7515)
 - [RFC 7516 JSON Web Encryption (JWE)](https://www.rfc-editor.org/rfc/rfc7516)
 - [RFC 7517 JSON Web Key (JWK)](https://www.rfc-editor.org/rfc/rfc7517)
@@ -20,7 +21,3 @@ Go Authentication Toolkit
 - [RFC 8812 CBOR Object Signing and Encryption (COSE) and JSON Object Signing and Encryption (JOSE) Registrations for Web Authentication (WebAuthn) Algorithms](https://datatracker.ietf.org/doc/html/rfc8812)
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)
-
-### Informative References
-
-- [RFC 3394 Advanced Encryption Standard (AES) Key Wrap Algorithm](https://www.rfc-editor.org/rfc/rfc3394)

@@ -17,7 +17,7 @@ import (
 )
 
 func TestVerify(t *testing.T) {
-	t.Run("RFC7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
 		raw := []byte(
 			"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
 				"." +
@@ -62,7 +62,7 @@ func TestVerify(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
 		raw := []byte(
 			"eyJhbGciOiJSUzI1NiJ9" +
 				"." +
@@ -134,7 +134,7 @@ func TestVerify(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256", func(t *testing.T) {
 		raw := []byte(
 			"eyJhbGciOiJFUzI1NiJ9" +
 				"." +
@@ -178,7 +178,7 @@ func TestVerify(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
 		raw := []byte(
 			"eyJhbGciOiJFUzUxMiJ9" +
 				"." +
@@ -223,7 +223,7 @@ func TestVerify(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		raw := []byte(
 			"eyJhbGciOiJub25lIn0" +
 				"." +
@@ -624,7 +624,7 @@ func TestMarshalJSON(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
-	t.Run("RFC7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
 		rawKey := `{"kty":"oct",` +
 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
@@ -661,7 +661,7 @@ func TestSign(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
 		rawKey := `{"kty":"RSA",` +
 			`"n":"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddx` +
 			`HmfHQp-Vaw-4qPCJrcS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMs` +
@@ -729,7 +729,7 @@ func TestSign(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		h := NewHeader()
 		h.SetAlgorithm(jwa.None)
 		h.SetType("JWT")
@@ -790,7 +790,7 @@ func TestSign(t *testing.T) {
 }
 
 func TestKeyTypeMissmatch(t *testing.T) {
-	// from RFC7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256
+	// from RFC 7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256
 	raw := []byte(
 		"eyJhbGciOiJFUzI1NiJ9" + // {"alg":"ES256"}
 			"." +

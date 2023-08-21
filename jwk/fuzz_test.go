@@ -163,12 +163,12 @@ func FuzzJWK(f *testing.F) {
 		`gawR+N5MDtdPTEQ0XfIBc2cJEUyMTY5MPvACWpkA6SdS4xSvdXK3IVfOWA=="]` +
 		`}`)
 
-	// RFC8037 Appendix A.1. Ed25519 Private Key
+	// RFC 8037 Appendix A.1. Ed25519 Private Key
 	f.Add(`{"kty":"OKP","crv":"Ed25519",` +
 		`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",` +
 		`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`)
 
-	// RFC8037 Appendix A.2. Ed25519 Public Key
+	// RFC 8037 Appendix A.2. Ed25519 Public Key
 	f.Add(`{"kty":"OKP","crv":"Ed25519",` +
 		`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`)
 

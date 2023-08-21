@@ -9,7 +9,7 @@ import (
 )
 
 func TestParseKey_RSA(t *testing.T) {
-	t.Run("RFC7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
 		rawKey := `{"kty":"RSA",` +
 			`"n":"ofgWCuLjybRlzo0tZWJjNiuSfb4p4fAkd_wWJcyQoTbji9k0l8W26mPddx` +
 			`HmfHQp-Vaw-4qPCJrcS2mJPMEzP1Pt0Bm4d4QlL-yRT-SFd2lZS-pCgNMs` +
@@ -269,8 +269,8 @@ func BenchmarkRSA(b *testing.B) {
 	})
 }
 
-func TestParseKey_RFC7517AppendixB(t *testing.T) {
-	// RFC7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
+func TestParseKey_RFC 7517AppendixB(t *testing.T) {
+	// RFC 7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
 	rawKey := []byte(`{"kty":"RSA",` +
 		`"use":"sig",` +
 		`"kid":"1b94c",` +
@@ -325,8 +325,8 @@ func TestParseKey_RFC7517AppendixB(t *testing.T) {
 	}
 }
 
-func BenchmarkParseKey_RFC7517AppendixB(b *testing.B) {
-	// RFC7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
+func BenchmarkParseKey_RFC 7517AppendixB(b *testing.B) {
+	// RFC 7517 Appendix B. Example Use of "x5c" (X.509 Certificate Chain) Parameter
 	rawKey := []byte(`{"kty":"RSA",` +
 		`"use":"sig",` +
 		`"kid":"1b94c",` +

@@ -37,7 +37,7 @@ func TestGenerateKey(t *testing.T) {
 }
 
 func TestPublicKey(t *testing.T) {
-	t.Run("RFC 7748 6.2. Curve448", func(t *testing.T) {
+	t.Run("RFC 7748 Section 6.2. Curve448", func(t *testing.T) {
 		t.Run("Alice", func(t *testing.T) {
 			seed := decodeHex(
 				"9a8f4925d1519f5775cf46b04b5800d4ee9ee8bae8bc5565d498c28d" +

@@ -68,7 +68,7 @@ func (h *Header) Clone() *Header {
 }
 
 // Algorithm returns the key management algorithm
-// defined in RFC7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+// defined in RFC 7516 Section 4.1.1. "alg" (Algorithm) Header Parameter.
 func (h *Header) Algorithm() jwa.KeyManagementAlgorithm {
 	if h == nil {
 		return ""
@@ -81,7 +81,7 @@ func (h *Header) SetAlgorithm(alg jwa.KeyManagementAlgorithm) {
 }
 
 // Encryption return the encryption algorithm
-// defined in RFC7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
+// defined in RFC 7516 Section 4.1.2. "enc" (Encryption Algorithm) Header Parameter.
 func (h *Header) EncryptionAlgorithm() jwa.EncryptionAlgorithm {
 	if h == nil {
 		return ""
@@ -93,7 +93,7 @@ func (h *Header) SetEncryptionAlgorithm(enc jwa.EncryptionAlgorithm) {
 	h.enc = enc
 }
 
-// Compression is RFC7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
+// Compression is RFC 7516 Section 4.1.3. "zip" (zip Algorithm) Header Parameter.
 func (h *Header) CompressionAlgorithm() jwa.CompressionAlgorithm {
 	if h == nil {
 		return ""
@@ -105,7 +105,7 @@ func (h *Header) SetCompressionAlgorithm(zip jwa.CompressionAlgorithm) {
 	h.zip = zip
 }
 
-// JWKSetURL is RFC7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
+// JWKSetURL is RFC 7516 Section 4.1.4. "jku" (JWK Set URL) Header Parameter.
 func (h *Header) JWKSetURL() *url.URL {
 	if h == nil {
 		return nil
@@ -117,7 +117,7 @@ func (h *Header) SetJWKSetURL(jku *url.URL) {
 	h.jku = jku
 }
 
-// JWK is RFC7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
+// JWK is RFC 7516 Section 4.1.5. "jwk" (JSON Web Key) Header Parameter.
 func (h *Header) JWK() *jwk.Key {
 	if h == nil {
 		return nil
@@ -129,7 +129,7 @@ func (h *Header) SetJWK(jwk *jwk.Key) {
 	h.jwk = jwk
 }
 
-// KeyID is RFC7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
+// KeyID is RFC 7516 Section 4.1.6. "kid" (Key ID) Header Parameter.
 func (h *Header) KeyID() string {
 	if h == nil {
 		return ""
@@ -141,7 +141,7 @@ func (h *Header) SetKeyID(kid string) {
 	h.kid = kid
 }
 
-// X509URL is RFC7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
+// X509URL is RFC 7516 Section 4.1.7. "x5u" (X.509 URL) Header Parameter.
 func (h *Header) X509URL() *url.URL {
 	return h.x5u
 }
@@ -150,7 +150,7 @@ func (h *Header) SetX509URL(x5u *url.URL) {
 	h.x5u = x5u
 }
 
-// X509CertificateChain is RFC7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
+// X509CertificateChain is RFC 7516 Section 4.1.8. "x5c" (X.509 Certificate Chain) Header Parameter.
 func (h *Header) X509CertificateChain() []*x509.Certificate {
 	if h == nil {
 		return nil
@@ -162,7 +162,7 @@ func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
 	h.x5c = x5c
 }
 
-// X509CertificateSHA1 is RFC7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
+// X509CertificateSHA1 is RFC 7516 Section 4.1.9. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA1() []byte {
 	if h == nil {
 		return nil
@@ -174,7 +174,7 @@ func (h *Header) SetX509CertificateSHA1(x5t []byte) {
 	h.x5t = x5t
 }
 
-// X509CertificateSHA256 is RFC7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
+// X509CertificateSHA256 is RFC 7516 Section 4.1.10. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA256() []byte {
 	if h == nil {
 		return nil
@@ -186,7 +186,7 @@ func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 	h.x5tS256 = x5tS256
 }
 
-// Type is RFC7516 Section 4.1.11. "typ" (Type) Header Parameter.
+// Type is RFC 7516 Section 4.1.11. "typ" (Type) Header Parameter.
 func (h *Header) Type() string {
 	if h == nil {
 		return ""
@@ -198,7 +198,7 @@ func (h *Header) SetType(typ string) {
 	h.typ = typ
 }
 
-// ContentType is RFC7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
+// ContentType is RFC 7516 Section 4.1.12. "cty" (Content Type) Header Parameter.
 func (h *Header) ContentType() string {
 	if h == nil {
 		return ""
@@ -210,7 +210,7 @@ func (h *Header) SetContentType(cty string) {
 	h.cty = cty
 }
 
-// Critical is RFC7516 Section 4.1.13. "crit" (Critical) Header Parameter.
+// Critical is RFC 7516 Section 4.1.13. "crit" (Critical) Header Parameter.
 func (h *Header) Critical() []string {
 	if h == nil {
 		return nil
@@ -222,7 +222,7 @@ func (h *Header) SetCritical(crit []string) {
 	h.crit = crit
 }
 
-// EphemeralPublicKey is RFC7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
+// EphemeralPublicKey is RFC 7518 Section 4.6.1.1. "epk" (Ephemeral Public Key) Header Parameter.
 func (h *Header) EphemeralPublicKey() *jwk.Key {
 	if h == nil {
 		return nil
@@ -234,7 +234,7 @@ func (h *Header) SetEphemeralPublicKey(epk *jwk.Key) {
 	h.epk = epk
 }
 
-// AgreementPartyUInfo is RFC7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
+// AgreementPartyUInfo is RFC 7518 Section 4.6.1.2. "apu" (Agreement PartyUInfo) Header Parameter
 func (h *Header) AgreementPartyUInfo() []byte {
 	if h == nil {
 		return nil
@@ -246,7 +246,7 @@ func (h *Header) SetAgreementPartyUInfo(apu []byte) {
 	h.apu = apu
 }
 
-// AgreementPartyVInfo is RFC7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
+// AgreementPartyVInfo is RFC 7518 Section 4.6.1.3. "apv" (Agreement PartyVInfo) Header Parameter
 func (h *Header) AgreementPartyVInfo() []byte {
 	if h == nil {
 		return nil
@@ -258,7 +258,7 @@ func (h *Header) SetAgreementPartyVInfo(apv []byte) {
 	h.apv = apv
 }
 
-// InitializationVector is RFC7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
+// InitializationVector is RFC 7518 Section 4.7.1.1. "iv" (Initialization Vector) Header Parameter.
 // It is the 96-bit IV value used for the key encryption operation.
 func (h *Header) InitializationVector() []byte {
 	if h == nil {
@@ -271,7 +271,7 @@ func (h *Header) SetInitializationVector(iv []byte) {
 	h.iv = iv
 }
 
-// AuthenticationTag is RFC7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
+// AuthenticationTag is RFC 7518 Section 4.7.1.2. "tag" (Authentication Tag) Header Parameter.
 func (h *Header) AuthenticationTag() []byte {
 	if h == nil {
 		return nil
@@ -284,7 +284,7 @@ func (h *Header) SetAuthenticationTag(tag []byte) {
 }
 
 // PBES2SaltInput is the PBES2 salt input
-// defined in RFC7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
+// defined in RFC 7518 Section 4.8.1.1. "p2s" (PBES2 Salt Input) Header Parameter.
 func (h *Header) PBES2SaltInput() []byte {
 	if h == nil {
 		return nil
@@ -297,7 +297,7 @@ func (h *Header) SetPBES2SaltInput(p2s []byte) {
 }
 
 // PBES2Count is the PBES2 Count
-// defined in RFC7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
+// defined in RFC 7518 Section 4.8.1.2. "p2c" (PBES2 Count) Header Parameter.
 func (h *Header) PBES2Count() int {
 	if h == nil {
 		return 0
