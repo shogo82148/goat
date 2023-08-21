@@ -11,7 +11,7 @@ import (
 	"github.com/shogo82148/goat/secp256k1"
 )
 
-// RFC 7518 6.2.2. Parameters for Elliptic Curve Private Keys
+// RFC 7518 Section 6.2.2. Parameters for Elliptic Curve Private Keys
 func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	var curve elliptic.Curve
 	crv := jwa.EllipticCurve(d.MustString("crv"))
@@ -68,7 +68,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	}
 }
 
-// RFC 7518 6.2.2. Parameters for Elliptic Curve Private Keys
+// RFC 7518 Section 6.2.2. Parameters for Elliptic Curve Private Keys
 func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
 	if err := validateEcdsaPublicKey(pub); err != nil {
 		e.SaveError(err)

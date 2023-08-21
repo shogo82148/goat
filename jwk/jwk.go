@@ -61,12 +61,12 @@ func (key *Key) SetPublicKeyUse(use jwktypes.KeyUse) {
 	key.use = use
 }
 
-// KeyOperations returns RFC 7517 4.3. "key_ops" (Key Operations) Parameter.
+// KeyOperations returns RFC 7517 Section 4.3. "key_ops" (Key Operations) Parameter.
 func (key *Key) KeyOperations() []jwktypes.KeyOp {
 	return key.keyOps
 }
 
-// SetKeyOperation sets RFC 7517 4.3. "key_ops" (Key Operations) Parameter.
+// SetKeyOperation sets RFC 7517 Section 4.3. "key_ops" (Key Operations) Parameter.
 func (key *Key) SetKeyOperation(keyOps []jwktypes.KeyOp) {
 	key.keyOps = keyOps
 }
@@ -86,6 +86,7 @@ func (key *Key) KeyID() string {
 	return key.kid
 }
 
+// SetKeyID sets RFC 7517 Section 4.5. "kid" (Key ID) Parameter.
 func (key *Key) SetKeyID(kid string) {
 	key.kid = kid
 }
@@ -95,33 +96,37 @@ func (key *Key) X509URL() *url.URL {
 	return key.x5u
 }
 
+// SetX509URL sets RFC 7517 Section 4.6. "x5u" (X.509 URL) Parameter.
 func (key *Key) SetX509URL(x5u *url.URL) {
 	key.x5u = x5u
 }
 
-// X509CertificateChain is RFC7517 4.7. "x5c" (X.509 Certificate Chain) Parameter.
+// X509CertificateChain is RFC 7517 Section 4.7. "x5c" (X.509 Certificate Chain) Parameter.
 func (key *Key) X509CertificateChain() []*x509.Certificate {
 	return key.x5c
 }
 
+// SetX509CertificateChain sets RFC 7517 Section 4.7. "x5c" (X.509 Certificate Chain) Parameter.
 func (key *Key) SetX509CertificateChain(x5c []*x509.Certificate) {
 	key.x5c = x5c
 }
 
-// X509CertificateSHA1 is RFC7517 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
+// X509CertificateSHA1 is RFC 7517 Section 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
 func (key *Key) X509CertificateSHA1() []byte {
 	return key.x5t
 }
 
+// SetX509CertificateSHA1 sets RFC 7517 Section 4.8. "x5t" (X.509 Certificate SHA-1 Thumbprint) Parameter.
 func (key *Key) SetX509CertificateSHA1(x5t []byte) {
 	key.x5t = x5t
 }
 
-// X509CertificateSHA256 is RFC7517 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
+// X509CertificateSHA256 is RFC 7517 Section 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
 func (key *Key) X509CertificateSHA256() []byte {
 	return key.x5tS256
 }
 
+// SetX509CertificateSHA256 sets RFC 7517 Section 4.9. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Parameter.
 func (key *Key) SetX509CertificateSHA256(x5tS256 []byte) {
 	key.x5tS256 = x5tS256
 }
@@ -440,7 +445,7 @@ func ParseSet(data []byte) (*Set, error) {
 		if key, err := ParseMap(key); err == nil {
 			list = append(list, key)
 
-			// from: RFC7517 Section 5. JWK Set Format
+			// from: RFC 7517 Section 5. JWK Set Format
 			// Implementations SHOULD ignore JWKs within a JWK Set that use "kty"
 			// (key type) values that are not understood by them, that are missing
 			// required members, or for which values are out of the supported

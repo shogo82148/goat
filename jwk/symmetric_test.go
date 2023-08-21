@@ -8,7 +8,7 @@ import (
 )
 
 func TestParseKey_Symmetric(t *testing.T) {
-	t.Run("RFC7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
+	t.Run("RFC 7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
 		rawKey := `{"kty":"oct",` +
 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +

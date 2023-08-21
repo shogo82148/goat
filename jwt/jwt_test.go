@@ -26,7 +26,7 @@ func TestParse(t *testing.T) {
 		return time.Unix(1300819379, 0)
 	})()
 
-	t.Run("RFC7519 Section 3.1. Example JWT", func(t *testing.T) {
+	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
 		raw := []byte(
 			"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
 				"." +
@@ -61,7 +61,7 @@ func TestParse(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
+	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
 		raw := []byte(
 			"eyJhbGciOiJub25lIn0" +
 				"." +
@@ -141,7 +141,7 @@ func TestParse_Claims(t *testing.T) {
 
 func TestSign(t *testing.T) {
 
-	t.Run("RFC7519 Section 3.1. Example JWT", func(t *testing.T) {
+	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
 		rawKey := `{"kty":"oct",` +
 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
@@ -180,7 +180,7 @@ func TestSign(t *testing.T) {
 		}
 	})
 
-	t.Run("RFC7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
+	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
 		sigKey := jwa.None.New().NewSigningKey(nil)
 		header := jws.NewHeader()
 		header.SetAlgorithm(jwa.None)

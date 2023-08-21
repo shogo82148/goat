@@ -65,7 +65,7 @@ func NewHeader() *Header {
 	}
 }
 
-// Algorithm is RFC7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
+// Algorithm is RFC 7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
 func (h *Header) Algorithm() jwa.SignatureAlgorithm {
 	return h.alg
 }
@@ -74,7 +74,7 @@ func (h *Header) SetAlgorithm(alg jwa.SignatureAlgorithm) {
 	h.alg = alg
 }
 
-// JWKSetURL is RFC7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
+// JWKSetURL is RFC 7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
 func (h *Header) JWKSetURL() *url.URL {
 	return h.jku
 }
@@ -83,7 +83,7 @@ func (h *Header) SetJWKSetURL(jku *url.URL) {
 	h.jku = jku
 }
 
-// JWK is RFC7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
+// JWK is RFC 7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
 func (h *Header) JWK() *jwk.Key {
 	return h.jwk
 }
@@ -92,7 +92,7 @@ func (h *Header) SetJWK(jwk *jwk.Key) {
 	h.jwk = jwk
 }
 
-// KeyID is RFC7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
+// KeyID is RFC 7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
 func (h *Header) KeyID() string {
 	return h.kid
 }
@@ -101,7 +101,7 @@ func (h *Header) SetKeyID(kid string) {
 	h.kid = kid
 }
 
-// X509URL is RFC7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
+// X509URL is RFC 7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
 func (h *Header) X509URL() *url.URL {
 	return h.x5u
 }
@@ -110,7 +110,7 @@ func (h *Header) SetX509URL(x5u *url.URL) {
 	h.x5u = x5u
 }
 
-// X509CertificateChain is RFC7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
+// X509CertificateChain is RFC 7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
 func (h *Header) X509CertificateChain() []*x509.Certificate {
 	return h.x5c
 }
@@ -119,7 +119,7 @@ func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
 	h.x5c = x5c
 }
 
-// X509CertificateSHA1 is RFC7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
+// X509CertificateSHA1 is RFC 7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA1() []byte {
 	return h.x5t
 }
@@ -128,7 +128,7 @@ func (h *Header) SetX509CertificateSHA1(x5t []byte) {
 	h.x5t = x5t
 }
 
-// X509CertificateSHA256 is RFC7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
+// X509CertificateSHA256 is RFC 7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
 func (h *Header) X509CertificateSHA256() []byte {
 	return h.x5tS256
 }
@@ -137,7 +137,7 @@ func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 	h.x5tS256 = x5tS256
 }
 
-// Type is RFC7517 Section 4.1.9. "typ" (Type) Header Parameter.
+// Type is RFC 7517 Section 4.1.9. "typ" (Type) Header Parameter.
 func (h *Header) Type() string {
 	return h.typ
 }
@@ -146,7 +146,7 @@ func (h *Header) SetType(typ string) {
 	h.typ = typ
 }
 
-// ContentType is RFC7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
+// ContentType is RFC 7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
 func (h *Header) ContentType() string {
 	return h.cty
 }

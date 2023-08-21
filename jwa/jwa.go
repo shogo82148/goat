@@ -262,7 +262,7 @@ func (alg KeyManagementAlgorithm) String() string {
 type KeyAlgorithm string
 
 // EncryptionAlgorithm an algorithm for content encryption
-// defined in RFC7518 5. Cryptographic Algorithms for Content Encryption.
+// defined in RFC 7518 Section.5. Cryptographic Algorithms for Content Encryption.
 type EncryptionAlgorithm string
 
 const (
@@ -374,7 +374,7 @@ const (
 	RSA KeyType = "RSA"
 
 	// OKP is Octet string key pairs
-	// defined in RFC8037 Section 2 Key Type "OKP".
+	// defined in RFC 8037 Section 2. Key Type "OKP".
 	OKP KeyType = "OKP"
 
 	// Oct is Octet sequence (used to represent symmetric keys).
