@@ -1,5 +1,5 @@
-github.com/shogo82148/memoize v0.0.2 h1:KBHGjTpwuKPyCzpNlpNT79hKfmJaheHxpIuqdGzqdIE=
-github.com/shogo82148/memoize v0.0.2/go.mod h1:sOsvhOlJGVR2nHgCzUchvbEeYB6jNvSP9o4SPHgb+bY=
+github.com/shogo82148/memoize v0.0.3 h1:dgPkeH6TM9Vu0hXC0UfeSBEIQVL6i0Q9nscBh5CJZAs=
+github.com/shogo82148/memoize v0.0.3/go.mod h1:sOsvhOlJGVR2nHgCzUchvbEeYB6jNvSP9o4SPHgb+bY=
 github.com/shogo82148/pointer v1.3.0 h1:LW5V2jUAjFNjS8e7k/PgFoh3EavOSB/vvN85aGue5+I=
 github.com/shogo82148/pointer v1.3.0/go.mod h1:agZ5JFpavFPXznbWonIvbG78NDfvDTFppe+7o53up5w=
 golang.org/x/crypto v0.13.0 h1:mvySKfSWJ+UKUii46M40LOvyWfN0s2U+46/jDd0e6Ck=
