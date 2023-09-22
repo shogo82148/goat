@@ -582,8 +582,8 @@ func TestDecoder_GetInt64(t *testing.T) {
 	if !ok {
 		t.Error("want ok, but not")
 	}
-	if v != 9223372036854775807 {
-		t.Errorf("unexpected value, want %d, got %d", 9223372036854775807, v)
+	if got, want := v, int64(9223372036854775807); got != want {
+		t.Errorf("unexpected value, want %d, got %d", want, got)
 	}
 	if err := d.Err(); err != nil {
 		t.Fatal(err)
@@ -594,8 +594,8 @@ func TestDecoder_GetInt64(t *testing.T) {
 	if !ok {
 		t.Error("want ok, but not")
 	}
-	if v != 9007199254740991 {
-		t.Errorf("unexpected value, want %d, got %d", 9007199254740991, v)
+	if got, want := v, int64(9007199254740991); got != want {
+		t.Errorf("unexpected value, want %d, got %d", want, got)
 	}
 	if err := d.Err(); err != nil {
 		t.Fatal(err)
@@ -654,8 +654,8 @@ func TestDecoder_MustInt64(t *testing.T) {
 
 	d = NewDecoder("jsonutils", raw)
 	v := d.MustInt64("integer")
-	if v != 9223372036854775807 {
-		t.Errorf("unexpected value: want %d, got %d", 9223372036854775807, v)
+	if got, want := v, int64(9223372036854775807); got != want {
+		t.Errorf("unexpected value: want %d, got %d", want, got)
 	}
 	if err := d.Err(); err != nil {
 		t.Fatal(err)
