@@ -1,6 +1,7 @@
 package jwk
 
 import (
+	"os"
 	"testing"
 )
 
@@ -175,6 +176,26 @@ func FuzzJWK(f *testing.F) {
 	// RFC 8037 Appendix A.6. ECDH-ES with X25519
 	f.Add(`{"kty":"OKP","crv":"X25519","kid":"Bob",` +
 		`"x":"3p7bfXt9wbTTW2HC7OQ1Nz-DQ8hbeGdNrfx-FG-IK08"}`)
+
+	// RFC 7520 Example JWKs
+	if data, err := os.ReadFile("testdata/rfc7520/3_1.ec_public_key.json"); err == nil {
+		f.Add(string(data))
+	}
+	if data, err := os.ReadFile("testdata/rfc7520/3_2.ec_private_key.json"); err == nil {
+		f.Add(string(data))
+	}
+	if data, err := os.ReadFile("testdata/rfc7520/3_3.rsa_public_key.json"); err == nil {
+		f.Add(string(data))
+	}
+	if data, err := os.ReadFile("testdata/rfc7520/3_4.rsa_private_key.json"); err == nil {
+		f.Add(string(data))
+	}
+	if data, err := os.ReadFile("testdata/rfc7520/3_5.symmetric_key_mac_computation.json"); err == nil {
+		f.Add(string(data))
+	}
+	if data, err := os.ReadFile("testdata/rfc7520/3_6.symmetric_key_encryption.json"); err == nil {
+		f.Add(string(data))
+	}
 
 	f.Fuzz(func(t *testing.T, data string) {
 		key1, err := ParseKey([]byte(data))

@@ -14,6 +14,7 @@ Go Authentication Toolkit
 - [RFC 7517 JSON Web Key (JWK)](https://www.rfc-editor.org/rfc/rfc7517)
 - [RFC 7518 JSON Web Algorithms (JWA)](https://www.rfc-editor.org/rfc/rfc7518)
 - [RFC 7519 JSON Web Token (JWT)](https://www.rfc-editor.org/rfc/rfc7519)
+- [Examples of Protecting Content Using JSON Object Signing and Encryption (JOSE)](https://www.rfc-editor.org/rfc/rfc7520)
 - [RFC 7638 JSON Web Key (JWK) Thumbprint](https://www.rfc-editor.org/rfc/rfc7638)
 - [RFC 7797 JSON Web Signature (JWS) Unencoded Payload Option](https://www.rfc-editor.org/rfc/rfc7797)
 - [RFC 8032 Edwards-Curve Digital Signature Algorithm (EdDSA)](https://www.rfc-editor.org/rfc/rfc8032)
