@@ -1,4 +1,4 @@
-// Package jws handles JSON Web Token defined in RFC 7519.
+// Package jwt handles JSON Web Token defined in RFC 7519.
 package jwt
 
 import (
