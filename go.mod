@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/shogo82148/memoize v0.0.3
 	github.com/shogo82148/pointer v1.3.0
-	golang.org/x/crypto v0.13.0
+	golang.org/x/crypto v0.14.0
 )
 
-require golang.org/x/sys v0.12.0 // indirect
+require golang.org/x/sys v0.13.0 // indirect
