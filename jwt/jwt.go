@@ -2,10 +2,8 @@
 package jwt
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -43,131 +41,6 @@ type Claims struct {
 	// Raw is the raw data of JSON-decoded JOSE header.
 	// JSON numbers are decoded as json.Number to avoid data loss.
 	Raw map[string]any
-}
-
-// Parse parses a JWT.
-func Parse(data []byte, finder KeyFinder) (*Token, error) {
-	// split to segments
-	idx1 := bytes.IndexByte(data, '.')
-	if idx1 < 0 {
-		return nil, errors.New("jwt: failed to parse: invalid format")
-	}
-	idx2 := bytes.IndexByte(data[idx1+1:], '.')
-	if idx2 < 0 {
-		return nil, errors.New("jwt: failed to parse: invalid format")
-	}
-	idx2 += idx1 + 1
-	b64header := data[:idx1]
-	b64payload := data[idx1+1 : idx2]
-	b64signature := data[idx2+1:]
-
-	// pre-allocate buffer
-	size := len(b64header)
-	if len(b64payload) > size {
-		size = len(b64payload)
-	}
-	if len(b64signature) > size {
-		size = len(b64signature)
-	}
-	buf := make([]byte, b64.DecodedLen(size))
-
-	// parse header
-	n, err := b64.Decode(buf[:cap(buf)], b64header)
-	if err != nil {
-		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
-	}
-	buf = buf[:n]
-	var header jws.Header
-	if header.UnmarshalJSON(buf[:n]) != nil {
-		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
-	}
-
-	// verify signature
-	key, err := finder.FindKey(&header)
-	if err != nil {
-		return nil, fmt.Errorf("jwt: failed to find key: %w", err)
-	}
-	n, err = b64.Decode(buf[:cap(buf)], b64signature)
-	if err != nil {
-		return nil, fmt.Errorf("jwt: failed to parse signature: %w", err)
-	}
-	buf = buf[:n]
-	if err := key.Verify(data[:idx2], buf[:n]); err != nil {
-		return nil, fmt.Errorf("jwt: failed to verify signature: %w", err)
-	}
-
-	// parse payload
-	n, err = b64.Decode(buf[:cap(buf)], b64payload)
-	if err != nil {
-		return nil, fmt.Errorf("jwt: failed to parse signature: %w", err)
-	}
-	buf = buf[:n]
-
-	c, err := parseClaims(buf)
-	if err != nil {
-		return nil, err
-	}
-	token := &Token{
-		Header: &header,
-		Claims: c,
-	}
-	return token, nil
-}
-
-func parseClaims(data []byte) (*Claims, error) {
-	now := nowFunc()
-
-	var raw map[string]any
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	if err := dec.Decode(&raw); err != nil {
-		return nil, fmt.Errorf("jwt: failed to parse claims: %w", err)
-	}
-	c := &Claims{
-		Raw: raw,
-	}
-	d := jsonutils.NewDecoder("jwt", raw)
-
-	c.Issuer, _ = d.GetString("iss")
-	c.Subject, _ = d.GetString("sub")
-
-	// In RFC 7519, the "aud" claim is defined as a string or an array of strings.
-	if aud, ok := raw["aud"]; ok {
-		switch aud := aud.(type) {
-		case []any:
-			for _, v := range aud {
-				s, ok := v.(string)
-				if !ok {
-					d.SaveError(fmt.Errorf("jwt: invalid type of aud claim: %T", v))
-				}
-				c.Audience = append(c.Audience, s)
-			}
-		case string:
-			c.Audience = []string{aud}
-		}
-	}
-
-	if t, ok := d.GetTime("exp"); ok {
-		c.ExpirationTime = t
-		if !now.Before(t) {
-			d.SaveError(fmt.Errorf("jwt: token is expired"))
-		}
-	}
-
-	if t, ok := d.GetTime("nbf"); ok {
-		c.NotBefore = t
-		if now.Before(t) {
-			d.SaveError(fmt.Errorf("jwt: token is not valid yet"))
-		}
-	}
-
-	c.IssuedAt, _ = d.GetTime("iat")
-	c.JWTID, _ = d.GetString("jti")
-
-	if err := d.Err(); err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 func Sign(header *jws.Header, claims *Claims, key sig.SigningKey) ([]byte, error) {

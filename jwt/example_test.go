@@ -1,6 +1,7 @@
 package jwt_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -25,8 +26,10 @@ func ExampleParse() {
 	data := "eyJhbGciOiJFZERTQSJ9." +
 		"eyJpc3MiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OC9nb2F0In0." +
 		"40CbHAJKHO_wM6YdpXjrK6b4duHoD14e9fyrUxUvOVGGK_lOCkQCfR0eJWYwLhUwAATHFTI0ppkh1cBidC8DDQ"
-	finder := &jwt.JWKKeyFiner{Key: key}
-	token, err := jwt.Parse([]byte(data), finder)
+	p := &jwt.Parser{
+		KeyFinder: &jwt.JWKKeyFiner{Key: key},
+	}
+	token, err := p.Parse(context.Background(), []byte(data))
 	if err != nil {
 		log.Fatal(err)
 	}
