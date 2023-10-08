@@ -33,12 +33,12 @@ type AlgorithmVerfier interface {
 	VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error
 }
 
-// UnsafeAnyAlgorithm is an AlgorithmVerfier that accepts any algorithm.
-var UnsafeAnyAlgorithm = unsafeAnyAlgorithmVerifier{}
+// UnsecureAnyAlgorithm is an AlgorithmVerfier that accepts any algorithm.
+var UnsecureAnyAlgorithm = unsecureAnyAlgorithmVerifier{}
 
-type unsafeAnyAlgorithmVerifier struct{}
+type unsecureAnyAlgorithmVerifier struct{}
 
-func (unsafeAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
+func (unsecureAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
 	return nil
 }
 
