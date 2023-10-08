@@ -228,34 +228,39 @@ func TestParse_Claims(t *testing.T) {
 // 	})
 // }
 
-// func BenchmarkParse(b *testing.B) {
-// 	defer mockTime(func() time.Time {
-// 		return time.Unix(1300819379, 0)
-// 	})()
+func BenchmarkParse(b *testing.B) {
+	mockTime(b, func() time.Time {
+		return time.Unix(1300819379, 0)
+	})
 
-// 	raw := []byte(
-// 		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
-// 			"." +
-// 			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
-// 			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
-// 			"." +
-// 			"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
-// 	)
-// 	rawKey := `{"kty":"oct",` +
-// 		`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
-// 		`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
-// 		`}`
-// 	key, err := jwk.ParseKey([]byte(rawKey))
-// 	if err != nil {
-// 		b.Fatal(err)
-// 	}
-// 	finder := &JWKKeyFiner{Key: key}
+	raw := []byte(
+		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
+			"." +
+			"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFt" +
+			"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
+			"." +
+			"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+	)
+	rawKey := `{"kty":"oct",` +
+		`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+		`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+		`}`
+	key, err := jwk.ParseKey([]byte(rawKey))
+	if err != nil {
+		b.Fatal(err)
+	}
+	p := &Parser{
+		KeyFinder:             &JWKKeyFiner{Key: key},
+		AlgorithmVerfier:      AllowedAlgorithms{jwa.HS256},
+		IssuerSubjectVerifier: Issuer("joe"),
+		AudienceVerifier:      UnsecureAnyAudience,
+	}
 
-// 	b.ResetTimer()
-// 	for i := 0; i < b.N; i++ {
-// 		_, err := Parse(raw, finder)
-// 		if err != nil {
-// 			b.Fatal(err)
-// 		}
-// 	}
-// }
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := p.Parse(context.Background(), raw)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
