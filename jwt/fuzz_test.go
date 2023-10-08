@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"context"
 	"errors"
 	"reflect"
 	"testing"
@@ -15,9 +16,9 @@ import (
 )
 
 func FuzzJWT(f *testing.F) {
-	defer mockTime(func() time.Time {
+	mockTime(f, func() time.Time {
 		return time.Unix(1300819379, 0)
-	})()
+	})
 
 	f.Add(
 		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"+
@@ -95,14 +96,20 @@ func FuzzJWT(f *testing.F) {
 			return
 		}
 		var sigKey sig.SigningKey
-		token1, err := Parse([]byte(data), FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-			alg := header.Algorithm()
-			if !alg.Available() {
-				return nil, errors.New("unknown algorithm")
-			}
-			sigKey = alg.New().NewSigningKey(k)
-			return sigKey, nil
-		}))
+		p := &Parser{
+			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.SigningKey, error) {
+				alg := header.Algorithm()
+				if !alg.Available() {
+					return nil, errors.New("unknown algorithm")
+				}
+				sigKey = alg.New().NewSigningKey(k)
+				return sigKey, nil
+			}),
+			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+			AudienceVerifier:      UnsecureAnyAudience,
+		}
+		token1, err := p.Parse(context.Background(), []byte(data))
 		if err != nil {
 			return
 		}
@@ -114,9 +121,15 @@ func FuzzJWT(f *testing.F) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		token2, err := Parse(signed, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-			return sigKey, nil
-		}))
+		p = &Parser{
+			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.SigningKey, error) {
+				return sigKey, nil
+			}),
+			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+			AudienceVerifier:      UnsecureAnyAudience,
+		}
+		token2, err := p.Parse(context.Background(), signed)
 		if err != nil {
 			t.Fatal(err)
 		}

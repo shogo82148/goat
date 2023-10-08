@@ -1,6 +1,7 @@
 package jws
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -54,13 +55,17 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, body, err := msg.Verify(FindKeyFunc(func(protected, unprotected *Header) (key sig.SigningKey, err error) {
-			if protected.KeyID() != tv.Input.Key.KeyID() {
-				return nil, errors.New("key not found")
-			}
-			alg := tv.Input.Algorithm.New()
-			return alg.NewSigningKey(tv.Input.Key), nil
-		}))
+		v := &Verifier{
+			AlgorithmVerfier: AllowedAlgorithms{tv.Input.Algorithm},
+			KeyFinder: FindKeyFunc(func(_ context.Context, protected, unprotected *Header) (key sig.SigningKey, err error) {
+				if protected.KeyID() != tv.Input.Key.KeyID() {
+					return nil, errors.New("key not found")
+				}
+				alg := tv.Input.Algorithm.New()
+				return alg.NewSigningKey(tv.Input.Key), nil
+			}),
+		}
+		_, body, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -69,13 +74,17 @@ func TestRFC7520(t *testing.T) {
 		}
 
 		// verify the signature of the JSON serialization.
-		_, body, err = tv.Output.JSON.Verify(FindKeyFunc(func(protected, unprotected *Header) (key sig.SigningKey, err error) {
-			if protected.KeyID() != tv.Input.Key.KeyID() {
-				return nil, errors.New("key not found")
-			}
-			alg := tv.Input.Algorithm.New()
-			return alg.NewSigningKey(tv.Input.Key), nil
-		}))
+		v = &Verifier{
+			AlgorithmVerfier: AllowedAlgorithms{tv.Input.Algorithm},
+			KeyFinder: FindKeyFunc(func(_ context.Context, protected, unprotected *Header) (key sig.SigningKey, err error) {
+				if protected.KeyID() != tv.Input.Key.KeyID() {
+					return nil, errors.New("key not found")
+				}
+				alg := tv.Input.Algorithm.New()
+				return alg.NewSigningKey(tv.Input.Key), nil
+			}),
+		}
+		_, body, err = v.Verify(context.Background(), tv.Output.JSON)
 		if err != nil {
 			t.Fatal(err)
 		}

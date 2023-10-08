@@ -70,6 +70,7 @@ func (h *Header) Algorithm() jwa.SignatureAlgorithm {
 	return h.alg
 }
 
+// SetAlgorithm sets RFC 7515 Section 4.1.1. "alg" (Algorithm) Header Parameter.
 func (h *Header) SetAlgorithm(alg jwa.SignatureAlgorithm) {
 	h.alg = alg
 }
@@ -79,6 +80,7 @@ func (h *Header) JWKSetURL() *url.URL {
 	return h.jku
 }
 
+// SetJWKSetURL sets RFC 7515 Section 4.1.2. "jku" (JWK Set URL) Header Parameter.
 func (h *Header) SetJWKSetURL(jku *url.URL) {
 	h.jku = jku
 }
@@ -88,6 +90,7 @@ func (h *Header) JWK() *jwk.Key {
 	return h.jwk
 }
 
+// SetJWK sets RFC 7515 Section 4.1.3. "jwk" (JSON Web Key) Header Parameter.
 func (h *Header) SetJWK(jwk *jwk.Key) {
 	h.jwk = jwk
 }
@@ -97,6 +100,7 @@ func (h *Header) KeyID() string {
 	return h.kid
 }
 
+// SetKeyID sets RFC 7515 Section 4.1.4. "kid" (Key ID) Header Parameter.
 func (h *Header) SetKeyID(kid string) {
 	h.kid = kid
 }
@@ -106,6 +110,7 @@ func (h *Header) X509URL() *url.URL {
 	return h.x5u
 }
 
+// SetX509URL sets RFC 7515 Section 4.1.5. "x5u" (X.509 URL) Header Parameter.
 func (h *Header) SetX509URL(x5u *url.URL) {
 	h.x5u = x5u
 }
@@ -115,6 +120,7 @@ func (h *Header) X509CertificateChain() []*x509.Certificate {
 	return h.x5c
 }
 
+// SetX509CertificateChain sets RFC 7515 Section 4.1.6. "x5c" (X.509 Certificate Chain) Header Parameter.
 func (h *Header) SetX509CertificateChain(x5c []*x509.Certificate) {
 	h.x5c = x5c
 }
@@ -124,6 +130,7 @@ func (h *Header) X509CertificateSHA1() []byte {
 	return h.x5t
 }
 
+// SetX509CertificateSHA1 sets RFC 7515 Section 4.1.7. "x5t" (X.509 Certificate SHA-1 Thumbprint) Header Parameter.
 func (h *Header) SetX509CertificateSHA1(x5t []byte) {
 	h.x5t = x5t
 }
@@ -133,6 +140,7 @@ func (h *Header) X509CertificateSHA256() []byte {
 	return h.x5tS256
 }
 
+// SetX509CertificateSHA256 sets RFC 7517 Section 4.1.8. "x5t#S256" (X.509 Certificate SHA-256 Thumbprint) Header Parameter.
 func (h *Header) SetX509CertificateSHA256(x5tS256 []byte) {
 	h.x5tS256 = x5tS256
 }
@@ -142,6 +150,7 @@ func (h *Header) Type() string {
 	return h.typ
 }
 
+// SetType sets RFC 7517 Section 4.1.9. "typ" (Type) Header Parameter.
 func (h *Header) SetType(typ string) {
 	h.typ = typ
 }
@@ -151,6 +160,7 @@ func (h *Header) ContentType() string {
 	return h.cty
 }
 
+// SetContentType sets RFC 7517 Section 4.1.10. "cty" (Content Type) Header Parameter.
 func (h *Header) SetContentType(cty string) {
 	h.cty = cty
 }
@@ -614,55 +624,6 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		return nil, err
 	}
 	return e.Data(), nil
-}
-
-// KeyFinder is a wrapper for the FindKey method.
-type KeyFinder interface {
-	FindKey(protected, unprotected *Header) (key sig.SigningKey, err error)
-}
-
-type FindKeyFunc func(protected, unprotected *Header) (key sig.SigningKey, err error)
-
-func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.SigningKey, err error) {
-	return f(protected, unprotected)
-}
-
-// Verify verifies the JWS message.
-func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
-	// pre-allocate buffer
-	size := 0
-	for _, sig := range msg.Signatures {
-		if len(sig.raw) > size {
-			size = len(sig.raw)
-		}
-	}
-	size += len(msg.payload) + 1 // +1 for '.'
-	buf := make([]byte, size)
-
-	for _, sig := range msg.Signatures {
-		key, err := finder.FindKey(sig.protected, sig.header)
-		if err != nil {
-			continue
-		}
-		buf = buf[:0]
-		buf = append(buf, sig.raw...)
-		buf = append(buf, '.')
-		buf = append(buf, msg.payload...)
-		err = key.Verify(buf, sig.signature)
-		if err == nil {
-			var ret []byte
-			if sig.protected.b64 {
-				ret, err = b64Decode(msg.payload)
-				if err != nil {
-					return nil, nil, errors.New("jws: failed to verify the message")
-				}
-			} else {
-				ret = msg.payload
-			}
-			return sig.protected, ret, nil
-		}
-	}
-	return nil, nil, errors.New("jws: failed to verify the message")
 }
 
 // Sign adds a new signature signed by key.

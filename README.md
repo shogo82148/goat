@@ -22,3 +22,8 @@ Go Authentication Toolkit
 - [RFC 8812 CBOR Object Signing and Encryption (COSE) and JSON Object Signing and Encryption (JOSE) Registrations for Web Authentication (WebAuthn) Algorithms](https://datatracker.ietf.org/doc/html/rfc8812)
 - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 - [OpenID Connect Discovery 1.0](https://openid.net/specs/openid-connect-discovery-1_0.html)
+
+## Related Works
+
+- [github.com/golang-jwt/jwt](https://github.com/golang-jwt/jwt)
+- [github.com/lestrrat-go/jwx](https://github.com/lestrrat-go/jwx)

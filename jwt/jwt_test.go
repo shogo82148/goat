@@ -1,6 +1,7 @@
 package jwt
 
 import (
+	"context"
 	"encoding/base64"
 	"testing"
 	"time"
@@ -13,18 +14,17 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-func mockTime(f func() time.Time) func() {
+// mockTime overwrites current time for testing.
+func mockTime(t testing.TB, f func() time.Time) {
 	g := nowFunc
 	nowFunc = f
-	return func() {
-		nowFunc = g
-	}
+	t.Cleanup(func() { nowFunc = g })
 }
 
 func TestParse(t *testing.T) {
-	defer mockTime(func() time.Time {
+	mockTime(t, func() time.Time {
 		return time.Unix(1300819379, 0)
-	})()
+	})
 
 	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
 		raw := []byte(
@@ -43,8 +43,13 @@ func TestParse(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		finder := &JWKKeyFiner{Key: key}
-		token, err := Parse(raw, finder)
+		p := &Parser{
+			KeyFinder:             &JWKKeyFiner{Key: key},
+			AlgorithmVerfier:      AllowedAlgorithms{jwa.HS256},
+			IssuerSubjectVerifier: Issuer("joe"),
+			AudienceVerifier:      UnsecureAnyAudience,
+		}
+		token, err := p.Parse(context.Background(), raw)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -69,10 +74,16 @@ func TestParse(t *testing.T) {
 				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 				".",
 		)
-		token, err := Parse(raw, FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-			alg := header.Algorithm().New()
-			return alg.NewSigningKey(nil), nil
-		}))
+		p := &Parser{
+			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (key sig.SigningKey, err error) {
+				alg := header.Algorithm().New()
+				return alg.NewSigningKey(nil), nil
+			}),
+			AlgorithmVerfier:      AllowedAlgorithms{jwa.None},
+			IssuerSubjectVerifier: Issuer("joe"),
+			AudienceVerifier:      UnsecureAnyAudience,
+		}
+		token, err := p.Parse(context.Background(), raw)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -92,48 +103,55 @@ func TestParse(t *testing.T) {
 
 func TestParse_Claims(t *testing.T) {
 	var now time.Time
-	defer mockTime(func() time.Time {
+	mockTime(t, func() time.Time {
 		return now
-	})()
-
-	algNone := FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-		alg := jwa.None.New()
-		return alg.NewSigningKey(nil), nil
 	})
+
+	p := &Parser{
+		KeyFinder: FindKeyFunc(func(_ context.Context, header *jws.Header) (sig.SigningKey, error) {
+			alg := jwa.None.New()
+			return alg.NewSigningKey(nil), nil
+		}),
+		AlgorithmVerfier:      AllowedAlgorithms{jwa.None},
+		IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+		AudienceVerifier:      UnsecureAnyAudience,
+	}
 
 	var err error
 	var token, data []byte
 
+	// test "exp" claim
 	token = []byte(`{"exp":1300819380}`)
 	data = []byte(
 		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before expiration time
-	_, err = Parse(data, algNone)
+	_, err = p.Parse(context.Background(), data)
 	if err != nil {
 		t.Error(err)
 	}
 
 	now = time.Unix(1300819380, 0) // just expiration time
-	_, err = Parse(data, algNone)
+	_, err = p.Parse(context.Background(), data)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
 
+	// test "nbf" claim
 	token = []byte(`{"nbf":1300819380}`)
 	data = []byte(
 		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before the token is valid
-	_, err = Parse(data, algNone)
+	_, err = p.Parse(context.Background(), data)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
 
 	now = time.Unix(1300819380, 0) // just activated
-	_, err = Parse(data, algNone)
+	_, err = p.Parse(context.Background(), data)
 	if err != nil {
 		t.Error(err)
 	}
@@ -211,9 +229,9 @@ func TestSign(t *testing.T) {
 }
 
 func BenchmarkParse(b *testing.B) {
-	defer mockTime(func() time.Time {
+	mockTime(b, func() time.Time {
 		return time.Unix(1300819379, 0)
-	})()
+	})
 
 	raw := []byte(
 		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
@@ -231,11 +249,16 @@ func BenchmarkParse(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	finder := &JWKKeyFiner{Key: key}
+	p := &Parser{
+		KeyFinder:             &JWKKeyFiner{Key: key},
+		AlgorithmVerfier:      AllowedAlgorithms{jwa.HS256},
+		IssuerSubjectVerifier: Issuer("joe"),
+		AudienceVerifier:      UnsecureAnyAudience,
+	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_, err := Parse(raw, finder)
+		_, err := p.Parse(context.Background(), raw)
 		if err != nil {
 			b.Fatal(err)
 		}
