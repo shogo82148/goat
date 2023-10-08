@@ -1,25 +1,11 @@
 package jws
 
 import (
+	"context"
 	"errors"
-
-	"github.com/shogo82148/goat/sig"
 )
 
 var errVerifyFailed = errors.New("jws: failed to verify the message")
-
-// KeyFinder is a wrapper for the FindKey method.
-type KeyFinder interface {
-	// FindKey finds a signing key for the JWS message.
-	FindKey(protected, unprotected *Header) (key sig.SigningKey, err error)
-}
-
-// FindKeyFunc is an adapter to allow the use of ordinary functions as KeyFinder.
-type FindKeyFunc func(protected, unprotected *Header) (key sig.SigningKey, err error)
-
-func (f FindKeyFunc) FindKey(protected, unprotected *Header) (key sig.SigningKey, err error) {
-	return f(protected, unprotected)
-}
 
 // Verifier verifies the JWS message.
 type Verifier struct {
@@ -27,7 +13,7 @@ type Verifier struct {
 }
 
 // Verify verifies the JWS message.
-func (v *Verifier) Verify(msg *Message) (protected *Header, payload []byte, err error) {
+func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header, payload []byte, err error) {
 	// pre-allocate buffer
 	size := 0
 	for _, sig := range msg.Signatures {
@@ -39,7 +25,7 @@ func (v *Verifier) Verify(msg *Message) (protected *Header, payload []byte, err 
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
-		key, err := v.KeyFinder.FindKey(sig.protected, sig.header)
+		key, err := v.KeyFinder.FindKey(ctx, sig.protected, sig.header)
 		if err != nil {
 			continue
 		}

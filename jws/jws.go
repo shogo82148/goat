@@ -626,16 +626,6 @@ func encodeHeader(h *Header) (map[string]any, error) {
 	return e.Data(), nil
 }
 
-// Verify verifies the JWS message.
-//
-// Deprecated: Use [Verifier.Verify] instead.
-func (msg *Message) Verify(finder KeyFinder) (*Header, []byte, error) {
-	v := &Verifier{
-		KeyFinder: finder,
-	}
-	return v.Verify(msg)
-}
-
 // Sign adds a new signature signed by key.
 func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	// encode the header

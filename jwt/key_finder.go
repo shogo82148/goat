@@ -11,12 +11,6 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-// Token is a decoded JWT token.
-type Token struct {
-	Header *jws.Header
-	Claims *Claims
-}
-
 type JWKSKeyFinder struct {
 	JWKS *jwk.Set
 }

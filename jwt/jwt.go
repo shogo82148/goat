@@ -43,6 +43,12 @@ type Claims struct {
 	Raw map[string]any
 }
 
+// Token is a decoded JWT token.
+type Token struct {
+	Header *jws.Header
+	Claims *Claims
+}
+
 func Sign(header *jws.Header, claims *Claims, key sig.SigningKey) ([]byte, error) {
 	payload, err := encodeClaims(claims)
 	if err != nil {
