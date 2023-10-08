@@ -56,7 +56,7 @@ func TestRFC7520(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{tv.Input.Algorithm},
+			AlgorithmVerifier: AllowedAlgorithms{tv.Input.Algorithm},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, unprotected *Header) (key sig.SigningKey, err error) {
 				if protected.KeyID() != tv.Input.Key.KeyID() {
 					return nil, errors.New("key not found")
@@ -75,7 +75,7 @@ func TestRFC7520(t *testing.T) {
 
 		// verify the signature of the JSON serialization.
 		v = &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{tv.Input.Algorithm},
+			AlgorithmVerifier: AllowedAlgorithms{tv.Input.Algorithm},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, unprotected *Header) (key sig.SigningKey, err error) {
 				if protected.KeyID() != tv.Input.Key.KeyID() {
 					return nil, errors.New("key not found")

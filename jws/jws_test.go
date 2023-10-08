@@ -36,8 +36,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.HS256},
-			KeyFinder:        &JWKKeyFinder{JWK: key},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.HS256},
+			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -113,8 +113,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.RS256},
-			KeyFinder:        &JWKKeyFinder{JWK: key},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.RS256},
+			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -159,8 +159,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.ES256},
-			KeyFinder:        &JWKKeyFinder{JWK: key},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -211,8 +211,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.ES512},
-			KeyFinder:        &JWKKeyFinder{JWK: key},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.ES512},
+			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -247,7 +247,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.None},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.None},
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header, _ *Header) (sig.SigningKey, error) {
 				return header.Algorithm().New().NewSigningKey(nil), nil
 			}),
@@ -278,8 +278,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
-			KeyFinder:        &JWKKeyFinder{JWK: key},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.EdDSA},
+			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
 		raw := "eyJhbGciOiJFZERTQSJ9" +
@@ -338,7 +338,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.RS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.RS256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "2010-12-29" {
 					return nil, errors.New("unknown key id")
@@ -392,7 +392,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 
 		v = &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.ES256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 					return nil, errors.New("unknown key id")
@@ -436,7 +436,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.ES256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 					return nil, errors.New("unknown key id")
@@ -481,7 +481,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.HS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.HS256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				rawKey := `{` +
 					`"kty":"oct",` +
@@ -850,8 +850,8 @@ func TestKeyTypeMissmatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := &Verifier{
-		AlgorithmVerfier: AllowedAlgorithms{jwa.ES256},
-		KeyFinder:        &JWKKeyFinder{JWK: key},
+		AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+		KeyFinder:         &JWKKeyFinder{JWK: key},
 	}
 	msg, err := Parse(raw)
 	if err != nil {

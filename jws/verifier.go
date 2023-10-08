@@ -9,8 +9,8 @@ import (
 
 var errVerifyFailed = errors.New("jws: failed to verify the message")
 
-// AlgorithmVerfier verifies the algorithm used for signing.
-type AlgorithmVerfier interface {
+// AlgorithmVerifier verifies the algorithm used for signing.
+type AlgorithmVerifier interface {
 	VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error
 }
 
@@ -25,7 +25,7 @@ func (a AllowedAlgorithms) VerifyAlgorithm(ctx context.Context, alg jwa.Signatur
 	return errors.New("jws: signing algorithm is not allowed")
 }
 
-// UnsecureAnyAlgorithm is an AlgorithmVerfier that accepts any algorithm.
+// UnsecureAnyAlgorithm is an AlgorithmVerifier that accepts any algorithm.
 var UnsecureAnyAlgorithm = unsecureAnyAlgorithmVerifier{}
 
 type unsecureAnyAlgorithmVerifier struct{}
@@ -38,14 +38,14 @@ func (unsecureAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa
 type Verifier struct {
 	_NamedFieldsRequired struct{}
 
-	AlgorithmVerfier AlgorithmVerfier
-	KeyFinder        KeyFinder
+	AlgorithmVerifier AlgorithmVerifier
+	KeyFinder         KeyFinder
 }
 
 // Verify verifies the JWS message.
 func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header, payload []byte, err error) {
 	_ = v._NamedFieldsRequired
-	if v.AlgorithmVerfier == nil || v.KeyFinder == nil {
+	if v.AlgorithmVerifier == nil || v.KeyFinder == nil {
 		return nil, nil, errors.New("jws: verifier is not configured")
 	}
 
@@ -60,7 +60,7 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header,
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
-		if err := v.AlgorithmVerfier.VerifyAlgorithm(ctx, sig.protected.alg); err != nil {
+		if err := v.AlgorithmVerifier.VerifyAlgorithm(ctx, sig.protected.alg); err != nil {
 			continue
 		}
 		key, err := v.KeyFinder.FindKey(ctx, sig.protected, sig.header)

@@ -18,8 +18,8 @@ func ExampleParse() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerfier: jws.AllowedAlgorithms{jwa.EdDSA},
-		KeyFinder:        &jws.JWKKeyFinder{JWK: key},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.EdDSA},
+		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
 	raw := "eyJhbGciOiJFZERTQSJ9" +
@@ -51,8 +51,8 @@ func ExampleVerifier_Verify() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerfier: jws.AllowedAlgorithms{jwa.EdDSA},
-		KeyFinder:        &jws.JWKKeyFinder{JWK: key},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.EdDSA},
+		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
 	raw := "eyJhbGciOiJFZERTQSJ9" +
