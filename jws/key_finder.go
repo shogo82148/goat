@@ -2,6 +2,7 @@ package jws
 
 import (
 	"context"
+	"errors"
 
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/sig"
@@ -25,6 +26,9 @@ type JWKKeyFinder struct {
 }
 
 func (f *JWKKeyFinder) FindKey(ctx context.Context, protected, unprotected *Header) (key sig.SigningKey, err error) {
-	alg := protected.Algorithm().New()
-	return alg.NewSigningKey(f.JWK), nil
+	alg := protected.Algorithm()
+	if !alg.Available() {
+		return nil, errors.New("jws: algorithm not available")
+	}
+	return alg.New().NewSigningKey(f.JWK), nil
 }
