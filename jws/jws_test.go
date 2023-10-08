@@ -34,7 +34,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			KeyFinder: &JWKKeyFinder{JWK: key},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.HS256},
+			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -110,7 +111,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			KeyFinder: &JWKKeyFinder{JWK: key},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.RS256},
+			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -155,7 +157,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			KeyFinder: &JWKKeyFinder{JWK: key},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
+			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -206,7 +209,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			KeyFinder: &JWKKeyFinder{JWK: key},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
+			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
 		msg, err := Parse(raw)
@@ -241,6 +245,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
+			AlgorithmVerfier: AllowedAlgorithms{jwa.None},
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header, _ *Header) (sig.SigningKey, error) {
 				return header.Algorithm().New().NewSigningKey(nil), nil
 			}),
@@ -271,7 +276,8 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			KeyFinder: &JWKKeyFinder{JWK: key},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
+			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
 		raw := "eyJhbGciOiJFZERTQSJ9" +
