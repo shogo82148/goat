@@ -159,7 +159,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.ES256},
 			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 
@@ -211,7 +211,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerfier: AllowedAlgorithms{jwa.EdDSA},
+			AlgorithmVerfier: AllowedAlgorithms{jwa.ES512},
 			KeyFinder:        &JWKKeyFinder{JWK: key},
 		}
 

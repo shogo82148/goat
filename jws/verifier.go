@@ -60,6 +60,9 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header,
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
+		if err := v.AlgorithmVerfier.VerifyAlgorithm(ctx, sig.protected.alg); err != nil {
+			continue
+		}
 		key, err := v.KeyFinder.FindKey(ctx, sig.protected, sig.header)
 		if err != nil {
 			continue
