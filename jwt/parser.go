@@ -28,12 +28,12 @@ func (f FindKeyFunc) FindKey(ctx context.Context, header *jws.Header) (sig.Signi
 	return f(ctx, header)
 }
 
-// AlgorithmVerfier verifies the algorithm used for signing.
-type AlgorithmVerfier interface {
+// AlgorithmVerifier verifies the algorithm used for signing.
+type AlgorithmVerifier interface {
 	VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error
 }
 
-// UnsecureAnyAlgorithm is an AlgorithmVerfier that accepts any algorithm.
+// UnsecureAnyAlgorithm is an AlgorithmVerifier that accepts any algorithm.
 var UnsecureAnyAlgorithm = unsecureAnyAlgorithmVerifier{}
 
 type unsecureAnyAlgorithmVerifier struct{}
@@ -42,7 +42,7 @@ func (unsecureAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa
 	return nil
 }
 
-// AllowedAlgorithms is an AlgorithmVerfier that accepts only the specified algorithms.
+// AllowedAlgorithms is an AlgorithmVerifier that accepts only the specified algorithms.
 type AllowedAlgorithms []jwa.SignatureAlgorithm
 
 func (a AllowedAlgorithms) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
@@ -108,7 +108,7 @@ type Parser struct {
 	_NamedFieldsRequired struct{}
 
 	KeyFinder             KeyFinder
-	AlgorithmVerfier      AlgorithmVerfier
+	AlgorithmVerifier     AlgorithmVerifier
 	IssuerSubjectVerifier IssuerSubjectVerifier
 	AudienceVerifier      AudienceVerifier
 }
@@ -116,7 +116,7 @@ type Parser struct {
 func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	// verify the parser options
 	_ = p._NamedFieldsRequired
-	if p.KeyFinder == nil || p.AlgorithmVerfier == nil || p.IssuerSubjectVerifier == nil || p.AudienceVerifier == nil {
+	if p.KeyFinder == nil || p.AlgorithmVerifier == nil || p.IssuerSubjectVerifier == nil || p.AudienceVerifier == nil {
 		return nil, errors.New("jwt: parser is not configured")
 	}
 
@@ -154,7 +154,7 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	if header.UnmarshalJSON(buf[:n]) != nil {
 		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
 	}
-	if err := p.AlgorithmVerfier.VerifyAlgorithm(ctx, header.Algorithm()); err != nil {
+	if err := p.AlgorithmVerifier.VerifyAlgorithm(ctx, header.Algorithm()); err != nil {
 		return nil, fmt.Errorf("jwt: failed to verify algorithm: %w", err)
 	}
 

@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 		}
 		p := &Parser{
 			KeyFinder:             &JWKKeyFiner{Key: key},
-			AlgorithmVerfier:      AllowedAlgorithms{jwa.HS256},
+			AlgorithmVerifier:     AllowedAlgorithms{jwa.HS256},
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
@@ -79,7 +79,7 @@ func TestParse(t *testing.T) {
 				alg := header.Algorithm().New()
 				return alg.NewSigningKey(nil), nil
 			}),
-			AlgorithmVerfier:      AllowedAlgorithms{jwa.None},
+			AlgorithmVerifier:     AllowedAlgorithms{jwa.None},
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
@@ -112,7 +112,7 @@ func TestParse_Claims(t *testing.T) {
 			alg := jwa.None.New()
 			return alg.NewSigningKey(nil), nil
 		}),
-		AlgorithmVerfier:      AllowedAlgorithms{jwa.None},
+		AlgorithmVerifier:     AllowedAlgorithms{jwa.None},
 		IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 		AudienceVerifier:      UnsecureAnyAudience,
 	}
@@ -251,7 +251,7 @@ func BenchmarkParse(b *testing.B) {
 	}
 	p := &Parser{
 		KeyFinder:             &JWKKeyFiner{Key: key},
-		AlgorithmVerfier:      AllowedAlgorithms{jwa.HS256},
+		AlgorithmVerifier:     AllowedAlgorithms{jwa.HS256},
 		IssuerSubjectVerifier: Issuer("joe"),
 		AudienceVerifier:      UnsecureAnyAudience,
 	}

@@ -105,7 +105,7 @@ func FuzzJWT(f *testing.F) {
 				sigKey = alg.New().NewSigningKey(k)
 				return sigKey, nil
 			}),
-			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			AlgorithmVerifier:     UnsecureAnyAlgorithm,
 			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
@@ -125,7 +125,7 @@ func FuzzJWT(f *testing.F) {
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.SigningKey, error) {
 				return sigKey, nil
 			}),
-			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			AlgorithmVerifier:     UnsecureAnyAlgorithm,
 			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
