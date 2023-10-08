@@ -92,6 +92,17 @@ func (unsecureAnyAudienceVerifier) VerifyAudience(ctx context.Context, aud []str
 	return nil
 }
 
+type Audience string
+
+func (a Audience) VerifyAudience(ctx context.Context, aud []string) error {
+	for _, v := range aud {
+		if v == string(a) {
+			return nil
+		}
+	}
+	return fmt.Errorf("jwt: invalid audience: %s", aud)
+}
+
 // Parser is a JWT parser.
 type Parser struct {
 	_NamedFieldsRequired struct{}

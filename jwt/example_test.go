@@ -24,10 +24,13 @@ func ExampleParse() {
 	}
 
 	data := "eyJhbGciOiJFZERTQSJ9." +
-		"eyJpc3MiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OC9nb2F0In0." +
-		"40CbHAJKHO_wM6YdpXjrK6b4duHoD14e9fyrUxUvOVGGK_lOCkQCfR0eJWYwLhUwAATHFTI0ppkh1cBidC8DDQ"
+		"eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ." +
+		"2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw"
 	p := &jwt.Parser{
-		KeyFinder: &jwt.JWKKeyFiner{Key: key},
+		AlgorithmVerfier:      jwt.AllowedAlgorithms{jwa.EdDSA},
+		KeyFinder:             &jwt.JWKKeyFiner{Key: key},
+		IssuerSubjectVerifier: jwt.Issuer("https://github.com/shogo82148/goat"),
+		AudienceVerifier:      jwt.Audience("https://github.com/shogo82148"),
 	}
 	token, err := p.Parse(context.Background(), []byte(data))
 	if err != nil {
@@ -54,6 +57,7 @@ func ExampleSign() {
 	header.SetAlgorithm(jwa.EdDSA)
 	claims := new(jwt.Claims)
 	claims.Issuer = "https://github.com/shogo82148/goat"
+	claims.Audience = []string{"https://github.com/shogo82148"}
 
 	// sign
 	token, err := jwt.Sign(header, claims, signingKey)
@@ -63,7 +67,7 @@ func ExampleSign() {
 	fmt.Println(string(token))
 
 	// Output:
-	// eyJhbGciOiJFZERTQSJ9.eyJpc3MiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OC9nb2F0In0.40CbHAJKHO_wM6YdpXjrK6b4duHoD14e9fyrUxUvOVGGK_lOCkQCfR0eJWYwLhUwAATHFTI0ppkh1cBidC8DDQ
+	// eyJhbGciOiJFZERTQSJ9.eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ.2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw
 }
 
 func ExampleClaims_DecodeCustom() {
