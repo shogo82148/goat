@@ -16,9 +16,9 @@ import (
 )
 
 func FuzzJWT(f *testing.F) {
-	defer mockTime(func() time.Time {
+	mockTime(f, func() time.Time {
 		return time.Unix(1300819379, 0)
-	})()
+	})
 
 	f.Add(
 		"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9"+

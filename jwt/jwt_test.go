@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"context"
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -13,18 +14,17 @@ import (
 	"github.com/shogo82148/goat/sig"
 )
 
-func mockTime(f func() time.Time) func() {
+// mockTime overwrites current time for testing.
+func mockTime(t testing.TB, f func() time.Time) {
 	g := nowFunc
 	nowFunc = f
-	return func() {
-		nowFunc = g
-	}
+	t.Cleanup(func() { nowFunc = g })
 }
 
 func TestParse(t *testing.T) {
-	defer mockTime(func() time.Time {
+	mockTime(t, func() time.Time {
 		return time.Unix(1300819379, 0)
-	})()
+	})
 
 	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
 		raw := []byte(
@@ -101,54 +101,61 @@ func TestParse(t *testing.T) {
 	})
 }
 
-// func TestParse_Claims(t *testing.T) {
-// 	var now time.Time
-// 	defer mockTime(func() time.Time {
-// 		return now
-// 	})()
+func TestParse_Claims(t *testing.T) {
+	var now time.Time
+	mockTime(t, func() time.Time {
+		return now
+	})
 
-// 	algNone := FindKeyFunc(func(header *jws.Header) (sig.SigningKey, error) {
-// 		alg := jwa.None.New()
-// 		return alg.NewSigningKey(nil), nil
-// 	})
+	p := &Parser{
+		KeyFinder: FindKeyFunc(func(_ context.Context, header *jws.Header) (sig.SigningKey, error) {
+			alg := jwa.None.New()
+			return alg.NewSigningKey(nil), nil
+		}),
+		AlgorithmVerfier:      AllowedAlgorithms{jwa.None},
+		IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+		AudienceVerifier:      UnsecureAnyAudience,
+	}
 
-// 	var err error
-// 	var token, data []byte
+	var err error
+	var token, data []byte
 
-// 	token = []byte(`{"exp":1300819380}`)
-// 	data = []byte(
-// 		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
-// 			base64.RawURLEncoding.EncodeToString(token) + ".")
+	// test "exp" claim
+	token = []byte(`{"exp":1300819380}`)
+	data = []byte(
+		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
+			base64.RawURLEncoding.EncodeToString(token) + ".")
 
-// 	now = time.Unix(1300819380, -1) // 1ns before expiration time
-// 	_, err = Parse(data, algNone)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+	now = time.Unix(1300819380, -1) // 1ns before expiration time
+	_, err = p.Parse(context.Background(), data)
+	if err != nil {
+		t.Error(err)
+	}
 
-// 	now = time.Unix(1300819380, 0) // just expiration time
-// 	_, err = Parse(data, algNone)
-// 	if err == nil {
-// 		t.Error("want some error, but not")
-// 	}
+	now = time.Unix(1300819380, 0) // just expiration time
+	_, err = p.Parse(context.Background(), data)
+	if err == nil {
+		t.Error("want some error, but not")
+	}
 
-// 	token = []byte(`{"nbf":1300819380}`)
-// 	data = []byte(
-// 		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
-// 			base64.RawURLEncoding.EncodeToString(token) + ".")
+	// test "nbf" claim
+	token = []byte(`{"nbf":1300819380}`)
+	data = []byte(
+		"eyJhbGciOiJub25lIn0." + // {"alg":"none"}
+			base64.RawURLEncoding.EncodeToString(token) + ".")
 
-// 	now = time.Unix(1300819380, -1) // 1ns before the token is valid
-// 	_, err = Parse(data, algNone)
-// 	if err == nil {
-// 		t.Error("want some error, but not")
-// 	}
+	now = time.Unix(1300819380, -1) // 1ns before the token is valid
+	_, err = p.Parse(context.Background(), data)
+	if err == nil {
+		t.Error("want some error, but not")
+	}
 
-// 	now = time.Unix(1300819380, 0) // just activated
-// 	_, err = Parse(data, algNone)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// }
+	now = time.Unix(1300819380, 0) // just activated
+	_, err = p.Parse(context.Background(), data)
+	if err != nil {
+		t.Error(err)
+	}
+}
 
 // func TestSign(t *testing.T) {
 
