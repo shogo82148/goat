@@ -27,7 +27,7 @@ func ExampleParse() {
 		"eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ." +
 		"2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw"
 	p := &jwt.Parser{
-		AlgorithmVerfier:      jwt.AllowedAlgorithms{jwa.EdDSA},
+		AlgorithmVerifier:     jwt.AllowedAlgorithms{jwa.EdDSA},
 		KeyFinder:             &jwt.JWKKeyFiner{Key: key},
 		IssuerSubjectVerifier: jwt.Issuer("https://github.com/shogo82148/goat"),
 		AudienceVerifier:      jwt.Audience("https://github.com/shogo82148"),

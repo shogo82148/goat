@@ -170,7 +170,7 @@ func FuzzJWS(f *testing.F) {
 		}
 		var header1 *Header
 		v := &Verifier{
-			AlgorithmVerfier: UnsecureAnyAlgorithm,
+			AlgorithmVerifier: UnsecureAnyAlgorithm,
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, unprotected *Header) (sig.SigningKey, error) {
 				alg := protected.Algorithm()
 				if !alg.Available() {
@@ -322,7 +322,7 @@ func FuzzJWSCompact(f *testing.F) {
 		}
 		var sigKey sig.SigningKey
 		v1 := &Verifier{
-			AlgorithmVerfier: UnsecureAnyAlgorithm,
+			AlgorithmVerifier: UnsecureAnyAlgorithm,
 			KeyFinder: FindKeyFunc(func(_ context.Context, header, _ *Header) (sig.SigningKey, error) {
 				alg := header.Algorithm()
 				if !alg.Available() {
@@ -355,7 +355,7 @@ func FuzzJWSCompact(f *testing.F) {
 		}
 
 		v2 := &Verifier{
-			AlgorithmVerfier: UnsecureAnyAlgorithm,
+			AlgorithmVerifier: UnsecureAnyAlgorithm,
 			KeyFinder: FindKeyFunc(func(_ context.Context, header, _ *Header) (sig.SigningKey, error) {
 				return sigKey, nil
 			}),
