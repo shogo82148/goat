@@ -105,6 +105,9 @@ func FuzzJWT(f *testing.F) {
 				sigKey = alg.New().NewSigningKey(k)
 				return sigKey, nil
 			}),
+			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+			AudienceVerifier:      UnsecureAnyAudience,
 		}
 		token1, err := p.Parse(context.Background(), []byte(data))
 		if err != nil {
@@ -122,6 +125,9 @@ func FuzzJWT(f *testing.F) {
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.SigningKey, error) {
 				return sigKey, nil
 			}),
+			AlgorithmVerfier:      UnsecureAnyAlgorithm,
+			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
+			AudienceVerifier:      UnsecureAnyAudience,
 		}
 		token2, err := p.Parse(context.Background(), signed)
 		if err != nil {

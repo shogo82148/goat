@@ -154,6 +154,9 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	if header.UnmarshalJSON(buf[:n]) != nil {
 		return nil, fmt.Errorf("jwt: failed to parse header: %w", err)
 	}
+	if err := p.AlgorithmVerfier.VerifyAlgorithm(ctx, header.Algorithm()); err != nil {
+		return nil, fmt.Errorf("jwt: failed to verify algorithm: %w", err)
+	}
 
 	// verify signature
 	key, err := p.KeyFinder.FindKey(ctx, &header)
