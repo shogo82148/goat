@@ -157,76 +157,76 @@ func TestParse_Claims(t *testing.T) {
 	}
 }
 
-// func TestSign(t *testing.T) {
+func TestSign(t *testing.T) {
 
-// 	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
-// 		rawKey := `{"kty":"oct",` +
-// 			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
-// 			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
-// 			`}`
-// 		key, err := jwk.ParseKey([]byte(rawKey))
-// 		if err != nil {
-// 			t.Fatal(err)
-// 		}
-// 		sigKey := jwa.HS256.New().NewSigningKey(key)
+	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
+		rawKey := `{"kty":"oct",` +
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75` +
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"` +
+			`}`
+		key, err := jwk.ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sigKey := jwa.HS256.New().NewSigningKey(key)
 
-// 		header := jws.NewHeader()
-// 		header.SetAlgorithm(jwa.HS256)
-// 		header.SetType("JWT")
-// 		claims := &Claims{
-// 			Issuer:         "joe",
-// 			ExpirationTime: time.Unix(1300819380, 0),
-// 			Raw: map[string]any{
-// 				"http://example.com/is_root": true,
-// 			},
-// 		}
+		header := jws.NewHeader()
+		header.SetAlgorithm(jwa.HS256)
+		header.SetType("JWT")
+		claims := &Claims{
+			Issuer:         "joe",
+			ExpirationTime: time.Unix(1300819380, 0),
+			Raw: map[string]any{
+				"http://example.com/is_root": true,
+			},
+		}
 
-// 		got, err := Sign(header, claims, sigKey)
-// 		if err != nil {
-// 			t.Fatal(err)
-// 		}
+		got, err := Sign(header, claims, sigKey)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-// 		want := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
-// 			"." +
-// 			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
-// 			"cnVlLCJpc3MiOiJqb2UifQ" +
-// 			"." +
-// 			"tu77b1J0ZCHMDd3tWZm36iolxZtBRaArSrtayOBDO34"
+		want := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" +
+			"." +
+			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
+			"cnVlLCJpc3MiOiJqb2UifQ" +
+			"." +
+			"tu77b1J0ZCHMDd3tWZm36iolxZtBRaArSrtayOBDO34"
 
-// 		if string(got) != want {
-// 			t.Errorf("unexpected payload: want %s, got %s", want, got)
-// 		}
-// 	})
+		if string(got) != want {
+			t.Errorf("unexpected payload: want %s, got %s", want, got)
+		}
+	})
 
-// 	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
-// 		sigKey := jwa.None.New().NewSigningKey(nil)
-// 		header := jws.NewHeader()
-// 		header.SetAlgorithm(jwa.None)
-// 		header.SetType("JWT")
-// 		claims := &Claims{
-// 			Issuer:         "joe",
-// 			ExpirationTime: time.Unix(1300819380, 0),
-// 			Raw: map[string]any{
-// 				"http://example.com/is_root": true,
-// 			},
-// 		}
+	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
+		sigKey := jwa.None.New().NewSigningKey(nil)
+		header := jws.NewHeader()
+		header.SetAlgorithm(jwa.None)
+		header.SetType("JWT")
+		claims := &Claims{
+			Issuer:         "joe",
+			ExpirationTime: time.Unix(1300819380, 0),
+			Raw: map[string]any{
+				"http://example.com/is_root": true,
+			},
+		}
 
-// 		got, err := Sign(header, claims, sigKey)
-// 		if err != nil {
-// 			t.Fatal(err)
-// 		}
+		got, err := Sign(header, claims, sigKey)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-// 		want := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0" +
-// 			"." +
-// 			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
-// 			"cnVlLCJpc3MiOiJqb2UifQ" +
-// 			"."
+		want := "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0" +
+			"." +
+			"eyJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0" +
+			"cnVlLCJpc3MiOiJqb2UifQ" +
+			"."
 
-// 		if string(got) != want {
-// 			t.Errorf("unexpected payload: want %s, got %s", want, got)
-// 		}
-// 	})
-// }
+		if string(got) != want {
+			t.Errorf("unexpected payload: want %s, got %s", want, got)
+		}
+	})
+}
 
 func BenchmarkParse(b *testing.B) {
 	mockTime(b, func() time.Time {
