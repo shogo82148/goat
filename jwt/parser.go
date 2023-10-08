@@ -42,14 +42,54 @@ func (unsecureAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa
 	return nil
 }
 
+// AllowedAlgorithms is an AlgorithmVerfier that accepts only the specified algorithms.
+type AllowedAlgorithms []jwa.SignatureAlgorithm
+
+func (a AllowedAlgorithms) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
+	for _, allowed := range a {
+		if alg == allowed {
+			return nil
+		}
+	}
+	return errors.New("jwt: signing algorithm is not allowed")
+}
+
 // IssuerSubjectVerifier verifies the issuer and the subject.
 type IssuerSubjectVerifier interface {
 	VerifyIssuer(ctx context.Context, iss, sub string) error
 }
 
+// Issuer is a verifier that accepts only the specified issuer.
+type Issuer string
+
+func (i Issuer) VerifyIssuer(ctx context.Context, iss, sub string) error {
+	if iss != string(i) {
+		return fmt.Errorf("jwt: invalid issuer: %s", iss)
+	}
+	return nil
+}
+
+// UnsecureAnyIssuerSubject is an IssuerSubjectVerifier that accepts any issuer and subject.
+// This is not recommended.
+var UnsecureAnyIssuerSubject = unsecureAnyIssuerSubjectVerifier{}
+
+type unsecureAnyIssuerSubjectVerifier struct{}
+
+func (unsecureAnyIssuerSubjectVerifier) VerifyIssuer(ctx context.Context, iss, sub string) error {
+	return nil
+}
+
 // AudienceVerifier verifies the audience.
 type AudienceVerifier interface {
 	VerifyAudience(ctx context.Context, aud []string) error
+}
+
+var UnsecureAnyAudience = unsecureAnyAudienceVerifier{}
+
+type unsecureAnyAudienceVerifier struct{}
+
+func (unsecureAnyAudienceVerifier) VerifyAudience(ctx context.Context, aud []string) error {
+	return nil
 }
 
 // Parser is a JWT parser.
@@ -65,9 +105,9 @@ type Parser struct {
 func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	// verify the parser options
 	_ = p._NamedFieldsRequired
-	// if p.KeyFinder == nil || p.AlgorithmVerfier == nil || p.IssuerSubjectVerifier == nil || p.AudienceVerifier == nil {
-	// 	return nil, errors.New("jwt: parser is not configured")
-	// }
+	if p.KeyFinder == nil || p.AlgorithmVerfier == nil || p.IssuerSubjectVerifier == nil || p.AudienceVerifier == nil {
+		return nil, errors.New("jwt: parser is not configured")
+	}
 
 	// split to segments
 	idx1 := bytes.IndexByte(data, '.')
@@ -125,7 +165,8 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	}
 	buf = buf[:n]
 
-	c, err := p.parseClaims(buf)
+	// parse claims
+	c, err := p.parseClaims(ctx, buf)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +177,7 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	return token, nil
 }
 
-func (p *Parser) parseClaims(data []byte) (*Claims, error) {
+func (p *Parser) parseClaims(ctx context.Context, data []byte) (*Claims, error) {
 	now := nowFunc()
 
 	var raw map[string]any
@@ -152,6 +193,9 @@ func (p *Parser) parseClaims(data []byte) (*Claims, error) {
 
 	c.Issuer, _ = d.GetString("iss")
 	c.Subject, _ = d.GetString("sub")
+	if err := p.IssuerSubjectVerifier.VerifyIssuer(ctx, c.Issuer, c.Subject); err != nil {
+		return nil, fmt.Errorf("jwt: failed to verify issuer and subject: %w", err)
+	}
 
 	// In RFC 7519, the "aud" claim is defined as a string or an array of strings.
 	if aud, ok := raw["aud"]; ok {
@@ -167,6 +211,9 @@ func (p *Parser) parseClaims(data []byte) (*Claims, error) {
 		case string:
 			c.Audience = []string{aud}
 		}
+	}
+	if err := p.AudienceVerifier.VerifyAudience(ctx, c.Audience); err != nil {
+		return nil, fmt.Errorf("jwt: failed to verify audience: %w", err)
 	}
 
 	if t, ok := d.GetTime("exp"); ok {
