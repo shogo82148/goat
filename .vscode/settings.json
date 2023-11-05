@@ -5,6 +5,7 @@
         "agcmkw",
         "AQAB",
         "cbor",
+        "cborutils",
         "ciphertext",
         "COSE",
         "cryptorand",
