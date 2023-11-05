@@ -10,7 +10,7 @@ import (
 
 func TestRFC7520(t *testing.T) {
 	t.Run("3.1. EC Public Key", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_1.ec_public_key.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_1.ec_public_key.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -24,7 +24,7 @@ func TestRFC7520(t *testing.T) {
 	})
 
 	t.Run("3.2. EC Private Key", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_2.ec_private_key.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_2.ec_private_key.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -41,7 +41,7 @@ func TestRFC7520(t *testing.T) {
 	})
 
 	t.Run("3.3. RSA Public Key", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_3.rsa_public_key.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_3.rsa_public_key.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -58,7 +58,7 @@ func TestRFC7520(t *testing.T) {
 	})
 
 	t.Run("3.4. RSA Private Key", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_4.rsa_private_key.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_4.rsa_private_key.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -75,7 +75,7 @@ func TestRFC7520(t *testing.T) {
 	})
 
 	t.Run("3.5. Symmetric Key (MAC Computation)", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_5.symmetric_key_mac_computation.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_5.symmetric_key_mac_computation.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -92,7 +92,7 @@ func TestRFC7520(t *testing.T) {
 	})
 
 	t.Run("3.6. Symmetric Key (Encryption) ", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/3_6.symmetric_key_encryption.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jwk/3_6.symmetric_key_encryption.json")
 		if err != nil {
 			t.Fatal(err)
 		}

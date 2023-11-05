@@ -41,7 +41,7 @@ type testVectorOutput struct {
 
 func TestRFC7520(t *testing.T) {
 	t.Run("4.1. RSA v1.5 Signature", func(t *testing.T) {
-		data, err := os.ReadFile("testdata/rfc7520/4_1.rsa_v15_signature.json")
+		data, err := os.ReadFile("../testdata/ietf-jose-cookbook/jws/4_1.rsa_v15_signature.json")
 		if err != nil {
 			t.Fatal(err)
 		}
