@@ -1,6 +1,10 @@
 package cborutils
 
-import "github.com/shogo82148/go-cbor"
+import (
+	"fmt"
+
+	"github.com/shogo82148/go-cbor"
+)
 
 type Decoder struct {
 	pkg string
@@ -63,4 +67,26 @@ func (d *Decoder) GetBytes(label int64) ([]byte, bool) {
 
 	b, ok := v.([]byte)
 	return b, ok
+}
+
+// MustBytes gets a byte string parameter.
+// If the parameter doesn't exist, it returns nil
+// and save the error.
+func (d *Decoder) MustBytes(label int64) []byte {
+	v, ok := d.raw[IntegerFromInt64(label)]
+	if !ok {
+		if d.err == nil {
+			d.err = fmt.Errorf("missing %d", label)
+		}
+		return nil
+	}
+
+	b, ok := v.([]byte)
+	if !ok {
+		if d.err == nil {
+			d.err = fmt.Errorf("invalid type for %d", label)
+		}
+		return nil
+	}
+	return b
 }
