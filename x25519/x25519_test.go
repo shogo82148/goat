@@ -2,6 +2,7 @@ package x25519
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 )
@@ -116,4 +117,21 @@ func TestX25519(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestECDH(t *testing.T) {
+	pub, priv, err := GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = pub.ECDH()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = priv.ECDH()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

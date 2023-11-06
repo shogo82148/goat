@@ -15,6 +15,7 @@ jobs:
       matrix:
         go:
           - "1.21"
+          - "1.20"
         goexperiment: [""]
         goarch:
           - amd64
