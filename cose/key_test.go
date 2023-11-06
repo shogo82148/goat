@@ -31,8 +31,11 @@ func TestParseMap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != KeyTypeEC2 {
+		if key.KeyType() != KeyTypeEC2 {
 			t.Errorf("unexpected key type: %v", key.kty)
+		}
+		if string(key.KeyID()) != "11" {
+			t.Errorf("unexpected key id: %v,  want 11", key.kid)
 		}
 	})
 }

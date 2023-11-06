@@ -53,3 +53,14 @@ func (d *Decoder) GetString(label int64) (string, bool) {
 	s, ok := v.(string)
 	return s, ok
 }
+
+// GetBytes gets a byte string parameter.
+func (d *Decoder) GetBytes(label int64) ([]byte, bool) {
+	v, ok := d.raw[IntegerFromInt64(label)]
+	if !ok {
+		return nil, false
+	}
+
+	b, ok := v.([]byte)
+	return b, ok
+}

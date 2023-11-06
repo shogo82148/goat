@@ -84,11 +84,11 @@ func parseKeyType(s string) (KeyType, error) {
 
 // https://www.iana.org/assignments/cose/cose.xhtml#key-common-parameters
 const (
-	KeyLabelKeyType   = 1 // Identification of the key type
-	KeyLabelKeyID     = 2 // Key identification value - match to kid in message
-	KeyLabelAlgorithm = 3 // Key usage restriction to this algorithm
-	KeyLabelKeyOps    = 4 // Restrict set of permissible operations
-	KeyLabelBaseIV    = 5 // Base IV to be XORed with Partial IVs
+	keyLabelKeyType   = 1 // Identification of the key type
+	keyLabelKeyID     = 2 // Key identification value - match to kid in message
+	keyLabelAlgorithm = 3 // Key usage restriction to this algorithm
+	keyLabelKeyOps    = 4 // Restrict set of permissible operations
+	keyLabelBaseIV    = 5 // Base IV to be XORed with Partial IVs
 )
 
 // Key represents a COSE_Key.
@@ -98,6 +98,7 @@ type Key struct {
 	Raw map[any]any
 
 	kty KeyType
+	kid []byte
 }
 
 // KeyType returns the key type of the key.
@@ -105,15 +106,20 @@ func (key *Key) KeyType() KeyType {
 	return key.kty
 }
 
+// KeyID returns the key ID of the key.
+func (key *Key) KeyID() []byte {
+	return key.kid
+}
+
 func decodeCommonKeyParameters(d *cborutils.Decoder, key *Key) {
-	if kty, ok := d.GetInteger(KeyLabelKeyType); ok {
+	if kty, ok := d.GetInteger(keyLabelKeyType); ok {
 		i64, err := kty.Int64()
 		if err != nil {
 			d.SaveError(err)
 			return
 		}
 		key.kty = KeyType(i64)
-	} else if kty, ok := d.GetString(KeyLabelKeyType); ok {
+	} else if kty, ok := d.GetString(keyLabelKeyType); ok {
 		kty, err := parseKeyType(kty)
 		if err != nil {
 			d.SaveError(err)
@@ -122,6 +128,10 @@ func decodeCommonKeyParameters(d *cborutils.Decoder, key *Key) {
 		key.kty = kty
 	} else {
 		d.SaveError(fmt.Errorf("missing key type"))
+	}
+
+	if kid, ok := d.GetBytes(keyLabelKeyID); ok {
+		key.kid = kid
 	}
 }
 
