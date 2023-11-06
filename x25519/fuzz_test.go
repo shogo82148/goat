@@ -1,26 +1,9 @@
-//go:build go1.20
-
 package x25519
 
 import (
 	"bytes"
 	"testing"
 )
-
-func FuzzNewKeyFromSeed(f *testing.F) {
-	f.Add(decodeHex("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a"))
-	f.Add(decodeHex("5dab087e624a8a4b79e17f8b83800ee66f3bb1292618b6fd1c2f8b27ff88e0eb"))
-	f.Fuzz(func(t *testing.T, seed []byte) {
-		if len(seed) != SeedSize {
-			return
-		}
-		priv := NewKeyFromSeed(seed)
-		legacy := newKeyFromSeedLegacy(seed)
-		if !priv.Equal(legacy) {
-			t.Errorf("result not match: %x and %x", priv, legacy)
-		}
-	})
-}
 
 func FuzzTestX25519(f *testing.F) {
 	f.Add(
