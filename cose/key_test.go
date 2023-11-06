@@ -1,6 +1,7 @@
 package cose
 
 import (
+	"bytes"
 	"os"
 	"testing"
 
@@ -18,7 +19,10 @@ func TestParseMap(t *testing.T) {
 	}
 
 	var set []map[any]any
-	if err := cbor.Unmarshal(msg, &set); err != nil {
+	dec := cbor.NewDecoder(bytes.NewReader(msg))
+	dec.UseAnyKey()
+	dec.UseInteger()
+	if err := dec.Decode(&set); err != nil {
 		t.Fatal(err)
 	}
 
@@ -27,6 +31,8 @@ func TestParseMap(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_ = key // TODO: check the key
+		if key.kty != KeyTypeEC2 {
+			t.Errorf("unexpected key type: %v", key.kty)
+		}
 	})
 }

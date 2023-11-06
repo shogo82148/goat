@@ -2,6 +2,7 @@ package cose
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/shogo82148/go-cbor"
 	"github.com/shogo82148/goat/internal/cborutils"
@@ -33,6 +34,63 @@ const (
 	KeyTypeWalnutDSA KeyType = 6
 )
 
+const (
+	keyTypeOKP       = "OKP"
+	keyTypeEC2       = "EC2"
+	keyTypeRSA       = "RSA"
+	keyTypeSymmetric = "Symmetric"
+	keyTypeHSS_LMS   = "HSS-LMS"
+	keyTypeWalnutDSA = "WalnutDSA"
+)
+
+// String returns the string representation of the key type.
+func (kty KeyType) String() string {
+	switch kty {
+	case KeyTypeOKP:
+		return keyTypeOKP
+	case KeyTypeEC2:
+		return keyTypeEC2
+	case KeyTypeRSA:
+		return keyTypeRSA
+	case KeyTypeSymmetric:
+		return keyTypeSymmetric
+	case KeyTypeHSS_LMS:
+		return keyTypeHSS_LMS
+	case KeyTypeWalnutDSA:
+		return keyTypeWalnutDSA
+	default:
+		return fmt.Sprintf("KeyType(%d)", kty)
+	}
+}
+
+func parseKeyType(s string) (KeyType, error) {
+	switch s {
+	case keyTypeOKP:
+		return KeyTypeOKP, nil
+	case keyTypeEC2:
+		return KeyTypeEC2, nil
+	case keyTypeRSA:
+		return KeyTypeRSA, nil
+	case keyTypeSymmetric:
+		return KeyTypeSymmetric, nil
+	case keyTypeHSS_LMS:
+		return KeyTypeHSS_LMS, nil
+	case keyTypeWalnutDSA:
+		return KeyTypeWalnutDSA, nil
+	default:
+		return KeyTypeReserved, fmt.Errorf("unknown key type: %s", s)
+	}
+}
+
+// https://www.iana.org/assignments/cose/cose.xhtml#key-common-parameters
+const (
+	KeyLabelKeyType   = 1 // Identification of the key type
+	KeyLabelKeyID     = 2 // Key identification value - match to kid in message
+	KeyLabelAlgorithm = 3 // Key usage restriction to this algorithm
+	KeyLabelKeyOps    = 4 // Restrict set of permissible operations
+	KeyLabelBaseIV    = 5 // Base IV to be XORed with Partial IVs
+)
+
 // Key represents a COSE_Key.
 type Key struct {
 	// Raw is the raw data of CBOR-decoded COSE key.
@@ -48,7 +106,23 @@ func (key *Key) KeyType() KeyType {
 }
 
 func decodeCommonKeyParameters(d *cborutils.Decoder, key *Key) {
-
+	if kty, ok := d.GetInteger(KeyLabelKeyType); ok {
+		i64, err := kty.Int64()
+		if err != nil {
+			d.SaveError(err)
+			return
+		}
+		key.kty = KeyType(i64)
+	} else if kty, ok := d.GetString(KeyLabelKeyType); ok {
+		kty, err := parseKeyType(kty)
+		if err != nil {
+			d.SaveError(err)
+			return
+		}
+		key.kty = kty
+	} else {
+		d.SaveError(fmt.Errorf("missing key type"))
+	}
 }
 
 // ParseKey parses a COSE_Key.
