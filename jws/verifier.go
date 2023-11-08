@@ -76,8 +76,8 @@ func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Cont
 	// pre-allocate buffer
 	size := 0
 	for _, sig := range msg.Signatures {
-		if len(sig.raw) > size {
-			size = len(sig.raw)
+		if len(sig.rawProtected) > size {
+			size = len(sig.rawProtected)
 		}
 	}
 	size += len(b64Content) + 1 // +1 for '.'
@@ -101,7 +101,7 @@ func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Cont
 			continue
 		}
 		buf = buf[:0]
-		buf = append(buf, sig.raw...)
+		buf = append(buf, sig.rawProtected...)
 		buf = append(buf, '.')
 		buf = append(buf, b64Content...)
 		err = key.Verify(buf, sig.signature)

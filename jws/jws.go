@@ -255,7 +255,7 @@ type Message struct {
 type Signature struct {
 	header       *Header // Unprotected Header
 	protected    *Header // Protected Header
-	raw          []byte  // protected header
+	rawProtected []byte  // protected header
 	b64signature []byte
 	signature    []byte
 }
@@ -301,7 +301,7 @@ func ParseCompact(data []byte) (*Message, error) {
 		Signatures: []*Signature{
 			{
 				protected:    &h,
-				raw:          b64header,
+				rawProtected: b64header,
 				b64signature: b64signature,
 				signature:    signature,
 			},
@@ -391,7 +391,7 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 			if err := protected.UnmarshalJSON(raw); err != nil {
 				return fmt.Errorf("jws: failed to parse protected header: %w", err)
 			}
-			sig.raw = raw
+			sig.rawProtected = []byte(protectedString)
 			sig.protected = protected
 		}
 
@@ -439,14 +439,14 @@ func (msg *Message) MarshalJSON() ([]byte, error) {
 	if len(msg.Signatures) == 1 {
 		// Flattened JWS JSON Serialization
 		sig := msg.Signatures[0]
-		raw["protected"] = string(sig.raw)
+		raw["protected"] = string(sig.rawProtected)
 		raw["signature"] = string(sig.b64signature)
 	} else {
 		// Complete JWS JSON Serialization Representation
 		signatures := make([]any, 0, len(msg.Signatures))
 		for _, sig := range msg.Signatures {
 			raw := map[string]any{
-				"protected": string(sig.raw),
+				"protected": string(sig.rawProtected),
 				"signature": string(sig.b64signature),
 			}
 			if sig.header != nil {
@@ -656,7 +656,7 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	msg.Signatures = append(msg.Signatures, &Signature{
 		protected:    protected,
 		header:       header,
-		raw:          raw,
+		rawProtected: raw,
 		b64signature: b64Encode(signature),
 		signature:    signature,
 	})
@@ -671,15 +671,15 @@ func (msg *Message) Compact() ([]byte, error) {
 	sig := msg.Signatures[0]
 
 	if !msg.b64 && bytes.IndexByte(msg.payload, '.') >= 0 {
-		buf := make([]byte, 0, len(sig.raw)+len(sig.b64signature)+2)
-		buf = append(buf, sig.raw...)
+		buf := make([]byte, 0, len(sig.rawProtected)+len(sig.b64signature)+2)
+		buf = append(buf, sig.rawProtected...)
 		buf = append(buf, '.')
 		buf = append(buf, '.')
 		buf = append(buf, sig.b64signature...)
 		return buf, nil
 	}
-	buf := make([]byte, 0, len(sig.raw)+len(msg.payload)+len(sig.b64signature)+2)
-	buf = append(buf, sig.raw...)
+	buf := make([]byte, 0, len(sig.rawProtected)+len(msg.payload)+len(sig.b64signature)+2)
+	buf = append(buf, sig.rawProtected...)
 	buf = append(buf, '.')
 	buf = append(buf, msg.payload...)
 	buf = append(buf, '.')

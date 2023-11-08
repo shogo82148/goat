@@ -57,18 +57,7 @@ func TestRFC7520(t *testing.T) {
 		}
 
 		t.Run(tv.Title, func(t *testing.T) {
-			if keyMap, ok := tv.Input.Key.(map[string]any); ok {
-				// single signature
-
-				key, err := jwk.ParseMap(keyMap)
-				if err != nil {
-					t.Fatal(err)
-				}
-				alg := jwa.SignatureAlgorithm(tv.Input.Algorithm.(string))
-				signingKey := alg.New().NewSigningKey(key)
-
-				payload := []byte(tv.Input.Payload)
-
+			if _, ok := tv.Input.Key.(map[string]any); ok {
 				// verify the compact serialization
 				if tv.Output.Compact != "" {
 					t.Log("verifying compact serialization")
@@ -76,33 +65,7 @@ func TestRFC7520(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					v := &Verifier{
-						KeyFinder: FindKeyFunc(func(ctx context.Context, protected, unprotected *Header) (sig.SigningKey, error) {
-							return signingKey, nil
-						}),
-						AlgorithmVerifier: AllowedAlgorithms{alg},
-					}
-
-					var protected, unprotected *Header
-					var got []byte
-					if _, ok := tv.Output.JSON["payload"]; ok {
-						protected, unprotected, got, err = v.Verify(context.Background(), msg)
-					} else {
-						protected, unprotected, got, err = v.VerifyContent(context.Background(), msg, payload)
-					}
-					if err != nil {
-						t.Fatal(err)
-					}
-					if !bytes.Equal(got, payload) {
-						t.Errorf("payload mismatch: got %q, want %q", got, payload)
-					}
-					if unprotected != nil {
-						// compact serialization doesn't have unprotected header
-						t.Errorf("unprotected header should be nil")
-					}
-					if diff := cmp.Diff(protected.Raw, tv.Signing.(map[string]any)["protected"]); diff != "" {
-						t.Errorf("protected header mismatch (-got +want):\n%s", diff)
-					}
+					testRFC7520VerifySigngleSignature(t, &tv, msg)
 				}
 
 				// flatten JSON serialization
@@ -116,40 +79,69 @@ func TestRFC7520(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					v := &Verifier{
-						KeyFinder: FindKeyFunc(func(ctx context.Context, protected, unprotected *Header) (sig.SigningKey, error) {
-							return signingKey, nil
-						}),
-						AlgorithmVerifier: AllowedAlgorithms{alg},
-					}
+					testRFC7520VerifySigngleSignature(t, &tv, msg)
+				}
 
-					var protected, unprotected *Header
-					var got []byte
-					if _, ok := tv.Output.JSON["payload"]; ok {
-						protected, unprotected, got, err = v.Verify(context.Background(), msg)
-					} else {
-						protected, unprotected, got, err = v.VerifyContent(context.Background(), msg, payload)
+				// general JSON serialization
+				if tv.Output.JSON != nil {
+					t.Log("verifying general JSON serialization")
+					data, err := json.Marshal(tv.Output.JSONFlat)
+					if err != nil {
+						t.Fatal(err)
 					}
-					_ = got
-					_ = protected
-					_ = unprotected
-					_ = err
-
-					// TODO: fix this test
-					// if err != nil {
-					// 	t.Fatal(err)
-					// }
-					// if !bytes.Equal(got, payload) {
-					// 	t.Errorf("payload mismatch: got %q, want %q", got, payload)
-					// }
-					// if diff := cmp.Diff(unprotected.Raw, tv.Signing.(map[string]any)["unprotected"]); diff != "" {
-					// 	t.Errorf("protected header mismatch (-got +want):\n%s", diff)
-					// }
-					// if diff := cmp.Diff(protected.Raw, tv.Signing.(map[string]any)["protected"]); diff != "" {
-					// 	t.Errorf("protected header mismatch (-got +want):\n%s", diff)
-					// }
+					msg, err := Parse(data)
+					if err != nil {
+						t.Fatal(err)
+					}
+					testRFC7520VerifySigngleSignature(t, &tv, msg)
 				}
 			}
 		})
+	}
+}
+
+func testRFC7520VerifySigngleSignature(t *testing.T, tv *testVector, msg *Message) {
+	key, err := jwk.ParseMap(tv.Input.Key.(map[string]any))
+	if err != nil {
+		t.Fatal(err)
+	}
+	alg := jwa.SignatureAlgorithm(tv.Input.Algorithm.(string))
+	signingKey := alg.New().NewSigningKey(key)
+	payload := []byte(tv.Input.Payload)
+
+	v := &Verifier{
+		KeyFinder: FindKeyFunc(func(ctx context.Context, protected, unprotected *Header) (sig.SigningKey, error) {
+			return signingKey, nil
+		}),
+		AlgorithmVerifier: AllowedAlgorithms{alg},
+	}
+
+	var protected, unprotected *Header
+	var got []byte
+	if _, ok := tv.Output.JSON["payload"]; ok {
+		protected, unprotected, got, err = v.Verify(context.Background(), msg)
+	} else {
+		protected, unprotected, got, err = v.VerifyContent(context.Background(), msg, payload)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, payload) {
+		t.Errorf("payload mismatch: got %q, want %q", got, payload)
+	}
+	signing := tv.Signing.(map[string]any)
+	var header any = nil
+	if unprotected != nil {
+		header = unprotected.Raw
+	}
+	if diff := cmp.Diff(header, signing["unprotected"]); diff != "" {
+		t.Errorf("protected header mismatch (-got +want):\n%s", diff)
+	}
+	header = nil
+	if protected != nil {
+		header = protected.Raw
+	}
+	if diff := cmp.Diff(header, signing["protected"]); diff != "" {
+		t.Errorf("protected header mismatch (-got +want):\n%s", diff)
 	}
 }
