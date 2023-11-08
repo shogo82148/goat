@@ -309,6 +309,14 @@ func ParseCompact(data []byte) (*Message, error) {
 	}, nil
 }
 
+func Parse(data []byte) (*Message, error) {
+	var msg Message
+	if err := msg.UnmarshalJSON(data); err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 // UnmarshalJSON implements [encoding/json.Unmarshaler].
 // It parses data as JSON Serialized JWS.
 func (msg *Message) UnmarshalJSON(data []byte) error {
@@ -319,7 +327,9 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("jws: failed to parse JWS: %w", err)
 	}
 
-	var m Message
+	m := Message{
+		b64: true, // the default value is true
+	}
 
 	// decode payload
 	if payloadAny, ok := raw["payload"]; ok {
@@ -341,13 +351,11 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	}
 
 	if flattened {
-		protected, ok := raw["protected"]
-		if !ok {
-			return errors.New("jws: failed to parse JWS: protected header is missing")
-		}
 		sigs := map[string]any{
-			"protected": protected,
 			"signature": sigAny,
+		}
+		if protected, ok := raw["protected"]; ok {
+			sigs["protected"] = protected
 		}
 		if header, ok := raw["header"]; ok {
 			sigs["header"] = header

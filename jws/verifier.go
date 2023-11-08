@@ -84,7 +84,16 @@ func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Cont
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
-		if err := v.AlgorithmVerifier.VerifyAlgorithm(ctx, sig.protected.alg); err != nil {
+		var alg jwa.SignatureAlgorithm
+		if sig.protected != nil {
+			alg = sig.protected.alg
+		} else if sig.header != nil {
+			alg = sig.header.alg
+		}
+		if alg == jwa.SignatureAlgorithmUnknown {
+			continue
+		}
+		if err := v.AlgorithmVerifier.VerifyAlgorithm(ctx, alg); err != nil {
 			continue
 		}
 		key, err := v.KeyFinder.FindKey(ctx, sig.protected, sig.header)
