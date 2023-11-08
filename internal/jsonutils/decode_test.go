@@ -4,7 +4,34 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
+
+func TestUnmarshal(t *testing.T) {
+	t.Run("number", func(t *testing.T) {
+		input := []byte(`{"number": 1.0}`)
+		var got any
+		if err := Unmarshal(input, &got); err != nil {
+			t.Fatal(err)
+		}
+		want := map[string]any{
+			"number": json.Number("1.0"),
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Error("mismatch (-want +got):", diff)
+		}
+	})
+
+	t.Run("trailing garbage", func(t *testing.T) {
+		input := []byte(`{"number": 1.0}garbage`)
+		var got any
+		err := Unmarshal(input, &got)
+		if err == nil {
+			t.Error("want some error, got nil")
+		}
+	})
+}
 
 func TestDecoder_Decode(t *testing.T) {
 	v := "AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75" +
