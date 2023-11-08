@@ -1,11 +1,13 @@
 package jws
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/shogo82148/goat/jwa"
 	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
 	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
@@ -62,8 +64,10 @@ func TestRFC7520(t *testing.T) {
 				alg := jwa.SignatureAlgorithm(tv.Input.Algorithm.(string))
 				signingKey := alg.New().NewSigningKey(key)
 
+				payload := []byte(tv.Input.Payload)
+
 				if tv.Output.Compact != "" {
-					// try to verify the compact serialization
+					t.Log("verifying compact serialization")
 					msg, err := ParseCompact([]byte(tv.Output.Compact))
 					if err != nil {
 						t.Fatal(err)
@@ -74,11 +78,26 @@ func TestRFC7520(t *testing.T) {
 						}),
 						AlgorithmVerifier: AllowedAlgorithms{alg},
 					}
+
+					var protected, unprotected *Header
+					var got []byte
 					if _, ok := tv.Output.JSON["payload"]; ok {
-						_, _, _, err = v.Verify(context.Background(), msg)
-						if err != nil {
-							t.Fatal(err)
-						}
+						protected, unprotected, got, err = v.Verify(context.Background(), msg)
+					} else {
+						protected, unprotected, got, err = v.VerifyContent(context.Background(), msg, payload)
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					if !bytes.Equal(got, payload) {
+						t.Errorf("payload mismatch: got %q, want %q", got, payload)
+					}
+					if unprotected != nil {
+						// compact serialization doesn't have unprotected header
+						t.Errorf("unprotected header should be nil")
+					}
+					if diff := cmp.Diff(protected.Raw, tv.Signing.(map[string]any)["protected"]); diff != "" {
+						t.Errorf("protected header mismatch (-got +want):\n%s", diff)
 					}
 				}
 			}

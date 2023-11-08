@@ -44,11 +44,35 @@ type Verifier struct {
 
 // Verify verifies the JWS message.
 func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected, unprotected *Header, payload []byte, err error) {
-	_ = v._NamedFieldsRequired
 	if v.AlgorithmVerifier == nil || v.KeyFinder == nil {
 		return nil, nil, nil, errors.New("jws: verifier is not configured")
 	}
 
+	var rawContent, b64Content []byte
+	if msg.b64 {
+		rawContent, err = b64Decode(msg.payload)
+		if err != nil {
+			return nil, nil, nil, errVerifyFailed
+		}
+		b64Content = msg.payload
+	} else {
+		rawContent = msg.payload
+		b64Content = b64Encode(rawContent)
+	}
+	return v.verify(ctx, msg, rawContent, b64Content)
+}
+
+func (v *Verifier) VerifyContent(ctx context.Context, msg *Message, content []byte) (protected, unprotected *Header, payload []byte, err error) {
+	if v.AlgorithmVerifier == nil || v.KeyFinder == nil {
+		return nil, nil, nil, errors.New("jws: verifier is not configured")
+	}
+
+	b64Content := b64Encode(content)
+	return v.verify(ctx, msg, content, b64Content)
+}
+
+func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Content []byte) (protected, unprotected *Header, payload []byte, err error) {
+	_ = v._NamedFieldsRequired
 	// pre-allocate buffer
 	size := 0
 	for _, sig := range msg.Signatures {
@@ -56,7 +80,7 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected, unprote
 			size = len(sig.raw)
 		}
 	}
-	size += len(msg.payload) + 1 // +1 for '.'
+	size += len(b64Content) + 1 // +1 for '.'
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
@@ -70,19 +94,10 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected, unprote
 		buf = buf[:0]
 		buf = append(buf, sig.raw...)
 		buf = append(buf, '.')
-		buf = append(buf, msg.payload...)
+		buf = append(buf, b64Content...)
 		err = key.Verify(buf, sig.signature)
 		if err == nil {
-			var ret []byte
-			if sig.protected.b64 {
-				ret, err = b64Decode(msg.payload)
-				if err != nil {
-					return nil, nil, nil, errVerifyFailed
-				}
-			} else {
-				ret = msg.payload
-			}
-			return sig.protected, sig.header, ret, nil
+			return sig.protected, sig.header, rawContent, nil
 		}
 	}
 	return nil, nil, nil, errVerifyFailed
