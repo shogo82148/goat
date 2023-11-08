@@ -43,10 +43,10 @@ type Verifier struct {
 }
 
 // Verify verifies the JWS message.
-func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header, payload []byte, err error) {
+func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected, unprotected *Header, payload []byte, err error) {
 	_ = v._NamedFieldsRequired
 	if v.AlgorithmVerifier == nil || v.KeyFinder == nil {
-		return nil, nil, errors.New("jws: verifier is not configured")
+		return nil, nil, nil, errors.New("jws: verifier is not configured")
 	}
 
 	// pre-allocate buffer
@@ -77,13 +77,13 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected *Header,
 			if sig.protected.b64 {
 				ret, err = b64Decode(msg.payload)
 				if err != nil {
-					return nil, nil, errVerifyFailed
+					return nil, nil, nil, errVerifyFailed
 				}
 			} else {
 				ret = msg.payload
 			}
-			return sig.protected, ret, nil
+			return sig.protected, sig.header, ret, nil
 		}
 	}
-	return nil, nil, errVerifyFailed
+	return nil, nil, nil, errVerifyFailed
 }

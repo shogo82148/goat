@@ -40,11 +40,11 @@ func TestVerify(t *testing.T) {
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
-		msg, err := Parse(raw)
+		msg, err := ParseCompact(raw)
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -117,11 +117,11 @@ func TestVerify(t *testing.T) {
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
-		msg, err := Parse(raw)
+		msg, err := ParseCompact(raw)
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -163,11 +163,11 @@ func TestVerify(t *testing.T) {
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
-		msg, err := Parse(raw)
+		msg, err := ParseCompact(raw)
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -215,11 +215,11 @@ func TestVerify(t *testing.T) {
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
-		msg, err := Parse(raw)
+		msg, err := ParseCompact(raw)
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -242,7 +242,7 @@ func TestVerify(t *testing.T) {
 				"cGxlLmNvbS9pc19yb290Ijp0cnVlfQ" +
 				".",
 		)
-		msg, err := Parse(raw)
+		msg, err := ParseCompact(raw)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -253,7 +253,7 @@ func TestVerify(t *testing.T) {
 			}),
 		}
 
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -288,11 +288,11 @@ func TestVerify(t *testing.T) {
 			"." +
 			"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
 			"9g7sVvpAr_MuM0KAg"
-		msg, err := Parse([]byte(raw))
+		msg, err := ParseCompact([]byte(raw))
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(context.Background(), msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -380,7 +380,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(context.Background(), &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -410,7 +410,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, payload, err = v.Verify(context.Background(), &msg)
+		_, _, payload, err = v.Verify(context.Background(), &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -454,7 +454,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(context.Background(), &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -495,7 +495,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(context.Background(), &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -853,11 +853,11 @@ func TestKeyTypeMissmatch(t *testing.T) {
 		AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
 		KeyFinder:         &JWKKeyFinder{JWK: key},
 	}
-	msg, err := Parse(raw)
+	msg, err := ParseCompact(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = v.Verify(context.Background(), msg)
+	_, _, _, err = v.Verify(context.Background(), msg)
 	if err == nil {
 		t.Error("want error, got nil")
 	}

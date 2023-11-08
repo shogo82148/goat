@@ -182,7 +182,7 @@ func FuzzJWS(f *testing.F) {
 			}),
 		}
 
-		protected1, payload1, err := v.Verify(context.Background(), &msg1)
+		protected1, _, payload1, err := v.Verify(context.Background(), &msg1)
 		if err != nil {
 			return
 		}
@@ -205,7 +205,7 @@ func FuzzJWS(f *testing.F) {
 		if err := msg3.UnmarshalJSON(data); err != nil {
 			t.Fatal(err)
 		}
-		_, payload3, err := v.Verify(context.Background(), &msg3)
+		_, _, payload3, err := v.Verify(context.Background(), &msg3)
 		if err != nil {
 			return
 		}
@@ -333,11 +333,11 @@ func FuzzJWSCompact(f *testing.F) {
 			}),
 		}
 
-		msg1, err := Parse([]byte(data))
+		msg1, err := ParseCompact([]byte(data))
 		if err != nil {
 			return
 		}
-		header1, payload1, err := v1.Verify(context.Background(), msg1)
+		header1, _, payload1, err := v1.Verify(context.Background(), msg1)
 		if err != nil {
 			return
 		}
@@ -360,11 +360,11 @@ func FuzzJWSCompact(f *testing.F) {
 				return sigKey, nil
 			}),
 		}
-		msg3, err := Parse(resigned)
+		msg3, err := ParseCompact(resigned)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, payload3, err := v2.Verify(context.Background(), msg3)
+		_, _, payload3, err := v2.Verify(context.Background(), msg3)
 		if err != nil {
 			t.Error(err)
 		}
