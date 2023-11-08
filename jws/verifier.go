@@ -48,18 +48,19 @@ func (v *Verifier) Verify(ctx context.Context, msg *Message) (protected, unprote
 		return nil, nil, nil, errors.New("jws: verifier is not configured")
 	}
 
-	var rawContent, b64Content []byte
-	if msg.b64 {
-		rawContent, err = b64Decode(msg.payload)
+	var content []byte
+	var sigContent []byte // content for calculating signature
+	if !msg.nb64 {
+		content, err = b64Decode(msg.payload)
 		if err != nil {
 			return nil, nil, nil, errVerifyFailed
 		}
-		b64Content = msg.payload
+		sigContent = msg.payload
 	} else {
-		rawContent = msg.payload
-		b64Content = b64Encode(rawContent)
+		content = msg.payload
+		sigContent = msg.payload
 	}
-	return v.verify(ctx, msg, rawContent, b64Content)
+	return v.verify(ctx, msg, content, sigContent)
 }
 
 func (v *Verifier) VerifyContent(ctx context.Context, msg *Message, content []byte) (protected, unprotected *Header, payload []byte, err error) {
@@ -71,7 +72,7 @@ func (v *Verifier) VerifyContent(ctx context.Context, msg *Message, content []by
 	return v.verify(ctx, msg, content, b64Content)
 }
 
-func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Content []byte) (protected, unprotected *Header, payload []byte, err error) {
+func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, sigContent []byte) (protected, unprotected *Header, payload []byte, err error) {
 	_ = v._NamedFieldsRequired
 	// pre-allocate buffer
 	size := 0
@@ -80,7 +81,7 @@ func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Cont
 			size = len(sig.rawProtected)
 		}
 	}
-	size += len(b64Content) + 1 // +1 for '.'
+	size += len(sigContent) + 1 // +1 for '.'
 	buf := make([]byte, size)
 
 	for _, sig := range msg.Signatures {
@@ -103,7 +104,7 @@ func (v *Verifier) verify(ctx context.Context, msg *Message, rawContent, b64Cont
 		buf = buf[:0]
 		buf = append(buf, sig.rawProtected...)
 		buf = append(buf, '.')
-		buf = append(buf, b64Content...)
+		buf = append(buf, sigContent...)
 		err = key.Verify(buf, sig.signature)
 		if err == nil {
 			return sig.protected, sig.header, rawContent, nil

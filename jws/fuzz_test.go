@@ -141,22 +141,21 @@ func FuzzJWS(f *testing.F) {
 			`}`,
 	)
 
-	// TODO: support b64 option
-	// f.Add(
-	// 	`{`+
-	// 		`"protected":`+
-	// 		`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",`+
-	// 		`"payload":`+
-	// 		`"$.02",`+
-	// 		`"signature":`+
-	// 		`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"`+
-	// 		`}`,
-	// 	`{`+
-	// 		`"kty":"oct",`+
-	// 		`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75`+
-	// 		`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"`+
-	// 		`}`,
-	// )
+	f.Add(
+		`{`+
+			`"protected":`+
+			`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",`+
+			`"payload":`+
+			`"$.02",`+
+			`"signature":`+
+			`"A5dxf2s96_n5FLueVuW1Z_vh161FwXZC4YLPff6dmDY"`+
+			`}`,
+		`{`+
+			`"kty":"oct",`+
+			`"k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75`+
+			`aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow"`+
+			`}`,
+	)
 
 	f.Fuzz(func(t *testing.T, raw, rawKey string) {
 		var msg1 Message
@@ -191,7 +190,12 @@ func FuzzJWS(f *testing.F) {
 			return // the key doesn't support signing, we skip it.
 		}
 
-		msg2 := NewMessage(payload1)
+		var msg2 *Message
+		if protected1.Base64() {
+			msg2 = NewMessage(payload1)
+		} else {
+			msg2 = NewRawMessage(payload1)
+		}
 		if err := msg2.Sign(protected1, header1, protected1.Algorithm().New().NewSigningKey(key)); err != nil {
 			t.Fatal(err)
 		}
@@ -201,11 +205,11 @@ func FuzzJWS(f *testing.F) {
 			t.Fatal(err)
 		}
 
-		var msg3 Message
-		if err := msg3.UnmarshalJSON(data); err != nil {
+		msg3, err := Parse(data)
+		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, payload3, err := v.Verify(context.Background(), &msg3)
+		_, _, payload3, err := v.Verify(context.Background(), msg3)
 		if err != nil {
 			return
 		}
