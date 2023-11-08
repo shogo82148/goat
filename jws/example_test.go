@@ -10,7 +10,7 @@ import (
 	"github.com/shogo82148/goat/jws"
 )
 
-func ExampleParse() {
+func ExampleParseCompact() {
 	rawKey := `{"kty":"OKP","crv":"Ed25519",` +
 		`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
 	key, err := jwk.ParseKey([]byte(rawKey))
@@ -29,12 +29,12 @@ func ExampleParse() {
 		"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
 		"9g7sVvpAr_MuM0KAg"
 
-	msg, err := jws.Parse([]byte(raw))
+	msg, err := jws.ParseCompact([]byte(raw))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, payload, err := v.Verify(context.Background(), msg)
+	_, _, payload, err := v.Verify(context.Background(), msg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,12 +62,12 @@ func ExampleVerifier_Verify() {
 		"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
 		"9g7sVvpAr_MuM0KAg"
 
-	msg, err := jws.Parse([]byte(raw))
+	msg, err := jws.ParseCompact([]byte(raw))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, payload, err := v.Verify(context.Background(), msg)
+	_, _, payload, err := v.Verify(context.Background(), msg)
 	if err != nil {
 		log.Fatal(err)
 	}

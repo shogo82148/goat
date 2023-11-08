@@ -54,13 +54,12 @@ type Header struct {
 	typ     string
 	cty     string
 	crit    []string
-	b64     bool
+	nb64    bool // nb64 is !b64
 }
 
 // NewHeader returns a new Header.
 func NewHeader() *Header {
 	return &Header{
-		b64: true,
 		Raw: map[string]any{},
 	}
 }
@@ -187,13 +186,13 @@ LOOP:
 
 // Base64 gets RFC 7797 Section 3. The "b64" Header Parameter.
 func (h *Header) Base64() bool {
-	return h.b64
+	return !h.nb64
 }
 
 // SetBase64 sets RFC 7797 Section 3. The "b64" Header Parameter.
 // If b64 is false, it adds "b64" into "crit" (Critical) Header Parameter.
 func (h *Header) SetBase64(b64 bool) {
-	h.b64 = b64
+	h.nb64 = !b64
 	if !b64 {
 		for _, param := range h.crit {
 			if param == "b64" {
@@ -231,7 +230,7 @@ func (h *Header) MarshalJSON() ([]byte, error) {
 func NewMessage(payload []byte) *Message {
 	return &Message{
 		payload: b64Encode(payload),
-		b64:     true,
+		nb64:    false,
 	}
 }
 
@@ -239,7 +238,7 @@ func NewMessage(payload []byte) *Message {
 func NewRawMessage(payload []byte) *Message {
 	return &Message{
 		payload: append([]byte(nil), payload...),
-		b64:     false,
+		nb64:    true,
 	}
 }
 
@@ -248,20 +247,20 @@ type Message struct {
 	Signatures []*Signature
 
 	payload []byte
-	b64     bool
+	nb64    bool // nb64 is !b64
 }
 
 // Signature is a signature of Message.
 type Signature struct {
 	header       *Header // Unprotected Header
 	protected    *Header // Protected Header
-	raw          []byte  // protected header
+	rawProtected []byte  // protected header
 	b64signature []byte
 	signature    []byte
 }
 
-// Parse parses a Compact Serialized JWS Signature.
-func Parse(data []byte) (*Message, error) {
+// ParseCompact parses a Compact Serialized JWS Signature.
+func ParseCompact(data []byte) (*Message, error) {
 	// copy data
 	data = append([]byte(nil), data...)
 
@@ -297,16 +296,24 @@ func Parse(data []byte) (*Message, error) {
 
 	return &Message{
 		payload: payload,
-		b64:     h.b64,
+		nb64:    h.nb64,
 		Signatures: []*Signature{
 			{
 				protected:    &h,
-				raw:          b64header,
+				rawProtected: b64header,
 				b64signature: b64signature,
 				signature:    signature,
 			},
 		},
 	}, nil
+}
+
+func Parse(data []byte) (*Message, error) {
+	var msg Message
+	if err := msg.UnmarshalJSON(data); err != nil {
+		return nil, err
+	}
+	return &msg, nil
 }
 
 // UnmarshalJSON implements [encoding/json.Unmarshaler].
@@ -319,14 +326,15 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("jws: failed to parse JWS: %w", err)
 	}
 
+	var m Message
+
 	// decode payload
-	payloadAny, ok := raw["payload"]
-	if !ok {
-		return errors.New("jws: failed to parse JWS: payload is missing")
-	}
-	payload, ok := payloadAny.(string)
-	if !ok {
-		return fmt.Errorf("jws: invalid type of payload: %T", payloadAny)
+	if payloadAny, ok := raw["payload"]; ok {
+		payload, ok := payloadAny.(string)
+		if !ok {
+			return fmt.Errorf("jws: invalid type of payload: %T", payloadAny)
+		}
+		m.payload = []byte(payload)
 	}
 
 	sigsAny, hasSigs := raw["signatures"]
@@ -340,13 +348,11 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	}
 
 	if flattened {
-		protected, ok := raw["protected"]
-		if !ok {
-			return errors.New("jws: failed to parse JWS: protected header is missing")
-		}
 		sigs := map[string]any{
-			"protected": protected,
 			"signature": sigAny,
+		}
+		if protected, ok := raw["protected"]; ok {
+			sigs["protected"] = protected
 		}
 		if header, ok := raw["header"]; ok {
 			sigs["header"] = header
@@ -360,41 +366,49 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 	}
 	// decode signatures
 	signatures := make([]*Signature, 0, len(sigsArray))
-	for _, sigAny := range sigsArray {
+	for i, sigAny := range sigsArray {
+		var sig Signature
+
 		sigObject, ok := sigAny.(map[string]any)
 		if !ok {
 			return fmt.Errorf("jws: invalid type of signatures[]: %T", sigAny)
 		}
 
 		// decode protected header
-		protectedAny, ok := sigObject["protected"]
-		if !ok {
-			return errors.New("jws: protected header is missing")
-		}
-		protectedString, ok := protectedAny.(string)
-		if !ok {
-			return fmt.Errorf("jws: invalid type of signatures[].protected: %T", protectedAny)
-		}
-		raw, err := b64.DecodeString(protectedString)
-		if err != nil {
-			return fmt.Errorf("jws: failed to parse protected header: %w", err)
-		}
-		protected := NewHeader()
-		if err := protected.UnmarshalJSON(raw); err != nil {
-			return fmt.Errorf("jws: failed to parse protected header: %w", err)
+		if protectedAny, ok := sigObject["protected"]; ok {
+			protectedString, ok := protectedAny.(string)
+			if !ok {
+				return fmt.Errorf("jws: invalid type of signatures[].protected: %T", protectedAny)
+			}
+			raw, err := b64.DecodeString(protectedString)
+			if err != nil {
+				return fmt.Errorf("jws: failed to parse protected header: %w", err)
+			}
+			protected := NewHeader()
+			if err := protected.UnmarshalJSON(raw); err != nil {
+				return fmt.Errorf("jws: failed to parse protected header: %w", err)
+			}
+			sig.rawProtected = []byte(protectedString)
+			sig.protected = protected
+
+			if i == 0 {
+				m.nb64 = protected.nb64
+			} else if m.nb64 != protected.nb64 {
+				return errors.New("jws: failed to parse protected header: b64 is mismatch")
+			}
 		}
 
 		// decode unprotected header
-		var header *Header
 		if unprotectedAny, ok := sigObject["header"]; ok {
 			unprotectedObject, ok := unprotectedAny.(map[string]any)
 			if !ok {
 				return fmt.Errorf("jws: invalid type of signatures[].header: %T", unprotectedAny)
 			}
-			header, err = decodeHeader(unprotectedObject)
+			header, err := decodeHeader(unprotectedObject)
 			if err != nil {
 				return fmt.Errorf("jws: failed to parse header: %w", err)
 			}
+			sig.header = header
 		}
 
 		// decode signature
@@ -410,21 +424,14 @@ func (msg *Message) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("jws: failed to parse signature: %w", err)
 		}
+		sig.b64signature = []byte(signatureString)
+		sig.signature = signature
 
-		signatures = append(signatures, &Signature{
-			protected:    protected,
-			header:       header,
-			raw:          []byte(protectedString),
-			b64signature: []byte(signatureString),
-			signature:    signature,
-		})
+		signatures = append(signatures, &sig)
 	}
+	m.Signatures = signatures
 
-	*msg = Message{
-		payload:    []byte(payload),
-		b64:        signatures[0].protected.b64,
-		Signatures: signatures,
-	}
+	*msg = m
 	return nil
 }
 
@@ -435,14 +442,14 @@ func (msg *Message) MarshalJSON() ([]byte, error) {
 	if len(msg.Signatures) == 1 {
 		// Flattened JWS JSON Serialization
 		sig := msg.Signatures[0]
-		raw["protected"] = string(sig.raw)
+		raw["protected"] = string(sig.rawProtected)
 		raw["signature"] = string(sig.b64signature)
 	} else {
 		// Complete JWS JSON Serialization Representation
 		signatures := make([]any, 0, len(msg.Signatures))
 		for _, sig := range msg.Signatures {
 			raw := map[string]any{
-				"protected": string(sig.raw),
+				"protected": string(sig.rawProtected),
 				"signature": string(sig.b64signature),
 			}
 			if sig.header != nil {
@@ -526,9 +533,7 @@ func decodeHeader(raw map[string]any) (*Header, error) {
 	h.cty, _ = d.GetString(jwa.ContentTypeKey)
 	h.crit, _ = d.GetStringArray(jwa.CriticalKey)
 	if b64, ok := d.GetBoolean(jwa.Base64URLEncodePayloadKey); ok {
-		h.b64 = b64
-	} else {
-		h.b64 = true // the default value is true
+		h.nb64 = !b64
 	}
 
 	// verify critical parameter
@@ -612,8 +617,8 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		e.Set(jwa.ContentTypeKey, cty)
 	}
 
-	if b64 := h.b64; !b64 {
-		e.Set(jwa.Base64URLEncodePayloadKey, b64)
+	if nb64 := h.nb64; nb64 {
+		e.Set(jwa.Base64URLEncodePayloadKey, false)
 	}
 
 	if crit := h.crit; len(crit) > 0 {
@@ -628,6 +633,10 @@ func encodeHeader(h *Header) (map[string]any, error) {
 
 // Sign adds a new signature signed by key.
 func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
+	if msg.nb64 != protected.nb64 {
+		return errors.New("jws: failed to sign: b64 is mismatch")
+	}
+
 	// encode the header
 	h1, err := encodeHeader(protected)
 	if err != nil {
@@ -652,7 +661,7 @@ func (msg *Message) Sign(protected, header *Header, key sig.SigningKey) error {
 	msg.Signatures = append(msg.Signatures, &Signature{
 		protected:    protected,
 		header:       header,
-		raw:          raw,
+		rawProtected: raw,
 		b64signature: b64Encode(signature),
 		signature:    signature,
 	})
@@ -666,16 +675,16 @@ func (msg *Message) Compact() ([]byte, error) {
 	}
 	sig := msg.Signatures[0]
 
-	if !msg.b64 && bytes.IndexByte(msg.payload, '.') >= 0 {
-		buf := make([]byte, 0, len(sig.raw)+len(sig.b64signature)+2)
-		buf = append(buf, sig.raw...)
+	if msg.nb64 && bytes.IndexByte(msg.payload, '.') >= 0 {
+		buf := make([]byte, 0, len(sig.rawProtected)+len(sig.b64signature)+2)
+		buf = append(buf, sig.rawProtected...)
 		buf = append(buf, '.')
 		buf = append(buf, '.')
 		buf = append(buf, sig.b64signature...)
 		return buf, nil
 	}
-	buf := make([]byte, 0, len(sig.raw)+len(msg.payload)+len(sig.b64signature)+2)
-	buf = append(buf, sig.raw...)
+	buf := make([]byte, 0, len(sig.rawProtected)+len(msg.payload)+len(sig.b64signature)+2)
+	buf = append(buf, sig.rawProtected...)
 	buf = append(buf, '.')
 	buf = append(buf, msg.payload...)
 	buf = append(buf, '.')

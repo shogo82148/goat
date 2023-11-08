@@ -2,9 +2,11 @@
 package jsonutils
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
 	"net/url"
@@ -12,6 +14,36 @@ import (
 	"strconv"
 	"time"
 )
+
+// Unmarshal is same as [json.Unmarshal], but it uses [json.Number] for numbers.
+func Unmarshal(data []byte, v interface{}) error {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	if err := dec.Decode(v); err != nil {
+		return err
+	}
+
+	// check if there are any trailing data.
+	r := dec.Buffered()
+	var buf [16]byte
+	for {
+		n, err := r.Read(buf[:])
+		if err != nil && err != io.EOF {
+			return err
+		}
+		for _, b := range buf[:n] {
+			switch b {
+			case ' ', '\t', '\r', '\n':
+				continue
+			default:
+				return fmt.Errorf("jsonutils: trailing data")
+			}
+		}
+		if err == io.EOF {
+			return nil
+		}
+	}
+}
 
 var b64 = base64.RawURLEncoding
 
