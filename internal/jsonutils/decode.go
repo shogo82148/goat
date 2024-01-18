@@ -23,26 +23,12 @@ func Unmarshal(data []byte, v interface{}) error {
 		return err
 	}
 
-	// check if there are any trailing data.
-	r := dec.Buffered()
-	var buf [16]byte
-	for {
-		n, err := r.Read(buf[:])
-		if err != nil && err != io.EOF {
-			return err
-		}
-		for _, b := range buf[:n] {
-			switch b {
-			case ' ', '\t', '\r', '\n':
-				continue
-			default:
-				return fmt.Errorf("jsonutils: trailing data")
-			}
-		}
-		if err == io.EOF {
-			return nil
-		}
+	// check if the input is fully consumed.
+	_, err := dec.Token()
+	if err != nil && err != io.EOF {
+		return err
 	}
+	return nil
 }
 
 var b64 = base64.RawURLEncoding
