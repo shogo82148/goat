@@ -14,20 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         go:
+          - "stable"
+          - "1.22"
           - "1.21"
-        goexperiment: [""]
         goarch:
           - amd64
         include:
-          # test with GOEXPERIMENT=loopvar
-          # https://github.com/golang/go/wiki/LoopvarExperiment
-          - go: "1.21"
-            goexperiment: "loopvar"
-            goarch: amd64
-
           # test on 32-bit platforms
-          - go: "1.21"
-            goexperiment: "loopvar"
+          - go: "stable"
             goarch: "386"
 
     steps:
@@ -41,7 +35,6 @@ jobs:
         run: |
           go test -v -coverprofile=profile.cov ./...
         env:
-          GOEXPERIMENT: ${{ matrix.goexperiment }}
           GOARCH: ${{ matrix.goarch }}
 
       - uses: shogo82148/actions-goveralls@v1
