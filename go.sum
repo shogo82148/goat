@@ -6,8 +6,8 @@ github.com/shogo82148/go-cbor v0.2.0 h1:nDxYWgnVZDSCDXkZ2r5043VG44R0tUqgFW9+a/IA
 github.com/shogo82148/go-cbor v0.2.0/go.mod h1:c6qv6Lp+eCC3Fgjrv6ZPl9W1UYaMByfOlKHDgKvWecA=
 github.com/shogo82148/int128 v0.2.1 h1:50PGsQvKqSwCco7vv/V+bwUU68wwDf0+QzP2+dE3HdA=
 github.com/shogo82148/int128 v0.2.1/go.mod h1:piOmnBaUvAz9m7x71/YcU8HgDQTw81u8brBwWzOxtI4=
-github.com/shogo82148/memoize v0.0.4 h1:3n08PzuwGLbVwawf2jM5kfNC4mV25EqaAIjKrNfqqAs=
-github.com/shogo82148/memoize v0.0.4/go.mod h1:sOsvhOlJGVR2nHgCzUchvbEeYB6jNvSP9o4SPHgb+bY=
+github.com/shogo82148/memoize v0.0.5 h1:mjmK8igH+rDaFVlUlj4JvBC2nVOAEiedEGpYYYxNLxE=
+github.com/shogo82148/memoize v0.0.5/go.mod h1:sOsvhOlJGVR2nHgCzUchvbEeYB6jNvSP9o4SPHgb+bY=
 github.com/shogo82148/pointer v1.3.0 h1:LW5V2jUAjFNjS8e7k/PgFoh3EavOSB/vvN85aGue5+I=
 github.com/shogo82148/pointer v1.3.0/go.mod h1:agZ5JFpavFPXznbWonIvbG78NDfvDTFppe+7o53up5w=
 golang.org/x/crypto v0.19.0 h1:ENy+Az/9Y1vSrlrvBSyna3PITt4tiZLf7sgCjZBX7Wo=
