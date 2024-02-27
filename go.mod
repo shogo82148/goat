@@ -9,7 +9,7 @@ require (
 	github.com/shogo82148/go-cbor v0.2.0
 	github.com/shogo82148/memoize v0.1.0
 	github.com/shogo82148/pointer v1.3.0
-	golang.org/x/crypto v0.19.0
+	golang.org/x/crypto v0.20.0
 )
 
 require (
