@@ -1,7 +1,6 @@
 module github.com/shogo82148/goat
 
-go 1.21.1
-toolchain go1.23.7
+go 1.23.0
 
 require (
 	github.com/google/go-cmp v0.6.0
