@@ -16,8 +16,6 @@ jobs:
         go:
           - "stable"
           - "1.23"
-          - "1.22"
-          - "1.21"
         goarch:
           - amd64
         include:
