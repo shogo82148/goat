@@ -1,3 +1,0 @@
-go test fuzz v1
-string("{\"payload\":\"\",\"protected\":\"eyJ0000iOiI00CJ9\",\"signature\":\"\"}")
-string("{\"kty\":\"EC\",\"crv\":\"P-256\",\"x\":\"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEX\",\"y\":\"x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0\"}")

@@ -1,3 +1,0 @@
-go test fuzz v1
-string("{\"payload\":\"\",\"protected\":\"eyJhbGciOiJFUzI1NiJ9\",\"signature\":\"\"}")
-string("{\"kty\":\"RSA\",\"n\":\"\",\"e\":\"00\"}")
