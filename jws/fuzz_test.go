@@ -15,7 +15,7 @@ import (
 )
 
 var jwsPayloads = []string{
-	// JWS protected by RSA Key
+	// JWS protected by RSA Key and EC Key
 	`{` +
 		`"payload":` +
 		`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
