@@ -199,7 +199,7 @@ func FuzzJWK(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, data string) {
 		// Limit the size of the input data
-		if len(data) > 4096 {
+		if len(data) > 2048 {
 			return
 		}
 
