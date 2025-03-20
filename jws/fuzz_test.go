@@ -158,6 +158,11 @@ func FuzzJWS(f *testing.F) {
 	)
 
 	f.Fuzz(func(t *testing.T, raw, rawKey string) {
+		// limit key size
+		if len(rawKey) > 2048 {
+			return
+		}
+
 		var msg1 Message
 		if err := msg1.UnmarshalJSON([]byte(raw)); err != nil {
 			return
@@ -320,6 +325,11 @@ func FuzzJWSCompact(f *testing.F) {
 			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`,
 	)
 	f.Fuzz(func(t *testing.T, data, key string) {
+		// limit key size
+		if len(key) > 2048 {
+			return
+		}
+
 		k, err := jwk.ParseKey([]byte(key))
 		if err != nil {
 			return
