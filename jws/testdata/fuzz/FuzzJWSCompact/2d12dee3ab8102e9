@@ -1,3 +1,0 @@
-go test fuzz v1
-string("eyJhbGciOiJFUzI1NiJ9..")
-string("{\"kty\":\"RSA\",\"n\":\"\",\"e\":\"000\"}")
