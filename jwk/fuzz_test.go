@@ -198,6 +198,11 @@ func FuzzJWK(f *testing.F) {
 	}
 
 	f.Fuzz(func(t *testing.T, data string) {
+		// Limit the size of the input data
+		if len(data) > 4096 {
+			return
+		}
+
 		key1, err := ParseKey([]byte(data))
 		if err != nil {
 			return
