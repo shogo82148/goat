@@ -7,11 +7,11 @@ require (
 	github.com/shogo82148/go-cbor v0.2.0
 	github.com/shogo82148/memoize v0.1.0
 	github.com/shogo82148/pointer v1.3.0
-	golang.org/x/crypto v0.36.0
+	golang.org/x/crypto v0.38.0
 )
 
 require (
 	github.com/shogo82148/float16 v0.5.0 // indirect
 	github.com/shogo82148/int128 v0.2.1 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
 )
