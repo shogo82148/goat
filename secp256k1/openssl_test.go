@@ -46,7 +46,7 @@ func TestVerify_OpenSSL(t *testing.T) {
 	// generate signature using OpenSSL, and verify it using goat.
 	checkSecp256k1Support(t)
 
-	for i := 0; i < 1024; i++ {
+	for i := range 1024 {
 		t.Run(strconv.Itoa(i), testVerifyOpenSSL)
 	}
 }
@@ -56,7 +56,7 @@ func TestSign_OpenSSL(t *testing.T) {
 	// generate signature using goat, and verify it using OpenSSL.
 	checkSecp256k1Support(t)
 
-	for i := 0; i < 1024; i++ {
+	for i := range 1024 {
 		t.Run(strconv.Itoa(i), testSignOpenSSL)
 	}
 }
@@ -165,8 +165,8 @@ func checkSecp256k1Support(t *testing.T) bool {
 		t.Skip(err)
 		return false
 	}
-	idx := bytes.Index(out, []byte("secp256k1"))
-	if idx < 0 {
+	found := bytes.Contains(out, []byte("secp256k1"))
+	if !found {
 		t.Skip("OpenSSL doesn't support secp256k1")
 		return false
 	}

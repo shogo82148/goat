@@ -95,7 +95,7 @@ func TestTable(t *testing.T) {
 	var table lookupTable
 	table.Init(&q)
 
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		var want, got PointJacobian
 		table.SelectInto(&got, uint8(i))
 		want.x.SetBytes(decodeHex(myTable[i].x))

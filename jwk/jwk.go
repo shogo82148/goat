@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"maps"
 	"net/url"
 	"reflect"
 
@@ -263,9 +264,7 @@ var _ json.Marshaler = (*Key)(nil)
 // MarshalJSON implements [encoding/json.Marshaler]
 func (key *Key) MarshalJSON() ([]byte, error) {
 	raw := make(map[string]any, len(key.Raw))
-	for k, v := range key.Raw {
-		raw[k] = v
-	}
+	maps.Copy(raw, key.Raw)
 	e := jsonutils.NewEncoder(raw)
 	encodeCommonParameters(e, key)
 	if err := e.Err(); err != nil {

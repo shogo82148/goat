@@ -52,7 +52,7 @@ func TestSign(t *testing.T) {
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
-	for i := 0; i < 1024; i++ {
+	for range 1024 {
 		r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
 		if err != nil {
 			t.Fatal(err)

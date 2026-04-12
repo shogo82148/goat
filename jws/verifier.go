@@ -3,6 +3,7 @@ package jws
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/shogo82148/goat/jwa"
 )
@@ -17,10 +18,8 @@ type AlgorithmVerifier interface {
 type AllowedAlgorithms []jwa.SignatureAlgorithm
 
 func (a AllowedAlgorithms) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
-	for _, allowed := range a {
-		if alg == allowed {
-			return nil
-		}
+	if slices.Contains(a, alg) {
+		return nil
 	}
 	return errors.New("jws: signing algorithm is not allowed")
 }

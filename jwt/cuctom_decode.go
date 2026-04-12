@@ -14,15 +14,15 @@ import (
 	"github.com/shogo82148/goat/internal/jsonutils"
 )
 
-var timeType = reflect.TypeOf(time.Time{})
-var urlType = reflect.TypeOf(url.URL{})
-var bigIntType = reflect.TypeOf(big.Int{})
+var timeType = reflect.TypeFor[time.Time]()
+var urlType = reflect.TypeFor[url.URL]()
+var bigIntType = reflect.TypeFor[big.Int]()
 
 // DecodeCustom decodes custom claims into v.
 // v must be a pointer.
 func (c *Claims) DecodeCustom(v any) error {
 	rv := reflect.ValueOf(v)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return fmt.Errorf("jwt: invalid decode type: %s", reflect.TypeOf(v))
 	}
 	return decode(c.Raw, rv)
@@ -30,7 +30,7 @@ func (c *Claims) DecodeCustom(v any) error {
 
 func indirect(v reflect.Value) reflect.Value {
 	for {
-		if v.Kind() != reflect.Ptr {
+		if v.Kind() != reflect.Pointer {
 			break
 		}
 		if v.IsNil() {
@@ -160,7 +160,7 @@ func decode(in any, out reflect.Value) error {
 		}
 	case nil:
 		switch out.Kind() {
-		case reflect.Interface, reflect.Ptr, reflect.Map, reflect.Slice:
+		case reflect.Interface, reflect.Pointer, reflect.Map, reflect.Slice:
 			out.Set(reflect.Zero(out.Type()))
 			// otherwise, ignore null for primitives
 		}
@@ -192,7 +192,7 @@ func decode(in any, out reflect.Value) error {
 				if f != nil {
 					subv := out
 					for _, i := range f.index {
-						if subv.Kind() == reflect.Ptr {
+						if subv.Kind() == reflect.Pointer {
 							if subv.IsNil() {
 								if !subv.CanSet() {
 									return fmt.Errorf("jwt: cannot set pointer to unexported struct: %v", subv.Type().Elem())
@@ -301,7 +301,7 @@ func typeFields(t reflect.Type) []field {
 				isUnexported := sf.PkgPath != ""
 				if sf.Anonymous {
 					t := sf.Type
-					if t.Kind() == reflect.Ptr {
+					if t.Kind() == reflect.Pointer {
 						t = t.Elem()
 					}
 					if isUnexported && t.Kind() != reflect.Struct {
@@ -322,7 +322,7 @@ func typeFields(t reflect.Type) []field {
 				index[len(f.index)] = i
 
 				ft := sf.Type
-				if ft.Name() == "" && ft.Kind() == reflect.Ptr {
+				if ft.Name() == "" && ft.Kind() == reflect.Pointer {
 					// Follow pointer.
 					ft = ft.Elem()
 				}

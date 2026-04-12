@@ -17,9 +17,9 @@ var varBasepointTable [56]lookupTable
 func basepointTable() *[56]lookupTable {
 	initBasepointOnce.Do(func() {
 		p := NewGeneratorPoint()
-		for i := 0; i < 56; i++ {
+		for i := range 56 {
 			varBasepointTable[i].Init(p)
-			for j := 0; j < 8; j++ {
+			for range 8 {
 				p.Add(p, p)
 			}
 		}

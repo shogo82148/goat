@@ -253,10 +253,7 @@ type kdf struct {
 
 func newKDF(hash crypto.Hash, z, alg, apu, apv, pub, priv []byte) *kdf {
 	h := hash.New()
-	size := h.Size()
-	if size < 4 {
-		size = 4
-	}
+	size := max(h.Size(), 4)
 	return &kdf{
 		z:    z,
 		hash: h,

@@ -1,6 +1,8 @@
 // Package jwktypes contains types used by the package jwk.
 package jwktypes
 
+import "slices"
+
 // KeyUse is type of "use" JWK parameter
 // defined in RFC 7517 Section 4.2.
 type KeyUse string
@@ -74,13 +76,7 @@ func checkKeyOps(key any, op KeyOp) bool {
 		return true
 	}
 
-	for _, v := range ops {
-		if v == op {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ops, op)
 }
 
 func checkKeyUse(key any, op KeyOp) bool {
