@@ -132,10 +132,7 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	b64signature := data[idx2+1:]
 
 	// pre-allocate buffer
-	size := max(len(b64payload), len(b64header))
-	if len(b64signature) > size {
-		size = len(b64signature)
-	}
+	size := max(len(b64signature), len(b64payload), len(b64header))
 	buf := make([]byte, b64.DecodedLen(size))
 
 	// parse header
