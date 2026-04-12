@@ -29,10 +29,7 @@ func (c *Claims) DecodeCustom(v any) error {
 }
 
 func indirect(v reflect.Value) reflect.Value {
-	for {
-		if v.Kind() != reflect.Pointer {
-			break
-		}
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			v.Set(reflect.New(v.Type().Elem()))
 		}
