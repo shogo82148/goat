@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/shogo82148/go-cbor v0.2.1
 	github.com/shogo82148/memoize v0.1.0
-	github.com/shogo82148/pointer v1.3.0
+	github.com/shogo82148/pointer v1.4.0
 	golang.org/x/crypto v0.50.0
 )
 
