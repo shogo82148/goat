@@ -1009,7 +1009,7 @@ func (v *Element) Power446(z *Element) *Element {
 		z111.Square(&z111)
 	}
 	z111.Mul(&z111, &z37)
-	for i := 0; i < 37; i++ {
+	for range 37 {
 		z111.Square(&z111)
 	}
 	z111.Mul(&z111, &z37) // 2^111 - 1

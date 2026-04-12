@@ -52,7 +52,7 @@ func initBaseTable() {
 		var gen Point
 		var base PointJacobian
 		base.FromAffine(gen.NewGenerator())
-		for i := 0; i < 64; i++ {
+		for i := range 64 {
 			baseTable[i].Init(&base)
 			base.Double(&base)
 			base.Double(&base)

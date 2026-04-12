@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"net/url"
 
@@ -60,9 +61,7 @@ func (h *Header) Clone() *Header {
 	}
 	clone := *h
 	raw := make(map[string]any, len(h.Raw))
-	for k, v := range h.Raw {
-		raw[k] = v
-	}
+	maps.Copy(raw, h.Raw)
 	clone.Raw = raw
 	return &clone
 }
@@ -1103,9 +1102,7 @@ func b64Encode(src []byte) []byte {
 
 func encodeHeader(h *Header) (map[string]any, error) {
 	raw := make(map[string]any, len(h.Raw))
-	for k, v := range h.Raw {
-		raw[k] = v
-	}
+	maps.Copy(raw, h.Raw)
 	e := jsonutils.NewEncoder(raw)
 	if v := h.alg; v != "" {
 		e.Set(jwa.AlgorithmKey, string(v))

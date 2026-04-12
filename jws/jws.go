@@ -11,7 +11,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/url"
+	"slices"
 	"sort"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -194,10 +196,8 @@ func (h *Header) Base64() bool {
 func (h *Header) SetBase64(b64 bool) {
 	h.nb64 = !b64
 	if !b64 {
-		for _, param := range h.crit {
-			if param == "b64" {
-				return // "b64" is already contained.
-			}
+		if slices.Contains(h.crit, "b64") {
+			return // "b64" is already contained.
 		}
 		h.crit = append(h.crit, "b64")
 	}
@@ -558,9 +558,7 @@ func encodeHeader(h *Header) (map[string]any, error) {
 		return nil, nil
 	}
 	raw := make(map[string]any, len(h.Raw))
-	for k, v := range h.Raw {
-		raw[k] = v
-	}
+	maps.Copy(raw, h.Raw)
 	e := jsonutils.NewEncoder(raw)
 	if v := h.alg; v != "" {
 		e.Set(jwa.AlgorithmKey, string(v))

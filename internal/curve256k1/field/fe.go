@@ -597,12 +597,12 @@ func (v *Element) Inv(z *Element) *Element {
 	}
 	x.Mul(&x, &z64) // = 2^192 - 1
 
-	for i := 0; i < 16; i++ {
+	for range 16 {
 		x.Square(&x)
 	}
 	x.Mul(&x, &z16) // = 2^208 - 1
 
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		x.Square(&x)
 	}
 	x.Mul(&x, &z8) // = 2^216 - 1
@@ -622,7 +622,7 @@ func (v *Element) Inv(z *Element) *Element {
 	x.Square(&x)
 	x.Mul(&x, z) // = 2^223 - 1
 
-	for i := 0; i < 17; i++ {
+	for range 17 {
 		x.Square(&x)
 	}
 	x.Mul(&x, &z16) // = 2^240 - 2^16 - 1

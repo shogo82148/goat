@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -46,10 +47,8 @@ func (unsecureAnyAlgorithmVerifier) VerifyAlgorithm(ctx context.Context, alg jwa
 type AllowedAlgorithms []jwa.SignatureAlgorithm
 
 func (a AllowedAlgorithms) VerifyAlgorithm(ctx context.Context, alg jwa.SignatureAlgorithm) error {
-	for _, allowed := range a {
-		if alg == allowed {
-			return nil
-		}
+	if slices.Contains(a, alg) {
+		return nil
 	}
 	return errors.New("jwt: signing algorithm is not allowed")
 }
@@ -95,10 +94,8 @@ func (unsecureAnyAudienceVerifier) VerifyAudience(ctx context.Context, aud []str
 type Audience string
 
 func (a Audience) VerifyAudience(ctx context.Context, aud []string) error {
-	for _, v := range aud {
-		if v == string(a) {
-			return nil
-		}
+	if slices.Contains(aud, string(a)) {
+		return nil
 	}
 	return fmt.Errorf("jwt: invalid audience: %s", aud)
 }
@@ -135,10 +132,7 @@ func (p *Parser) Parse(ctx context.Context, data []byte) (*Token, error) {
 	b64signature := data[idx2+1:]
 
 	// pre-allocate buffer
-	size := len(b64header)
-	if len(b64payload) > size {
-		size = len(b64payload)
-	}
+	size := max(len(b64payload), len(b64header))
 	if len(b64signature) > size {
 		size = len(b64signature)
 	}

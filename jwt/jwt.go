@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/shogo82148/goat/internal/jsonutils"
@@ -89,9 +90,7 @@ func Sign(header *jws.Header, claims *Claims, key sig.SigningKey) ([]byte, error
 
 func encodeClaims(c *Claims) ([]byte, error) {
 	raw := make(map[string]any, len(c.Raw))
-	for k, v := range c.Raw {
-		raw[k] = v
-	}
+	maps.Copy(raw, c.Raw)
 	e := jsonutils.NewEncoder(raw)
 
 	if iss := c.Issuer; iss != "" {

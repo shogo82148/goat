@@ -3,6 +3,7 @@ package jwt
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/big"
 	"net/url"
 	"reflect"
@@ -44,9 +45,7 @@ func (c *Claims) EncodeCustom(v any) error {
 	if c.Raw == nil {
 		c.Raw = raw
 	} else {
-		for k, v := range raw {
-			c.Raw[k] = v
-		}
+		maps.Copy(c.Raw, raw)
 	}
 
 	return nil
@@ -93,7 +92,7 @@ func encode(in reflect.Value) (any, error) {
 		for _, f := range fields {
 			subv := in
 			for _, i := range f.index {
-				if subv.Kind() == reflect.Ptr {
+				if subv.Kind() == reflect.Pointer {
 					if subv.IsNil() {
 						if !subv.CanSet() {
 							return nil, fmt.Errorf("jwt: cannot set pointer to unexported struct: %v", subv.Type().Elem())

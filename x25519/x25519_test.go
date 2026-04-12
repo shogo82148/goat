@@ -104,7 +104,7 @@ func TestX25519(t *testing.T) {
 		t.Run("After 1,000 iteration", func(t *testing.T) {
 			k := decodeHex("0900000000000000000000000000000000000000000000000000000000000000")
 			u := decodeHex("0900000000000000000000000000000000000000000000000000000000000000")
-			for i := 0; i < 1_000; i++ {
+			for range 1_000 {
 				v, err := X25519(k, u)
 				if err != nil {
 					t.Fatal(err)

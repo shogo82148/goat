@@ -1084,7 +1084,7 @@ func TestMulAdd_Check(t *testing.T) {
 func (s *Scalar) toBig(v *big.Int) *big.Int {
 	var buf [56]byte
 	copy(buf[:], s.s[:])
-	for i := 0; i < len(buf)/2; i++ {
+	for i := range len(buf) / 2 {
 		buf[i], buf[len(buf)-i-1] = buf[len(buf)-i-1], buf[i]
 	}
 	return v.SetBytes(buf[:])
@@ -1126,7 +1126,7 @@ func TestScalarNonAdjacentForm(t *testing.T) {
 
 	sNAF := s.nonAdjacentForm(5)
 
-	for i := 0; i < len(expectedNAF); i++ {
+	for i := range len(expectedNAF) {
 		if expectedNAF[i] != sNAF[i] {
 			t.Errorf("Wrong digit at position %d, got %d, expected %d", i, sNAF[i], expectedNAF[i])
 		}

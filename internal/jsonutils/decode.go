@@ -16,7 +16,7 @@ import (
 )
 
 // Unmarshal is same as [json.Unmarshal], but it uses [json.Number] for numbers.
-func Unmarshal(data []byte, v interface{}) error {
+func Unmarshal(data []byte, v any) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.UseNumber()
 	if err := dec.Decode(v); err != nil {

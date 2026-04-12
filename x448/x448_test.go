@@ -136,7 +136,7 @@ func TestLoop1(t *testing.T) {
 			"00000000000000000000000000000000000000000000000000000000",
 	)
 
-	for i := 0; i < 1; i++ {
+	for range 1 {
 		tmp, err := X448(k, u)
 		if err != nil {
 			t.Fatal(err)
@@ -164,7 +164,7 @@ func TestLoop1000(t *testing.T) {
 			"00000000000000000000000000000000000000000000000000000000",
 	)
 
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		tmp, err := X448(k, u)
 		if err != nil {
 			t.Fatal(err)

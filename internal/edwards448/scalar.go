@@ -1735,13 +1735,13 @@ func (s *Scalar) signedRadix16() [112]int8 {
 	var digits [112]int8
 
 	// Compute unsigned radix-16 digits:
-	for i := 0; i < 56; i++ {
+	for i := range 56 {
 		digits[2*i] = int8(s.s[i] & 0xF)
 		digits[2*i+1] = int8((s.s[i] >> 4) & 0xF)
 	}
 
 	// Recenter coefficients:
-	for i := 0; i < 112-1; i++ {
+	for i := range 112 - 1 {
 		carry := (digits[i] + 8) >> 4
 		digits[i] -= carry << 4
 		digits[i+1] += carry
@@ -1769,7 +1769,7 @@ func (s *Scalar) nonAdjacentForm(w uint) [448]int8 {
 	var naf [448]int8 // non adjacent form of s
 	var digits [8]uint64
 
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		digits[i] = binary.LittleEndian.Uint64(s.s[i*8:])
 	}
 
