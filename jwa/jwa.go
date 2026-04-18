@@ -613,17 +613,17 @@ func (enc EncryptionAlgorithm) Available() bool {
 // CEKSize returns the byte size of CEK(Content Encryption Key) for the algorithm.
 func (enc EncryptionAlgorithm) CEKSize() int {
 	switch enc {
-	case A128CBC_HS256:
+	case EncryptionAlgorithmA128CBC_HS256:
 		return 32
-	case A192CBC_HS384:
+	case EncryptionAlgorithmA192CBC_HS384:
 		return 48
-	case A256CBC_HS512:
+	case EncryptionAlgorithmA256CBC_HS512:
 		return 64
-	case A128GCM:
+	case EncryptionAlgorithmA128GCM:
 		return 16
-	case A192GCM:
+	case EncryptionAlgorithmA192GCM:
 		return 24
-	case A256GCM:
+	case EncryptionAlgorithmA256GCM:
 		return 32
 	}
 	return 0
@@ -632,9 +632,9 @@ func (enc EncryptionAlgorithm) CEKSize() int {
 // IVSice returns the byte size of IV(Initialization Vector) for the algorithm.
 func (enc EncryptionAlgorithm) IVSize() int {
 	switch enc {
-	case A128CBC_HS256, A192CBC_HS384, A256CBC_HS512:
+	case EncryptionAlgorithmA128CBC_HS256, EncryptionAlgorithmA192CBC_HS384, EncryptionAlgorithmA256CBC_HS512:
 		return 16
-	case A128GCM, A192GCM, A256GCM:
+	case EncryptionAlgorithmA128GCM, EncryptionAlgorithmA192GCM, EncryptionAlgorithmA256GCM:
 		return 12
 	}
 	return 0
