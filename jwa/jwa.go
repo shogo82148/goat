@@ -780,10 +780,18 @@ func (crv EllipticCurve) String() string {
 type CompressionAlgorithm string
 
 const (
+	// DEF is compression with the DEFLATE RFC 1951 algorithm.
+	//
+	// Deprecated: use [CompressionAlgorithmDEF] instead of DEF.
+	//go:fix inline
+	DEF = CompressionAlgorithmDEF
+)
+
+const (
 	CompressionAlgorithmUnknown CompressionAlgorithm = ""
 
-	// DEF is compression with the DEFLATE RFC 1951 algorithm.
-	DEF CompressionAlgorithm = "DEF"
+	// CompressionAlgorithmDEF is compression with the DEFLATE RFC 1951 algorithm.
+	CompressionAlgorithmDEF CompressionAlgorithm = "DEF"
 )
 
 func (zip CompressionAlgorithm) String() string {
