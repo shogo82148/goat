@@ -12,72 +12,161 @@ import (
 type SignatureAlgorithm string
 
 const (
-	SignatureAlgorithmUnknown SignatureAlgorithm = ""
-
 	// HS256 is HMAC using SHA-256.
 	// import github.com/shogo82148/goat/jwa/hs
-	HS256 SignatureAlgorithm = "HS256"
+	//
+	// Deprecated: use [SignatureAlgorithmHS256] instead of HS256.
+	//go:fix inline
+	HS256 = SignatureAlgorithmHS256
 
 	// HS384 is HMAC using SHA-384.
 	// import github.com/shogo82148/goat/jwa/hs
-	HS384 SignatureAlgorithm = "HS384"
+	//
+	// Deprecated: use [SignatureAlgorithmHS384] instead of HS384.
+	//go:fix inline
+	HS384 = SignatureAlgorithmHS384
 
 	// HS512 is HMAC using SHA-512.
 	// import github.com/shogo82148/goat/jwa/hs
-	HS512 SignatureAlgorithm = "HS512"
+	//
+	// Deprecated: use [SignatureAlgorithmHS512] instead of HS512.
+	//go:fix inline
+	HS512 = SignatureAlgorithmHS512
 
 	// RS256 is RSASSA-PKCS1-v1_5 using SHA-256.
 	// import github.com/shogo82148/goat/jwa/rs
-	RS256 SignatureAlgorithm = "RS256"
+	//
+	// Deprecated: use [SignatureAlgorithmRS256] instead of RS256.
+	//go:fix inline
+	RS256 = SignatureAlgorithmRS256
 
 	// RS384 is RSASSA-PKCS1-v1_5 using SHA-384.
 	// import github.com/shogo82148/goat/jwa/rs
-	RS384 SignatureAlgorithm = "RS384"
+	//
+	// Deprecated: use [SignatureAlgorithmRS384] instead of RS384.
+	//go:fix inline
+	RS384 = SignatureAlgorithmRS384
 
 	// RS512 is RSASSA-PKCS1-v1_5 using SHA-512.
 	// import github.com/shogo82148/goat/jwa/rs
-	RS512 SignatureAlgorithm = "RS512"
+	//
+	// Deprecated: use [SignatureAlgorithmRS512] instead of RS512.
+	//go:fix inline
+	RS512 = SignatureAlgorithmRS512
 
 	// ES256 is ECDSA using P-256 and SHA-256.
 	// import github.com/shogo82148/goat/jwa/es
-	ES256 SignatureAlgorithm = "ES256"
+	//
+	// Deprecated: use [SignatureAlgorithmES256] instead of ES256.
+	//go:fix inline
+	ES256 = SignatureAlgorithmES256
 
 	// ES384 is ECDSA using P-384 and SHA-384.
 	// import github.com/shogo82148/goat/jwa/es
-	ES384 SignatureAlgorithm = "ES384"
+	//
+	// Deprecated: use [SignatureAlgorithmES384] instead of ES384.
+	//go:fix inline
+	ES384 = SignatureAlgorithmES384
 
 	// ES512 is ECDSA using P-521 and SHA-512.
 	// import github.com/shogo82148/goat/jwa/es
-	ES512 SignatureAlgorithm = "ES512"
+	//
+	// Deprecated: use [SignatureAlgorithmES512] instead of ES512.
+	//go:fix inline
+	ES512 = SignatureAlgorithmES512
 
 	// PS256 is RSASSA-PSS using SHA-256 and MGF1 with SHA-256.
 	// import github.com/shogo82148/goat/jwa/ps
-	PS256 SignatureAlgorithm = "PS256"
 
 	// PS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
 	// import github.com/shogo82148/goat/jwa/ps
-	PS384 SignatureAlgorithm = "PS384"
+	PS384 = SignatureAlgorithmPS384
 
 	// PS512 is RSASSA-PSS using SHA-512 and MGF1 with SHA-512.
 	// import github.com/shogo82148/goat/jwa/ps
-	PS512 SignatureAlgorithm = "PS512"
+	PS512 = SignatureAlgorithmPS512
 
 	// None is no digital signature or MAC performed.
 	// import github.com/shogo82148/goat/jwa/none
-	None SignatureAlgorithm = "none"
+	None = SignatureAlgorithmNone
 
 	// EdDSA is Edwards-Curve Digital Signature Algorithm.
 	// import github.com/shogo82148/goat/jwa/eddsa
 	//
 	// Deprecated: use [SignatureAlgorithmEd25519] or [SignatureAlgorithmEd448] instead of EdDSA.
-	EdDSA SignatureAlgorithm = "EdDSA"
+	//go:fix inline
+	EdDSA = SignatureAlgorithmEdDSA
 
 	// ES256K is ECDSA using secp256k1 curve and SHA-256.
 	// import github.com/shogo82148/goat/jwa/es
-	ES256K SignatureAlgorithm = "ES256K"
+	//
+	// Deprecated: use [SignatureAlgorithmES256K] instead of ES256K.
+	//go:fix inline
+	ES256K = SignatureAlgorithmES256K
 )
 
 const (
+	// SignatureAlgorithmUnknown is an unknown signature algorithm.
+	SignatureAlgorithmUnknown SignatureAlgorithm = ""
+
+	// SignatureAlgorithmHS256 is HMAC using SHA-256.
+	// import github.com/shogo82148/goat/jwa/hs
+	SignatureAlgorithmHS256 SignatureAlgorithm = "HS256"
+
+	// SignatureAlgorithmHS384 is HMAC using SHA-384.
+	// import github.com/shogo82148/goat/jwa/hs
+	SignatureAlgorithmHS384 SignatureAlgorithm = "HS384"
+
+	// SignatureAlgorithmHS512 is HMAC using SHA-512.
+	// import github.com/shogo82148/goat/jwa/hs
+	SignatureAlgorithmHS512 SignatureAlgorithm = "HS512"
+
+	// SignatureAlgorithmRS256 is RSASSA-PKCS1-v1_5 using SHA-256.
+	// import github.com/shogo82148/goat/jwa/rs
+	SignatureAlgorithmRS256 SignatureAlgorithm = "RS256"
+
+	// SignatureAlgorithmRS384 is RSASSA-PKCS1-v1_5 using SHA-384.
+	// import github.com/shogo82148/goat/jwa/rs
+	SignatureAlgorithmRS384 SignatureAlgorithm = "RS384"
+
+	// SignatureAlgorithmRS512 is RSASSA-PKCS1-v1_5 using SHA-512.
+	// import github.com/shogo82148/goat/jwa/rs
+	SignatureAlgorithmRS512 SignatureAlgorithm = "RS512"
+
+	// SignatureAlgorithmES256 is ECDSA using P-256 and SHA-256.
+	// import github.com/shogo82148/goat/jwa/es
+	SignatureAlgorithmES256 SignatureAlgorithm = "ES256"
+
+	// SignatureAlgorithmES384 is ECDSA using P-384 and SHA-384.
+	// import github.com/shogo82148/goat/jwa/es
+	SignatureAlgorithmES384 SignatureAlgorithm = "ES384"
+
+	// SignatureAlgorithmES512 is ECDSA using P-521 and SHA-512.
+	// import github.com/shogo82148/goat/jwa/es
+	SignatureAlgorithmES512 SignatureAlgorithm = "ES512"
+
+	// SignatureAlgorithmPS256 is RSASSA-PSS using SHA-256 and MGF1 with SHA-256.
+	// import github.com/shogo82148/goat/jwa/ps
+	SignatureAlgorithmPS256 SignatureAlgorithm = "PS256"
+
+	// SignatureAlgorithmPS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
+	// import github.com/shogo82148/goat/jwa/ps
+	SignatureAlgorithmPS384 SignatureAlgorithm = "PS384"
+
+	// SignatureAlgorithmPS512 is RSASSA-PSS using SHA-512 and MGF1 with SHA-512.
+	// import github.com/shogo82148/goat/jwa/ps
+	SignatureAlgorithmPS512 SignatureAlgorithm = "PS512"
+
+	// SignatureAlgorithmNone is no digital signature or MAC performed.
+	// import github.com/shogo82148/goat/jwa/none
+	SignatureAlgorithmNone SignatureAlgorithm = "none"
+
+	// SignatureAlgorithmEdDSA is Edwards-Curve Digital Signature Algorithm.
+	// import github.com/shogo82148/goat/jwa/eddsa
+	//
+	// Deprecated: use [SignatureAlgorithmEd25519] or [SignatureAlgorithmEd448] instead of EdDSA.
+	SignatureAlgorithmEdDSA SignatureAlgorithm = "EdDSA"
+
 	// SignatureAlgorithmEd25519 is Ed25519 signature algorithm.
 	// import github.com/shogo82148/goat/jwa/ed25519
 	SignatureAlgorithmEd25519 SignatureAlgorithm = "Ed25519"
@@ -85,6 +174,10 @@ const (
 	// SignatureAlgorithmEd448 is Ed448 signature algorithm.
 	// import github.com/shogo82148/goat/jwa/ed448
 	SignatureAlgorithmEd448 SignatureAlgorithm = "Ed448"
+
+	// SignatureAlgorithmES256K is ECDSA using secp256k1 curve and SHA-256.
+	// import github.com/shogo82148/goat/jwa/es
+	SignatureAlgorithmES256K SignatureAlgorithm = "ES256K"
 )
 
 func (alg SignatureAlgorithm) String() string {
@@ -109,23 +202,23 @@ func (alg SignatureAlgorithm) Available() bool {
 }
 
 var signatureAlgorithms = map[SignatureAlgorithm]func() sig.Algorithm{
-	HS256:                     nil,
-	HS384:                     nil,
-	HS512:                     nil,
-	RS256:                     nil,
-	RS384:                     nil,
-	RS512:                     nil,
-	ES256:                     nil,
-	ES384:                     nil,
-	ES512:                     nil,
-	PS256:                     nil,
-	PS384:                     nil,
-	PS512:                     nil,
-	None:                      nil,
-	EdDSA:                     nil,
-	ES256K:                    nil,
+	SignatureAlgorithmHS256:   nil,
+	SignatureAlgorithmHS384:   nil,
+	SignatureAlgorithmHS512:   nil,
+	SignatureAlgorithmRS256:   nil,
+	SignatureAlgorithmRS384:   nil,
+	SignatureAlgorithmRS512:   nil,
+	SignatureAlgorithmES256:   nil,
+	SignatureAlgorithmES384:   nil,
+	SignatureAlgorithmES512:   nil,
+	SignatureAlgorithmPS256:   nil,
+	SignatureAlgorithmPS384:   nil,
+	SignatureAlgorithmPS512:   nil,
+	SignatureAlgorithmNone:    nil,
+	SignatureAlgorithmEdDSA:   nil,
 	SignatureAlgorithmEd25519: nil,
 	SignatureAlgorithmEd448:   nil,
+	SignatureAlgorithmES256K:  nil,
 }
 
 func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) {
