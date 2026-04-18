@@ -699,7 +699,7 @@ func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKe
 		e.SetBytes("y", data[66+1:])
 	case ecdh.X25519():
 		e.Set("kty", jwa.KeyTypeOKP)
-		e.Set("crv", jwa.EllipticCurveEd25519.String())
+		e.Set("crv", jwa.EllipticCurveX25519.String())
 		e.SetBytes("x", pub.Bytes())
 	}
 
