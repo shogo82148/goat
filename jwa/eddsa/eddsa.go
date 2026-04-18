@@ -1,4 +1,4 @@
-// Package eddsa provides the Elliptic Curve Diffie-Hellman key agreement algorithm defined in RFC 8032.
+// Package ed25519 provides the Edwards-Curve Digital Signature Algorithm defined in RFC 8032.
 package eddsa
 
 import (
@@ -16,7 +16,7 @@ func New() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.EdDSA, New)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEd25519, New)
 }
 
 type algorithm struct{}
