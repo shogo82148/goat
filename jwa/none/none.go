@@ -16,7 +16,7 @@ func New() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.None, New)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmNone, New)
 }
 
 var _ sig.Algorithm = (*algorithm)(nil)

@@ -325,12 +325,12 @@ func TestEncrypt(t *testing.T) {
 		}
 
 		header := &Header{}
-		header.SetAlgorithm(jwa.RSA_OAEP)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA_OAEP)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k)
 
 		plaintext := "The true sign of intelligence is not knowledge but imagination."
-		msg1, err := NewMessageWithKW(jwa.A256GCM, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA256GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -391,13 +391,13 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alg := jwa.RSA1_5.New()
+		alg := jwa.KeyManagementAlgorithmRSA1_5.New()
 		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
-		header.SetAlgorithm(jwa.RSA1_5)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA1_5)
 		plaintext := "Live long and prosper."
-		msg1, err := NewMessageWithKW(jwa.A128CBC_HS256, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -431,13 +431,13 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alg := jwa.A128KW.New()
+		alg := jwa.KeyManagementAlgorithmA128KW.New()
 		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
-		header.SetAlgorithm(jwa.A128KW)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmA128KW)
 		plaintext := "Live long and prosper."
-		msg1, err := NewMessageWithKW(jwa.A128CBC_HS256, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -477,11 +477,11 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		header := &Header{}
-		header.SetAlgorithm(jwa.A128GCMKW)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmA128GCMKW)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
-		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -521,11 +521,11 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		header := &Header{}
-		header.SetAlgorithm(jwa.PBES2_HS256_A128KW)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmPBES2_HS256_A128KW)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello World!\n"
-		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -565,12 +565,12 @@ func TestEncrypt(t *testing.T) {
 			t.Fatal(err)
 		}
 		header := &Header{}
-		header.SetAlgorithm(jwa.A128GCMKW)
-		header.SetCompressionAlgorithm(jwa.DEF)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmA128GCMKW)
+		header.SetCompressionAlgorithm(jwa.CompressionAlgorithmDEF)
 		alg := header.Algorithm().New()
 		key := alg.NewKeyWrapper(k)
 		plaintext := "Hello JWE!\n"
-		msg1, err := NewMessageWithKW(jwa.A128GCM, key, header, []byte(plaintext))
+		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128GCM, key, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -604,11 +604,11 @@ func TestNewMessage(t *testing.T) {
 	// $ jwx jwe encrypt --key oct.json --compress --key-encryption A128GCMKW --content-encryption A128GCM --output - input.txt
 	t.Run("jwx A128GCMKW compressed", func(t *testing.T) {
 		header := &Header{}
-		header.SetAlgorithm(jwa.A128GCMKW)
-		header.SetCompressionAlgorithm(jwa.DEF)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmA128GCMKW)
+		header.SetCompressionAlgorithm(jwa.CompressionAlgorithmDEF)
 		alg := header.Algorithm().New()
 		plaintext := "Hello JWE!\n"
-		msg1, err := NewMessage(jwa.A128GCM, header, []byte(plaintext))
+		msg1, err := NewMessage(jwa.EncryptionAlgorithmA128GCM, header, []byte(plaintext))
 		if err != nil {
 			t.Fatal(err)
 		}

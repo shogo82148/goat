@@ -1,4 +1,6 @@
 // Package eddsa provides the Edwards-Curve Digital Signature Algorithm defined in RFC 8032.
+//
+// Deprecated: use ed25519 or ed448 package instead of eddsa.
 package eddsa
 
 import (
@@ -11,12 +13,14 @@ import (
 )
 
 // New returns Edwards-Curve Digital Signature Algorithm.
+//
+// Deprecated: use ed25519 or ed448 package instead of eddsa.
 func New() sig.Algorithm {
 	return &algorithm{}
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.EdDSA, New)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEdDSA, New)
 }
 
 type algorithm struct{}

@@ -18,7 +18,7 @@ func ExampleParseCompact() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.EdDSA},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
 		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
@@ -51,7 +51,7 @@ func ExampleVerifier_Verify() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.EdDSA},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
 		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
@@ -85,9 +85,9 @@ func ExampleMessage_Compact() {
 		log.Fatal(err)
 	}
 	header := jws.NewHeader()
-	header.SetAlgorithm(jwa.EdDSA)
+	header.SetAlgorithm(jwa.SignatureAlgorithmEdDSA)
 	msg := jws.NewMessage([]byte("Example of Ed25519 signing"))
-	if err := msg.Sign(header, nil, jwa.EdDSA.New().NewSigningKey(key)); err != nil {
+	if err := msg.Sign(header, nil, jwa.SignatureAlgorithmEdDSA.New().NewSigningKey(key)); err != nil {
 		log.Fatal(err)
 	}
 

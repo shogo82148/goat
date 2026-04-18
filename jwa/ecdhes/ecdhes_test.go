@@ -62,7 +62,7 @@ func TestUnwrap(t *testing.T) {
 	alg := New()
 	key := alg.NewKeyWrapper(aliceKey)
 	opts := &options{
-		enc: jwa.A128GCM,
+		enc: jwa.EncryptionAlgorithmA128GCM,
 		epk: bobKey,
 		apu: []byte("Alice"),
 		apv: []byte("Bob"),

@@ -44,8 +44,8 @@ func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 }
 
 func encodeEd25519Key(e *jsonutils.Encoder, priv ed25519.PrivateKey, pub ed25519.PublicKey) {
-	e.Set("kty", jwa.OKP.String())
-	e.Set("crv", jwa.Ed25519.String())
+	e.Set("kty", jwa.KeyTypeOKP.String())
+	e.Set("crv", jwa.EllipticCurveEd25519.String())
 	e.SetBytes("x", []byte(pub))
 	if priv != nil {
 		e.SetBytes("d", []byte(priv[:ed25519.SeedSize]))

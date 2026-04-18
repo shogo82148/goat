@@ -16,7 +16,7 @@ import (
 )
 
 var a128kw = &algorithm{
-	name: string(jwa.PBES2_HS256_A128KW),
+	name: string(jwa.KeyManagementAlgorithmPBES2_HS256_A128KW),
 	hash: crypto.SHA256.New,
 	size: 16,
 }
@@ -28,7 +28,7 @@ func NewHS256A128KW() keymanage.Algorithm {
 }
 
 var a192kw = &algorithm{
-	name: string(jwa.PBES2_HS384_A192KW),
+	name: string(jwa.KeyManagementAlgorithmPBES2_HS384_A192KW),
 	hash: crypto.SHA384.New,
 	size: 24,
 }
@@ -40,7 +40,7 @@ func NewHS384A192KW() keymanage.Algorithm {
 }
 
 var a256kw = &algorithm{
-	name: string(jwa.PBES2_HS512_A256KW),
+	name: string(jwa.KeyManagementAlgorithmPBES2_HS512_A256KW),
 	hash: crypto.SHA512.New,
 	size: 32,
 }
@@ -52,9 +52,9 @@ func NewHS512A256KW() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.PBES2_HS256_A128KW, NewHS256A128KW)
-	jwa.RegisterKeyManagementAlgorithm(jwa.PBES2_HS384_A192KW, NewHS384A192KW)
-	jwa.RegisterKeyManagementAlgorithm(jwa.PBES2_HS512_A256KW, NewHS512A256KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmPBES2_HS256_A128KW, NewHS256A128KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmPBES2_HS384_A192KW, NewHS384A192KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmPBES2_HS512_A256KW, NewHS512A256KW)
 }
 
 var _ keymanage.Algorithm = (*algorithm)(nil)

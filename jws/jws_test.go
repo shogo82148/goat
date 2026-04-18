@@ -36,7 +36,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.HS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmHS256},
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -49,7 +49,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.HS256; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmHS256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 		if want, got := "JWT", header.Type(); want != got {
@@ -113,7 +113,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.RS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmRS256},
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -126,7 +126,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.RS256; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmRS256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -159,7 +159,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmES256},
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -175,7 +175,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.ES256; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmES256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -211,7 +211,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.ES512},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmES512},
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -224,7 +224,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.ES512; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmES512; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -247,7 +247,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.None},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmNone},
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header, _ *Header) (sig.SigningKey, error) {
 				return header.Algorithm().New().NewSigningKey(nil), nil
 			}),
@@ -258,7 +258,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.None; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmNone; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -278,7 +278,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.EdDSA},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -297,7 +297,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.EdDSA; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmEdDSA; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -338,7 +338,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.RS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmRS256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "2010-12-29" {
 					return nil, errors.New("unknown key id")
@@ -392,7 +392,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		}
 
 		v = &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmES256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 					return nil, errors.New("unknown key id")
@@ -436,7 +436,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmES256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				if header.KeyID() != "e9bc097a-ce51-4036-9562-d2ade882db0d" {
 					return nil, errors.New("unknown key id")
@@ -481,7 +481,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.HS256},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmHS256},
 			KeyFinder: FindKeyFunc(func(_ context.Context, protected, header *Header) (sig.SigningKey, error) {
 				rawKey := `{` +
 					`"kty":"oct",` +
@@ -513,7 +513,7 @@ func TestMarshalJSON(t *testing.T) {
 			` "http://example.com/is_root":true}`))
 
 		protected1 := NewHeader()
-		protected1.SetAlgorithm(jwa.RS256)
+		protected1.SetAlgorithm(jwa.SignatureAlgorithmRS256)
 		header1 := NewHeader()
 		header1.SetKeyID("2010-12-29")
 		rawKey1 := `{"kty":"RSA",` +
@@ -550,12 +550,12 @@ func TestMarshalJSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := msg.Sign(protected1, header1, jwa.RS256.New().NewSigningKey(key1)); err != nil {
+		if err := msg.Sign(protected1, header1, jwa.SignatureAlgorithmRS256.New().NewSigningKey(key1)); err != nil {
 			t.Fatal(err)
 		}
 
 		protected := NewHeader()
-		protected.SetAlgorithm(jwa.ES256)
+		protected.SetAlgorithm(jwa.SignatureAlgorithmES256)
 		header := NewHeader()
 		header.SetKeyID("e9bc097a-ce51-4036-9562-d2ade882db0d")
 		rawKey2 := `{"kty":"EC",` +
@@ -568,7 +568,7 @@ func TestMarshalJSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := msg.Sign(protected, header, jwa.ES256.New().NewSigningKey(key2)); err != nil {
+		if err := msg.Sign(protected, header, jwa.SignatureAlgorithmES256.New().NewSigningKey(key2)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -589,7 +589,7 @@ func TestMarshalJSON(t *testing.T) {
 			` "http://example.com/is_root":true}`))
 
 		protected2 := NewHeader()
-		protected2.SetAlgorithm(jwa.ES256)
+		protected2.SetAlgorithm(jwa.SignatureAlgorithmES256)
 		header2 := NewHeader()
 		header2.SetKeyID("e9bc097a-ce51-4036-9562-d2ade882db0d")
 		rawKey2 := `{"kty":"EC",` +
@@ -602,7 +602,7 @@ func TestMarshalJSON(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := msg.Sign(protected2, header2, jwa.ES256.New().NewSigningKey(key2)); err != nil {
+		if err := msg.Sign(protected2, header2, jwa.SignatureAlgorithmES256.New().NewSigningKey(key2)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -621,7 +621,7 @@ func TestMarshalJSON(t *testing.T) {
 	t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
 		msg := NewRawMessage([]byte("$.02"))
 		header := NewHeader()
-		header.SetAlgorithm(jwa.HS256)
+		header.SetAlgorithm(jwa.SignatureAlgorithmHS256)
 		header.SetBase64(false)
 
 		rawKey := `{` +
@@ -634,7 +634,7 @@ func TestMarshalJSON(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if err := msg.Sign(header, nil, jwa.HS256.New().NewSigningKey(key)); err != nil {
+		if err := msg.Sign(header, nil, jwa.SignatureAlgorithmHS256.New().NewSigningKey(key)); err != nil {
 			t.Fatal(err)
 		}
 
@@ -666,9 +666,9 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.HS256.New().NewSigningKey(key)
+		k := jwa.SignatureAlgorithmHS256.New().NewSigningKey(key)
 		h := NewHeader()
-		h.SetAlgorithm(jwa.HS256)
+		h.SetAlgorithm(jwa.SignatureAlgorithmHS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
@@ -729,9 +729,9 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.RS256.New().NewSigningKey(key)
+		k := jwa.SignatureAlgorithmRS256.New().NewSigningKey(key)
 		h := NewHeader()
-		h.SetAlgorithm(jwa.RS256)
+		h.SetAlgorithm(jwa.SignatureAlgorithmRS256)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
@@ -764,12 +764,12 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC 7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		h := NewHeader()
-		h.SetAlgorithm(jwa.None)
+		h.SetAlgorithm(jwa.SignatureAlgorithmNone)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		k := jwa.None.New().NewSigningKey(nil)
+		k := jwa.SignatureAlgorithmNone.New().NewSigningKey(nil)
 		msg := NewMessage(payload)
 		if err := msg.Sign(h, nil, k); err != nil {
 			t.Fatal(err)
@@ -800,9 +800,9 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		k := jwa.HS256.New().NewSigningKey(key)
+		k := jwa.SignatureAlgorithmHS256.New().NewSigningKey(key)
 		h := NewHeader()
-		h.SetAlgorithm(jwa.HS256)
+		h.SetAlgorithm(jwa.SignatureAlgorithmHS256)
 		h.SetBase64(false)
 		msg := NewRawMessage([]byte("$.02"))
 		if err := msg.Sign(h, nil, k); err != nil {
@@ -850,7 +850,7 @@ func TestKeyTypeMissmatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	v := &Verifier{
-		AlgorithmVerifier: AllowedAlgorithms{jwa.ES256},
+		AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmES256},
 		KeyFinder:         &JWKKeyFinder{JWK: key},
 	}
 	msg, err := ParseCompact(raw)

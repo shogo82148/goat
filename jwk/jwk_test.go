@@ -391,8 +391,8 @@ func TestNewPrivateKey_ECDH(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.OKP {
-			t.Errorf("unexpected type type: got %s, want %s", key.kty, jwa.OKP)
+		if key.kty != jwa.KeyTypeOKP {
+			t.Errorf("unexpected type type: got %s, want %s", key.kty, jwa.KeyTypeOKP)
 		}
 		if _, err := key.MarshalJSON(); err != nil {
 			t.Fatal(err)
@@ -439,8 +439,8 @@ func TestNewPublicKey_ECDH(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.OKP {
-			t.Errorf("unexpected type type: got %s, want %s", key.kty, jwa.OKP)
+		if key.kty != jwa.KeyTypeOKP {
+			t.Errorf("unexpected type type: got %s, want %s", key.kty, jwa.KeyTypeOKP)
 		}
 		if _, err := key.MarshalJSON(); err != nil {
 			t.Fatal(err)

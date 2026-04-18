@@ -45,7 +45,7 @@ func TestParse(t *testing.T) {
 		}
 		p := &Parser{
 			KeyFinder:             &JWKKeyFiner{Key: key},
-			AlgorithmVerifier:     AllowedAlgorithms{jwa.HS256},
+			AlgorithmVerifier:     AllowedAlgorithms{jwa.SignatureAlgorithmHS256},
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
@@ -79,7 +79,7 @@ func TestParse(t *testing.T) {
 				alg := header.Algorithm().New()
 				return alg.NewSigningKey(nil), nil
 			}),
-			AlgorithmVerifier:     AllowedAlgorithms{jwa.None},
+			AlgorithmVerifier:     AllowedAlgorithms{jwa.SignatureAlgorithmNone},
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
@@ -109,10 +109,10 @@ func TestParse_Claims(t *testing.T) {
 
 	p := &Parser{
 		KeyFinder: FindKeyFunc(func(_ context.Context, header *jws.Header) (sig.SigningKey, error) {
-			alg := jwa.None.New()
+			alg := jwa.SignatureAlgorithmNone.New()
 			return alg.NewSigningKey(nil), nil
 		}),
-		AlgorithmVerifier:     AllowedAlgorithms{jwa.None},
+		AlgorithmVerifier:     AllowedAlgorithms{jwa.SignatureAlgorithmNone},
 		IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 		AudienceVerifier:      UnsecureAnyAudience,
 	}
@@ -168,10 +168,10 @@ func TestSign(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sigKey := jwa.HS256.New().NewSigningKey(key)
+		sigKey := jwa.SignatureAlgorithmHS256.New().NewSigningKey(key)
 
 		header := jws.NewHeader()
-		header.SetAlgorithm(jwa.HS256)
+		header.SetAlgorithm(jwa.SignatureAlgorithmHS256)
 		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",
@@ -199,9 +199,9 @@ func TestSign(t *testing.T) {
 	})
 
 	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
-		sigKey := jwa.None.New().NewSigningKey(nil)
+		sigKey := jwa.SignatureAlgorithmNone.New().NewSigningKey(nil)
 		header := jws.NewHeader()
-		header.SetAlgorithm(jwa.None)
+		header.SetAlgorithm(jwa.SignatureAlgorithmNone)
 		header.SetType("JWT")
 		claims := &Claims{
 			Issuer:         "joe",
@@ -251,7 +251,7 @@ func BenchmarkParse(b *testing.B) {
 	}
 	p := &Parser{
 		KeyFinder:             &JWKKeyFiner{Key: key},
-		AlgorithmVerifier:     AllowedAlgorithms{jwa.HS256},
+		AlgorithmVerifier:     AllowedAlgorithms{jwa.SignatureAlgorithmHS256},
 		IssuerSubjectVerifier: Issuer("joe"),
 		AudienceVerifier:      UnsecureAnyAudience,
 	}

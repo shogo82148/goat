@@ -16,13 +16,13 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	var curve elliptic.Curve
 	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
-	case jwa.P256:
+	case jwa.EllipticCurveP256:
 		curve = elliptic.P256()
-	case jwa.P384:
+	case jwa.EllipticCurveP384:
 		curve = elliptic.P384()
-	case jwa.P521:
+	case jwa.EllipticCurveP521:
 		curve = elliptic.P521()
-	case jwa.Secp256k1:
+	case jwa.EllipticCurveSecp256k1:
 		curve = secp256k1.Curve()
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
@@ -74,16 +74,16 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 		e.SaveError(err)
 		return
 	}
-	e.Set("kty", jwa.EC.String())
+	e.Set("kty", jwa.KeyTypeEC.String())
 	switch pub.Curve {
 	case elliptic.P256():
-		e.Set("crv", jwa.P256.String())
+		e.Set("crv", jwa.EllipticCurveP256.String())
 	case elliptic.P384():
-		e.Set("crv", jwa.P384.String())
+		e.Set("crv", jwa.EllipticCurveP384.String())
 	case elliptic.P521():
-		e.Set("crv", jwa.P521.String())
+		e.Set("crv", jwa.EllipticCurveP521.String())
 	case secp256k1.Curve():
-		e.Set("crv", jwa.Secp256k1.String())
+		e.Set("crv", jwa.EllipticCurveSecp256k1.String())
 	default:
 		panic("not reach")
 	}

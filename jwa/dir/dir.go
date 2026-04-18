@@ -15,7 +15,7 @@ func New() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.Direct, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmDirect, New)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)

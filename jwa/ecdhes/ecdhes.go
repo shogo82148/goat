@@ -59,10 +59,10 @@ func NewA256KW() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES, New)
-	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A128KW, NewA128KW)
-	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A192KW, NewA192KW)
-	jwa.RegisterKeyManagementAlgorithm(jwa.ECDH_ES_A256KW, NewA256KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmECDH_ES, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmECDH_ES_A128KW, NewA128KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmECDH_ES_A192KW, NewA192KW)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmECDH_ES_A256KW, NewA256KW)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)
