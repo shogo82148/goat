@@ -24,6 +24,7 @@ jobs:
         include:
           # test on 32-bit platforms
           - go: "stable"
+            os: ubuntu-latest
             goarch: "386"
 
           # test on windows
