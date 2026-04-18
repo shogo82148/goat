@@ -45,7 +45,7 @@ jobs:
 
       - name: test
         run: |
-          go test -v -coverprofile=profile.cov ./...
+          go test -v -coverprofile="profile.cov" ./...
         env:
           GOARCH: ${{ matrix.goarch }}
 
