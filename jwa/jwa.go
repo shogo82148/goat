@@ -644,20 +644,47 @@ func (enc EncryptionAlgorithm) IVSize() int {
 type KeyType string
 
 const (
-	KeyTypeUnknown KeyType = ""
-
 	// EC is Elliptic Curve.
-	EC KeyType = "EC"
+	//
+	// Deprecated: use [KeyTypeEC] instead of EC.
+	//go:fix inline
+	EC = KeyTypeEC
 
 	// RSA is RSA.
-	RSA KeyType = "RSA"
+	//
+	// Deprecated: use [KeyTypeRSA] instead of RSA.
+	//go:fix inline
+	RSA = KeyTypeRSA
 
 	// OKP is Octet string key pairs
 	// defined in RFC 8037 Section 2. Key Type "OKP".
-	OKP KeyType = "OKP"
+	//
+	// Deprecated: use [KeyTypeOKP] instead of OKP.
+	//go:fix inline
+	OKP = KeyTypeOKP
 
 	// Oct is Octet sequence (used to represent symmetric keys).
-	Oct KeyType = "oct"
+	//
+	// Deprecated: use [KeyTypeOct] instead of Oct.
+	//go:fix inline
+	Oct = KeyTypeOct
+)
+
+const (
+	KeyTypeUnknown KeyType = ""
+
+	// KeyTypeEC is Elliptic Curve.
+	KeyTypeEC KeyType = "EC"
+
+	// KeyTypeRSA is RSA.
+	KeyTypeRSA KeyType = "RSA"
+
+	// KeyTypeOKP is Octet string key pairs
+	// defined in RFC 8037 Section 2. Key Type "OKP".
+	KeyTypeOKP KeyType = "OKP"
+
+	// KeyTypeOct is Octet sequence (used to represent symmetric keys).
+	KeyTypeOct KeyType = "oct"
 )
 
 func (kyt KeyType) String() string {
