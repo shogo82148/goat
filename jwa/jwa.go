@@ -593,10 +593,10 @@ var encryptionAlgorithm = map[EncryptionAlgorithm]func() enc.Algorithm{
 func RegisterEncryptionAlgorithm(alg EncryptionAlgorithm, f func() enc.Algorithm) {
 	g, ok := encryptionAlgorithm[alg]
 	if !ok {
-		panic("jwa: RegisterKeyManagementAlgorithm of unknown algorithm")
+		panic("jwa: RegisterEncryptionAlgorithm of unknown algorithm")
 	}
 	if g != nil {
-		panic("jwa: RegisterKeyManagementAlgorithm of already registered algorithm")
+		panic("jwa: RegisterEncryptionAlgorithm of already registered algorithm")
 	}
 	encryptionAlgorithm[alg] = f
 }
