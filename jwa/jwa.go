@@ -68,11 +68,23 @@ const (
 
 	// EdDSA is Edwards-Curve Digital Signature Algorithm.
 	// import github.com/shogo82148/goat/jwa/eddsa
+	//
+	// Deprecated: use [SignatureAlgorithmEd25519] or [SignatureAlgorithmEd448] instead of EdDSA.
 	EdDSA SignatureAlgorithm = "EdDSA"
 
 	// ES256K is ECDSA using secp256k1 curve and SHA-256.
 	// import github.com/shogo82148/goat/jwa/es
 	ES256K SignatureAlgorithm = "ES256K"
+)
+
+const (
+	// SignatureAlgorithmEd25519 is Ed25519 signature algorithm.
+	// import github.com/shogo82148/goat/jwa/ed25519
+	SignatureAlgorithmEd25519 SignatureAlgorithm = "Ed25519"
+
+	// SignatureAlgorithmEd448 is Ed448 signature algorithm.
+	// import github.com/shogo82148/goat/jwa/ed448
+	SignatureAlgorithmEd448 SignatureAlgorithm = "Ed448"
 )
 
 func (alg SignatureAlgorithm) String() string {
@@ -97,21 +109,23 @@ func (alg SignatureAlgorithm) Available() bool {
 }
 
 var signatureAlgorithms = map[SignatureAlgorithm]func() sig.Algorithm{
-	HS256:  nil,
-	HS384:  nil,
-	HS512:  nil,
-	RS256:  nil,
-	RS384:  nil,
-	RS512:  nil,
-	ES256:  nil,
-	ES384:  nil,
-	ES512:  nil,
-	PS256:  nil,
-	PS384:  nil,
-	PS512:  nil,
-	None:   nil,
-	EdDSA:  nil,
-	ES256K: nil,
+	HS256:                     nil,
+	HS384:                     nil,
+	HS512:                     nil,
+	RS256:                     nil,
+	RS384:                     nil,
+	RS512:                     nil,
+	ES256:                     nil,
+	ES384:                     nil,
+	ES512:                     nil,
+	PS256:                     nil,
+	PS384:                     nil,
+	PS512:                     nil,
+	None:                      nil,
+	EdDSA:                     nil,
+	ES256K:                    nil,
+	SignatureAlgorithmEd25519: nil,
+	SignatureAlgorithmEd448:   nil,
 }
 
 func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) {

@@ -1,4 +1,4 @@
-// Package eddsa provides the Elliptic Curve Diffie-Hellman key agreement algorithm defined in RFC 8032.
+// Package eddsa provides the Edwards-Curve Digital Signature Algorithm defined in RFC 8032.
 package eddsa
 
 import (
