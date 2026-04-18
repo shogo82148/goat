@@ -247,7 +247,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.None},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmNone},
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header, _ *Header) (sig.SigningKey, error) {
 				return header.Algorithm().New().NewSigningKey(nil), nil
 			}),
@@ -258,7 +258,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.None; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmNone; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
@@ -764,12 +764,12 @@ func TestSign(t *testing.T) {
 
 	t.Run("RFC 7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
 		h := NewHeader()
-		h.SetAlgorithm(jwa.None)
+		h.SetAlgorithm(jwa.SignatureAlgorithmNone)
 		h.SetType("JWT")
 		payload := []byte(`{"iss":"joe",` + "\r\n" +
 			` "exp":1300819380,` + "\r\n" +
 			` "http://example.com/is_root":true}`)
-		k := jwa.None.New().NewSigningKey(nil)
+		k := jwa.SignatureAlgorithmNone.New().NewSigningKey(nil)
 		msg := NewMessage(payload)
 		if err := msg.Sign(h, nil, k); err != nil {
 			t.Fatal(err)

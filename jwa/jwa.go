@@ -84,14 +84,23 @@ const (
 
 	// PS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
 	// import github.com/shogo82148/goat/jwa/ps
+	//
+	// Deprecated: use [SignatureAlgorithmPS384] instead of PS384.
+	//go:fix inline
 	PS384 = SignatureAlgorithmPS384
 
 	// PS512 is RSASSA-PSS using SHA-512 and MGF1 with SHA-512.
 	// import github.com/shogo82148/goat/jwa/ps
+	//
+	// Deprecated: use [SignatureAlgorithmPS512] instead of PS512.
+	//go:fix inline
 	PS512 = SignatureAlgorithmPS512
 
 	// None is no digital signature or MAC performed.
 	// import github.com/shogo82148/goat/jwa/none
+	//
+	// Deprecated: use [SignatureAlgorithmNone] instead of None.
+	//go:fix inline
 	None = SignatureAlgorithmNone
 
 	// EdDSA is Edwards-Curve Digital Signature Algorithm.

@@ -26,7 +26,7 @@ func New256() sig.Algorithm {
 }
 
 var ps384 = &algorithm{
-	alg:  jwa.PS384,
+	alg:  jwa.SignatureAlgorithmPS384,
 	hash: crypto.SHA384,
 }
 
@@ -39,7 +39,7 @@ func New384() sig.Algorithm {
 }
 
 var ps512 = &algorithm{
-	alg:  jwa.PS512,
+	alg:  jwa.SignatureAlgorithmPS512,
 	hash: crypto.SHA512,
 }
 
@@ -92,8 +92,8 @@ func New512Weak() sig.Algorithm {
 
 func init() {
 	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmPS256, New256)
-	jwa.RegisterSignatureAlgorithm(jwa.PS384, New384)
-	jwa.RegisterSignatureAlgorithm(jwa.PS512, New512)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmPS384, New384)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmPS512, New512)
 }
 
 var _ sig.Algorithm = (*algorithm)(nil)
