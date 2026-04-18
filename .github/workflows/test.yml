@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -17,12 +17,24 @@ jobs:
           - "stable"
           - "1.26"
           - "1.25"
+        os:
+          - ubuntu-latest
         goarch:
           - amd64
         include:
           # test on 32-bit platforms
           - go: "stable"
+            os: ubuntu-latest
             goarch: "386"
+
+          # test on windows
+          - go: "stable"
+            os: windows-latest
+            goarch: "amd64"
+          # test on macos
+          - go: "stable"
+            os: macos-latest
+            goarch: "arm64"
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -33,14 +45,14 @@ jobs:
 
       - name: test
         run: |
-          go test -v -coverprofile=profile.cov ./...
+          go test -v -coverprofile="profile.cov" ./...
         env:
           GOARCH: ${{ matrix.goarch }}
 
       - uses: shogo82148/actions-goveralls@9606dbc5ac5cf888a0e9ef901515c3cd516a2790 # v1.11.0
         with:
           path-to-profile: profile.cov
-          flag-name: Go-${{ matrix.go }}
+          flag-name: Go-${{ matrix.go }}-${{ matrix.os }}-${{ matrix.goarch }}
           parallel: true
 
   # notifies that all test jobs are finished.
