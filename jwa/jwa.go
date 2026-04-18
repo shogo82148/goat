@@ -107,7 +107,6 @@ const (
 	// import github.com/shogo82148/goat/jwa/eddsa
 	//
 	// Deprecated: use [SignatureAlgorithmEd25519] or [SignatureAlgorithmEd448] instead of EdDSA.
-	//go:fix inline
 	EdDSA = SignatureAlgorithmEdDSA
 
 	// ES256K is ECDSA using secp256k1 curve and SHA-256.
