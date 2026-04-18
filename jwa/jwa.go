@@ -237,75 +237,196 @@ func RegisterSignatureAlgorithm(alg SignatureAlgorithm, f func() sig.Algorithm) 
 type KeyManagementAlgorithm string
 
 const (
-	KeyManagementAlgorithmUnknown KeyManagementAlgorithm = ""
-
 	// RSA1_5 is RSAES-PKCS1-v1_5.
 	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
-	RSA1_5 KeyManagementAlgorithm = "RSA1_5"
+	//
+	// Deprecated: use [KeyManagementAlgorithmRSA1_5] instead of RSA1_5.
+	//go:fix inline
+	RSA1_5 = KeyManagementAlgorithmRSA1_5
 
 	// RSA_OAEP is RSAES OAEP.
 	// import github.com/shogo82148/goat/jwa/rsapoaep
-	RSA_OAEP KeyManagementAlgorithm = "RSA-OAEP"
+	//
+	// Deprecated: use [KeyManagementAlgorithmRSA_OAEP] instead of RSA_OAEP.
+	//go:fix inline
+	RSA_OAEP = KeyManagementAlgorithmRSA_OAEP
 
 	// RSA_OAEP_256 is RSAES OAEP using SHA-256 and MGF1 with SHA-256.
 	// import github.com/shogo82148/goat/jwa/rsapoaep
-	RSA_OAEP_256 KeyManagementAlgorithm = "RSA-OAEP-256"
+	//
+	// Deprecated: use [KeyManagementAlgorithmRSA_OAEP_256] instead of RSA_OAEP_256.
+	//go:fix inline
+	RSA_OAEP_256 = KeyManagementAlgorithmRSA_OAEP_256
 
 	// A128KW is AES Key Wrap with default initial value using 128-bit key.
 	// import github.com/shogo82148/goat/jwa/akw
-	A128KW KeyManagementAlgorithm = "A128KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA128KW] instead of A128KW.
+	//go:fix inline
+	A128KW = KeyManagementAlgorithmA128KW
 
 	// A192KW is AES Key Wrap with default initial value using 192-bit key.
 	// import github.com/shogo82148/goat/jwa/akw
-	A192KW KeyManagementAlgorithm = "A192KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA192KW] instead of A192KW.
+	//go:fix inline
+	A192KW = KeyManagementAlgorithmA192KW
 
 	// A256KW is AES Key Wrap with default initial value using 256-bit key.
 	// import github.com/shogo82148/goat/jwa/akw
-	A256KW KeyManagementAlgorithm = "A256KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA256KW] instead of A256KW.
+	//go:fix inline
+	A256KW = KeyManagementAlgorithmA256KW
 
 	// Direct is direct use of a shared symmetric key as the CEK.
 	// import github.com/shogo82148/goat/jwa/dir
-	Direct KeyManagementAlgorithm = "dir"
+	//
+	// Deprecated: use [KeyManagementAlgorithmDirect] instead of Direct.
+	//go:fix inline
+	Direct = KeyManagementAlgorithmDirect
 
 	// ECDH_ES is Elliptic Curve Diffie-Hellman Ephemeral Static key agreement using Concat KDF.
 	// import github.com/shogo82148/goat/jwa/ecdhes
-	ECDH_ES KeyManagementAlgorithm = "ECDH-ES"
+	//
+	// Deprecated: use [KeyManagementAlgorithmECDH_ES] instead of ECDH_ES.
+	//go:fix inline
+	ECDH_ES = KeyManagementAlgorithmECDH_ES
 
 	// ECDH_ES_A128KW is ECDH-ES using Concat KDF and CEK wrapped with "A128KW".
 	// import github.com/shogo82148/goat/jwa/ecdhes
-	ECDH_ES_A128KW KeyManagementAlgorithm = "ECDH-ES+A128KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmECDH_ES_A128KW] instead of ECDH_ES_A128KW.
+	//go:fix inline
+	ECDH_ES_A128KW = KeyManagementAlgorithmECDH_ES_A128KW
 
 	// ECDH_ES_A192KW is ECDH-ES using Concat KDF and CEK wrapped with "A192KW".
 	// import github.com/shogo82148/goat/jwa/ecdhes
-	ECDH_ES_A192KW KeyManagementAlgorithm = "ECDH-ES+A192KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmECDH_ES_A192KW] instead of ECDH_ES_A192KW.
+	//go:fix inline
+	ECDH_ES_A192KW = KeyManagementAlgorithmECDH_ES_A192KW
 
 	// ECDH_ES_A256KW is ECDH-ES using Concat KDF and CEK wrapped with "A256KW".
 	// import github.com/shogo82148/goat/jwa/ecdhes
-	ECDH_ES_A256KW KeyManagementAlgorithm = "ECDH-ES+A256KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmECDH_ES_A256KW] instead of ECDH_ES_A256KW.
+	//go:fix inline
+	ECDH_ES_A256KW = KeyManagementAlgorithmECDH_ES_A256KW
 
 	// A128GCMKW is Key wrapping with AES GCM using 128-bit key.
 	// import github.com/shogo82148/goat/jwa/agcmkw
-	A128GCMKW KeyManagementAlgorithm = "A128GCMKW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA128GCMKW] instead of A128GCMKW.
+	//go:fix inline
+	A128GCMKW = KeyManagementAlgorithmA128GCMKW
 
-	// A196GCMKW is Key wrapping with AES GCM using 196-bit key.
+	// A192GCMKW is Key wrapping with AES GCM using 192-bit key.
 	// import github.com/shogo82148/goat/jwa/agcmkw
-	A192GCMKW KeyManagementAlgorithm = "A192GCMKW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA192GCMKW] instead of A192GCMKW.
+	//go:fix inline
+	A192GCMKW = KeyManagementAlgorithmA192GCMKW
 
 	// A256GCMKW is Key wrapping with AES GCM using 256-bit key.
 	// import github.com/shogo82148/goat/jwa/agcmkw
-	A256GCMKW KeyManagementAlgorithm = "A256GCMKW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmA256GCMKW] instead of A256GCMKW.
+	//go:fix inline
+	A256GCMKW = KeyManagementAlgorithmA256GCMKW
 
 	// PBES2_HS256_A128KW is PBES2 with HMAC SHA-256 and "A128KW" wrapping.
 	// import github.com/shogo82148/goat/jwa/pbes2
-	PBES2_HS256_A128KW KeyManagementAlgorithm = "PBES2-HS256+A128KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmPBES2_HS256_A128KW] instead of PBES2_HS256_A128KW.
+	//go:fix inline
+	PBES2_HS256_A128KW = KeyManagementAlgorithmPBES2_HS256_A128KW
 
 	// PBES2_HS384_A192KW is PBES2 with HMAC SHA-384 and "A192KW" wrapping.
 	// import github.com/shogo82148/goat/jwa/pbes2
-	PBES2_HS384_A192KW KeyManagementAlgorithm = "PBES2-HS384+A192KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmPBES2_HS384_A192KW] instead of PBES2_HS384_A192KW.
+	//go:fix inline
+	PBES2_HS384_A192KW = KeyManagementAlgorithmPBES2_HS384_A192KW
 
 	// PBES2_HS512_A256KW is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
 	// import github.com/shogo82148/goat/jwa/pbes2
-	PBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
+	//
+	// Deprecated: use [KeyManagementAlgorithmPBES2_HS512_A256KW] instead of PBES2_HS512_A256KW.
+	//go:fix inline
+	PBES2_HS512_A256KW = KeyManagementAlgorithmPBES2_HS512_A256KW
+)
+
+const (
+	KeyManagementAlgorithmUnknown KeyManagementAlgorithm = ""
+
+	// KeyManagementAlgorithmRSA1_5 is RSAES-PKCS1-v1_5.
+	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
+	KeyManagementAlgorithmRSA1_5 KeyManagementAlgorithm = "RSA1_5"
+
+	// KeyManagementAlgorithmRSA_OAEP is RSAES OAEP.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
+	KeyManagementAlgorithmRSA_OAEP KeyManagementAlgorithm = "RSA-OAEP"
+
+	// KeyManagementAlgorithmRSA_OAEP_256 is RSAES OAEP using SHA-256 and MGF1 with SHA-256.
+	// import github.com/shogo82148/goat/jwa/rsapoaep
+	KeyManagementAlgorithmRSA_OAEP_256 KeyManagementAlgorithm = "RSA-OAEP-256"
+
+	// KeyManagementAlgorithmA128KW is AES Key Wrap with default initial value using 128-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
+	KeyManagementAlgorithmA128KW KeyManagementAlgorithm = "A128KW"
+
+	// KeyManagementAlgorithmA192KW is AES Key Wrap with default initial value using 192-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
+	KeyManagementAlgorithmA192KW KeyManagementAlgorithm = "A192KW"
+
+	// KeyManagementAlgorithmA256KW is AES Key Wrap with default initial value using 256-bit key.
+	// import github.com/shogo82148/goat/jwa/akw
+	KeyManagementAlgorithmA256KW KeyManagementAlgorithm = "A256KW"
+
+	// KeyManagementAlgorithmDirect is direct use of a shared symmetric key as the CEK.
+	// import github.com/shogo82148/goat/jwa/dir
+	KeyManagementAlgorithmDirect KeyManagementAlgorithm = "dir"
+
+	// KeyManagementAlgorithmECDH_ES is Elliptic Curve Diffie-Hellman Ephemeral Static key agreement using Concat KDF.
+	// import github.com/shogo82148/goat/jwa/ecdhes
+	KeyManagementAlgorithmECDH_ES KeyManagementAlgorithm = "ECDH-ES"
+
+	// KeyManagementAlgorithmECDH_ES_A128KW is ECDH-ES using Concat KDF and CEK wrapped with "A128KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
+	KeyManagementAlgorithmECDH_ES_A128KW KeyManagementAlgorithm = "ECDH-ES+A128KW"
+
+	// KeyManagementAlgorithmECDH_ES_A192KW is ECDH-ES using Concat KDF and CEK wrapped with "A192KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
+	KeyManagementAlgorithmECDH_ES_A192KW KeyManagementAlgorithm = "ECDH-ES+A192KW"
+
+	// KeyManagementAlgorithmECDH_ES_A256KW is ECDH-ES using Concat KDF and CEK wrapped with "A256KW".
+	// import github.com/shogo82148/goat/jwa/ecdhes
+	KeyManagementAlgorithmECDH_ES_A256KW KeyManagementAlgorithm = "ECDH-ES+A256KW"
+
+	// KeyManagementAlgorithmA128GCMKW is Key wrapping with AES GCM using 128-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
+	KeyManagementAlgorithmA128GCMKW KeyManagementAlgorithm = "A128GCMKW"
+
+	// KeyManagementAlgorithmA192GCMKW is Key wrapping with AES GCM using 192-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
+	KeyManagementAlgorithmA192GCMKW KeyManagementAlgorithm = "A192GCMKW"
+
+	// KeyManagementAlgorithmA256GCMKW is Key wrapping with AES GCM using 256-bit key.
+	// import github.com/shogo82148/goat/jwa/agcmkw
+	KeyManagementAlgorithmA256GCMKW KeyManagementAlgorithm = "A256GCMKW"
+
+	// KeyManagementAlgorithmPBES2_HS256_A128KW is PBES2 with HMAC SHA-256 and "A128KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
+	KeyManagementAlgorithmPBES2_HS256_A128KW KeyManagementAlgorithm = "PBES2-HS256+A128KW"
+
+	// KeyManagementAlgorithmPBES2_HS384_A192KW is PBES2 with HMAC SHA-384 and "A192KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
+	KeyManagementAlgorithmPBES2_HS384_A192KW KeyManagementAlgorithm = "PBES2-HS384+A192KW"
+
+	// KeyManagementAlgorithmPBES2_HS512_A256KW is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
+	// import github.com/shogo82148/goat/jwa/pbes2
+	KeyManagementAlgorithmPBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
 )
 
 var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algorithm{
