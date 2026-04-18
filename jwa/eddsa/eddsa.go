@@ -1,4 +1,4 @@
-// Package ed25519 provides the Edwards-Curve Digital Signature Algorithm defined in RFC 8032.
+// Package eddsa provides the Edwards-Curve Digital Signature Algorithm defined in RFC 8032.
 package eddsa
 
 import (
@@ -16,7 +16,7 @@ func New() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEd25519, New)
+	jwa.RegisterSignatureAlgorithm(jwa.EdDSA, New)
 }
 
 type algorithm struct{}
