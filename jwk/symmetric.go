@@ -11,6 +11,6 @@ func parseSymmetricKey(d *jsonutils.Decoder, key *Key) {
 }
 
 func encodeSymmetricKey(e *jsonutils.Encoder, priv []byte) {
-	e.Set("kty", jwa.Oct.String())
+	e.Set("kty", jwa.KeyTypeOct.String())
 	e.SetBytes("k", priv)
 }

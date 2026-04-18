@@ -52,9 +52,9 @@ func New256HS512() enc.Algorithm {
 }
 
 func init() {
-	jwa.RegisterEncryptionAlgorithm(jwa.A128CBC_HS256, New128HS256)
-	jwa.RegisterEncryptionAlgorithm(jwa.A192CBC_HS384, New192HS384)
-	jwa.RegisterEncryptionAlgorithm(jwa.A256CBC_HS512, New256HS512)
+	jwa.RegisterEncryptionAlgorithm(jwa.EncryptionAlgorithmA128CBC_HS256, New128HS256)
+	jwa.RegisterEncryptionAlgorithm(jwa.EncryptionAlgorithmA192CBC_HS384, New192HS384)
+	jwa.RegisterEncryptionAlgorithm(jwa.EncryptionAlgorithmA256CBC_HS512, New256HS512)
 }
 
 var _ enc.Algorithm = (*algorithm)(nil)

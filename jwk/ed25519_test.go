@@ -16,7 +16,7 @@ func TestParseKey_Ed25519(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.OKP {
+		if key.kty != jwa.KeyTypeOKP {
 			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.kty)
 		}
 
@@ -46,7 +46,7 @@ func TestParseKey_Ed25519(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.OKP {
+		if key.kty != jwa.KeyTypeOKP {
 			t.Errorf("unexpected key type: want %s, got %s", "OKP", key.kty)
 		}
 

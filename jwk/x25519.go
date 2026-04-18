@@ -43,8 +43,8 @@ func encodeX25519Key(e *jsonutils.Encoder, priv x25519.PrivateKey, pub x25519.Pu
 		e.SaveError(err)
 		return
 	}
-	e.Set("kty", jwa.OKP.String())
-	e.Set("crv", jwa.X25519.String())
+	e.Set("kty", jwa.KeyTypeOKP.String())
+	e.Set("crv", jwa.EllipticCurveX25519.String())
 	e.SetBytes("x", []byte(pub))
 	if priv != nil {
 		if err := validateX25519PrivateKey(priv); err != nil {

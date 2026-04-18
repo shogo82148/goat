@@ -44,7 +44,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.kty; want != got {
+		if want, got := jwa.KeyTypeRSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		n := newBigInt("2044670291674465456259634338875880586006520963996017350503745333127027051873224508977372301204320323" +
@@ -103,7 +103,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.kty; want != got {
+		if want, got := jwa.KeyTypeRSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		if want, got := key.alg, jwa.SignatureAlgorithmRS256.KeyAlgorithm(); want != got {
@@ -161,7 +161,7 @@ func TestParseKey_RSA(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := jwa.RSA, key.kty; want != got {
+		if want, got := jwa.KeyTypeRSA, key.kty; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		if want, got := jwa.SignatureAlgorithmRS256.KeyAlgorithm(), key.alg; want != got {

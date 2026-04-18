@@ -96,9 +96,9 @@ func TestEncrypt(t *testing.T) {
 
 func TestCEKSize_and_IVSize(t *testing.T) {
 	tests := []jwa.EncryptionAlgorithm{
-		jwa.A128CBC_HS256,
-		jwa.A192CBC_HS384,
-		jwa.A256CBC_HS512,
+		jwa.EncryptionAlgorithmA128CBC_HS256,
+		jwa.EncryptionAlgorithmA192CBC_HS384,
+		jwa.EncryptionAlgorithmA256CBC_HS512,
 	}
 	for _, enc := range tests {
 		enc1 := enc.New()

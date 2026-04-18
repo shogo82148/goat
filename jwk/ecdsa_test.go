@@ -20,7 +20,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.kty, jwa.EC; want != got {
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("57807358241436249728379122087876380298924820027722995515715270765240753673285")
@@ -59,7 +59,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.kty, jwa.EC; want != got {
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132")
@@ -94,7 +94,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.kty, jwa.EC; want != got {
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
@@ -122,7 +122,7 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if want, got := key.kty, jwa.EC; want != got {
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
@@ -280,7 +280,7 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
 		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
 		key := &Key{
-			kty: jwa.EC,
+			kty: jwa.KeyTypeEC,
 			kid: "1",
 			use: "enc",
 			pub: &ecdsa.PublicKey{

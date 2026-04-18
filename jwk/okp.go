@@ -11,13 +11,13 @@ import (
 func parseOKPKey(d *jsonutils.Decoder, key *Key) {
 	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
-	case jwa.Ed25519:
+	case jwa.EllipticCurveEd25519:
 		parseEd25519Key(d, key)
-	case jwa.X25519:
+	case jwa.EllipticCurveX25519:
 		parseX25519Key(d, key)
-	case jwa.Ed448:
+	case jwa.EllipticCurveEd448:
 		parseEd448Key(d, key)
-	case jwa.X448:
+	case jwa.EllipticCurveX448:
 		parseX448Key(d, key)
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))

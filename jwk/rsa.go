@@ -110,7 +110,7 @@ func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string
 }
 
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
-	e.Set("kty", jwa.RSA.String())
+	e.Set("kty", jwa.KeyTypeRSA.String())
 
 	if err := validateRSAPublicKey(pub); err != nil {
 		e.SaveError(err)

@@ -17,7 +17,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.Oct {
+		if key.kty != jwa.KeyTypeOct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
 		got, ok := key.PrivateKey().([]byte)
@@ -45,7 +45,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.Oct {
+		if key.kty != jwa.KeyTypeOct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
 		if key.alg != "A128KW" {
@@ -70,7 +70,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.kty != jwa.Oct {
+		if key.kty != jwa.KeyTypeOct {
 			t.Errorf("unexpected key type: want %s, got %s", "oct", key.kty)
 		}
 		got, ok := key.PrivateKey().([]byte)

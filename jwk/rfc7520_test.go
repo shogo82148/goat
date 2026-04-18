@@ -18,8 +18,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.EC {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeEC {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 	})
 
@@ -32,8 +32,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.EC {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeEC {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 		if key.PublicKeyUse() != jwktypes.KeyUseSig {
 			t.Errorf("unexpected key use: want %s, got %s", jwktypes.KeyUseSig, key.PublicKeyUse())
@@ -49,8 +49,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.RSA {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeRSA {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 		if key.PublicKeyUse() != jwktypes.KeyUseSig {
 			t.Errorf("unexpected key use: want %s, got %s", jwktypes.KeyUseSig, key.PublicKeyUse())
@@ -66,8 +66,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.RSA {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeRSA {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 		if key.PublicKeyUse() != jwktypes.KeyUseSig {
 			t.Errorf("unexpected key use: want %s, got %s", jwktypes.KeyUseSig, key.PublicKeyUse())
@@ -83,8 +83,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.Oct {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeOct {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 		if key.PublicKeyUse() != jwktypes.KeyUseSig {
 			t.Errorf("unexpected key use: want %s, got %s", jwktypes.KeyUseSig, key.PublicKeyUse())
@@ -100,8 +100,8 @@ func TestRFC7520(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if key.KeyType() != jwa.Oct {
-			t.Errorf("unexpected key type: want %s, got %s", jwa.EC, key.KeyType())
+		if key.KeyType() != jwa.KeyTypeOct {
+			t.Errorf("unexpected key type: want %s, got %s", jwa.KeyTypeEC, key.KeyType())
 		}
 		if key.PublicKeyUse() != jwktypes.KeyUseEnc {
 			t.Errorf("unexpected key use: want %s, got %s", jwktypes.KeyUseEnc, key.PublicKeyUse())

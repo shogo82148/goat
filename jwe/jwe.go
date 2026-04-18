@@ -623,7 +623,7 @@ func NewMessage(enc jwa.EncryptionAlgorithm, protected *Header, plaintext []byte
 		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
 	}
 
-	if protected.CompressionAlgorithm() == jwa.DEF {
+	if protected.CompressionAlgorithm() == jwa.CompressionAlgorithmDEF {
 		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
 		w, err := flate.NewWriter(buf, flate.BestCompression)
 		if err != nil {
@@ -683,7 +683,7 @@ func NewMessageWithKW(enc jwa.EncryptionAlgorithm, kw keymanage.KeyWrapper, prot
 		return nil, errors.New("jwa: requested content encryption algorithm " + string(enc) + " is not available")
 	}
 
-	if protected.CompressionAlgorithm() == jwa.DEF {
+	if protected.CompressionAlgorithm() == jwa.CompressionAlgorithmDEF {
 		buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
 		w, err := flate.NewWriter(buf, flate.BestCompression)
 		if err != nil {
@@ -832,7 +832,7 @@ func (msg *Message) Decrypt(finder KeyWrapperFinder) (plaintext []byte, err erro
 		if err != nil {
 			return nil, fmt.Errorf("jwe: failed to decrypt: %w", err)
 		}
-		if merged.CompressionAlgorithm() == jwa.DEF {
+		if merged.CompressionAlgorithm() == jwa.CompressionAlgorithmDEF {
 			buf := bytes.NewBuffer(make([]byte, 0, len(plaintext)))
 			r := flate.NewReader(bytes.NewReader(plaintext))
 			if _, err := buf.ReadFrom(r); err != nil {

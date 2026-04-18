@@ -407,13 +407,13 @@ func ParseMap(raw map[string]any) (*Key, error) {
 	}
 
 	switch key.kty {
-	case jwa.EC:
+	case jwa.KeyTypeEC:
 		parseEcdsaKey(d, key)
-	case jwa.RSA:
+	case jwa.KeyTypeRSA:
 		parseRSAKey(d, key)
-	case jwa.OKP:
+	case jwa.KeyTypeOKP:
 		parseOKPKey(d, key)
-	case jwa.Oct:
+	case jwa.KeyTypeOct:
 		parseSymmetricKey(d, key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.kty)
@@ -517,7 +517,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.EC,
+			kty:  jwa.KeyTypeEC,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
@@ -526,7 +526,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.RSA,
+			kty:  jwa.KeyTypeRSA,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
@@ -535,7 +535,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.OKP,
+			kty:  jwa.KeyTypeOKP,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
@@ -543,7 +543,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 		switch key.Curve() {
 		case ecdh.P256(), ecdh.P384(), ecdh.P521():
 			return &Key{
-				kty: jwa.EC,
+				kty: jwa.KeyTypeEC,
 				keyOps: []jwktypes.KeyOp{
 					jwktypes.KeyOpDeriveKey,
 					jwktypes.KeyOpDeriveBits,
@@ -553,7 +553,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			}, nil
 		case ecdh.X25519():
 			return &Key{
-				kty: jwa.OKP,
+				kty: jwa.KeyTypeOKP,
 				keyOps: []jwktypes.KeyOp{
 					jwktypes.KeyOpDeriveKey,
 					jwktypes.KeyOpDeriveBits,
@@ -569,7 +569,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.OKP,
+			kty:  jwa.KeyTypeOKP,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
@@ -578,7 +578,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.OKP,
+			kty:  jwa.KeyTypeOKP,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
@@ -587,13 +587,13 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty:  jwa.OKP,
+			kty:  jwa.KeyTypeOKP,
 			priv: key,
 			pub:  key.Public(),
 		}, nil
 	case []byte:
 		return &Key{
-			kty:  jwa.Oct,
+			kty:  jwa.KeyTypeOct,
 			priv: append([]byte(nil), key...),
 		}, nil
 	default:
@@ -612,7 +612,7 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.EC,
+			kty: jwa.KeyTypeEC,
 			pub: key,
 		}, nil
 	case *rsa.PublicKey:
@@ -620,7 +620,7 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.RSA,
+			kty: jwa.KeyTypeRSA,
 			pub: key,
 		}, nil
 	case ed25519.PublicKey:
@@ -628,20 +628,20 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.OKP,
+			kty: jwa.KeyTypeOKP,
 			pub: key,
 		}, nil
 	case *ecdh.PublicKey:
 		switch key.Curve() {
 		case ecdh.P256(), ecdh.P384(), ecdh.P521():
 			return &Key{
-				kty:    jwa.EC,
+				kty:    jwa.KeyTypeEC,
 				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
 				pub:    key,
 			}, nil
 		case ecdh.X25519():
 			return &Key{
-				kty:    jwa.OKP,
+				kty:    jwa.KeyTypeOKP,
 				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
 				pub:    key,
 			}, nil
@@ -653,7 +653,7 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.OKP,
+			kty: jwa.KeyTypeOKP,
 			pub: key,
 		}, nil
 	case ed448.PublicKey:
@@ -661,7 +661,7 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.OKP,
+			kty: jwa.KeyTypeOKP,
 			pub: key,
 		}, nil
 	case x448.PublicKey:
@@ -669,7 +669,7 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 			return nil, err
 		}
 		return &Key{
-			kty: jwa.OKP,
+			kty: jwa.KeyTypeOKP,
 			pub: key,
 		}, nil
 	default:
@@ -680,26 +680,26 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKey) {
 	switch pub.Curve() {
 	case ecdh.P256():
-		e.Set("kty", jwa.EC.String())
-		e.Set("crv", jwa.P256.String())
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP256.String())
 		data := pub.Bytes()
 		e.SetBytes("x", data[1:32+1])
 		e.SetBytes("y", data[32+1:])
 	case ecdh.P384():
-		e.Set("kty", jwa.EC.String())
-		e.Set("crv", jwa.P384.String())
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP384.String())
 		data := pub.Bytes()
 		e.SetBytes("x", data[1:48+1])
 		e.SetBytes("y", data[48+1:])
 	case ecdh.P521():
-		e.Set("kty", jwa.EC.String())
-		e.Set("crv", jwa.P521.String())
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP521.String())
 		data := pub.Bytes()
 		e.SetBytes("x", data[1:66+1])
 		e.SetBytes("y", data[66+1:])
 	case ecdh.X25519():
-		e.Set("kty", jwa.OKP)
-		e.Set("crv", jwa.Ed25519.String())
+		e.Set("kty", jwa.KeyTypeOKP)
+		e.Set("crv", jwa.EllipticCurveEd25519.String())
 		e.SetBytes("x", pub.Bytes())
 	}
 
