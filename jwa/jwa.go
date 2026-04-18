@@ -699,28 +699,78 @@ type EllipticCurve string
 
 const (
 	// P256 is a Curve which implements NIST P-256.
-	P256 EllipticCurve = "P-256"
+	//
+	// Deprecated: use [EllipticCurveP256] instead of P256.
+	//go:fix inline
+	P256 = EllipticCurveP256
 
 	// P384 is a Curve which implements NIST P-384.
-	P384 EllipticCurve = "P-364"
+	//
+	// Deprecated: use [EllipticCurveP384] instead of P384.
+	//go:fix inline
+	P384 = EllipticCurveP384
 
 	// P521 is a Curve which implements NIST P-521.
-	P521 EllipticCurve = "P-521"
+	//
+	// Deprecated: use [EllipticCurveP521] instead of P521.
+	//go:fix inline
+	P521 = EllipticCurveP521
 
 	// Ed25519 is Ed25519 signature algorithm key pairs.
-	Ed25519 EllipticCurve = "Ed25519"
+	//
+	// Deprecated: use [EllipticCurveEd25519] instead of Ed25519.
+	//go:fix inline
+	Ed25519 = EllipticCurveEd25519
 
 	// Ed448 is Ed448 signature algorithm key pairs.
-	Ed448 EllipticCurve = "Ed448"
+	//
+	// Deprecated: use [EllipticCurveEd448] instead of Ed448.
+	//go:fix inline
+	Ed448 = EllipticCurveEd448
 
 	// X25519 is X25519 function key pairs.
-	X25519 EllipticCurve = "X25519"
+	//
+	// Deprecated: use [EllipticCurveX25519] instead of X25519.
+	//go:fix inline
+	X25519 = EllipticCurveX25519
 
 	// X448 is X448 function key pairs.
-	X448 EllipticCurve = "X448"
+	//
+	// Deprecated: use [EllipticCurveX448] instead of X448.
+	//go:fix inline
+	X448 = EllipticCurveX448
 
 	// secp256k1 is SECG secp256k1 curve.
-	Secp256k1 EllipticCurve = "secp256k1"
+	//
+	// Deprecated: use [EllipticCurveSecp256k1] instead of Secp256k1.
+	//go:fix inline
+	Secp256k1 = EllipticCurveSecp256k1
+)
+
+const (
+	// EllipticCurveP256 is a Curve which implements NIST P-256.
+	EllipticCurveP256 EllipticCurve = "P-256"
+
+	// EllipticCurveP384 is a Curve which implements NIST P-384.
+	EllipticCurveP384 EllipticCurve = "P-384"
+
+	// EllipticCurveP521 is a Curve which implements NIST P-521.
+	EllipticCurveP521 EllipticCurve = "P-521"
+
+	// EllipticCurveEd25519 is Ed25519 signature algorithm key pairs.
+	EllipticCurveEd25519 EllipticCurve = "Ed25519"
+
+	// EllipticCurveEd448 is Ed448 signature algorithm key pairs.
+	EllipticCurveEd448 EllipticCurve = "Ed448"
+
+	// EllipticCurveX25519 is X25519 function key pairs.
+	EllipticCurveX25519 EllipticCurve = "X25519"
+
+	// EllipticCurveX448 is X448 function key pairs.
+	EllipticCurveX448 EllipticCurve = "X448"
+
+	// EllipticCurveSecp256k1 is SECG secp256k1 curve.
+	EllipticCurveSecp256k1 EllipticCurve = "secp256k1"
 )
 
 func (crv EllipticCurve) String() string {
