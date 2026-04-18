@@ -41,9 +41,9 @@ func New256() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.A128GCMKW, New128)
-	jwa.RegisterKeyManagementAlgorithm(jwa.A192GCMKW, New192)
-	jwa.RegisterKeyManagementAlgorithm(jwa.A256GCMKW, New256)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA128GCMKW, New128)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA192GCMKW, New192)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA256GCMKW, New256)
 }
 
 var _ keymanage.Algorithm = (*algorithm)(nil)

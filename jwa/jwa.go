@@ -77,6 +77,10 @@ const (
 
 	// PS256 is RSASSA-PSS using SHA-256 and MGF1 with SHA-256.
 	// import github.com/shogo82148/goat/jwa/ps
+	//
+	// Deprecated: use [SignatureAlgorithmPS256] instead of PS256.
+	//go:fix inline
+	PS256 = SignatureAlgorithmPS256
 
 	// PS384 is RSASSA-PSS using SHA-384 and MGF1 with SHA-384.
 	// import github.com/shogo82148/goat/jwa/ps
@@ -430,23 +434,23 @@ const (
 )
 
 var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algorithm{
-	RSA1_5:             nil,
-	RSA_OAEP:           nil,
-	RSA_OAEP_256:       nil,
-	A128KW:             nil,
-	A192KW:             nil,
-	A256KW:             nil,
-	Direct:             nil,
-	ECDH_ES:            nil,
-	ECDH_ES_A128KW:     nil,
-	ECDH_ES_A192KW:     nil,
-	ECDH_ES_A256KW:     nil,
-	A128GCMKW:          nil,
-	A192GCMKW:          nil,
-	A256GCMKW:          nil,
-	PBES2_HS256_A128KW: nil,
-	PBES2_HS384_A192KW: nil,
-	PBES2_HS512_A256KW: nil,
+	KeyManagementAlgorithmRSA1_5:             nil,
+	KeyManagementAlgorithmRSA_OAEP:           nil,
+	KeyManagementAlgorithmRSA_OAEP_256:       nil,
+	KeyManagementAlgorithmA128KW:             nil,
+	KeyManagementAlgorithmA192KW:             nil,
+	KeyManagementAlgorithmA256KW:             nil,
+	KeyManagementAlgorithmDirect:             nil,
+	KeyManagementAlgorithmECDH_ES:            nil,
+	KeyManagementAlgorithmECDH_ES_A128KW:     nil,
+	KeyManagementAlgorithmECDH_ES_A192KW:     nil,
+	KeyManagementAlgorithmECDH_ES_A256KW:     nil,
+	KeyManagementAlgorithmA128GCMKW:          nil,
+	KeyManagementAlgorithmA192GCMKW:          nil,
+	KeyManagementAlgorithmA256GCMKW:          nil,
+	KeyManagementAlgorithmPBES2_HS256_A128KW: nil,
+	KeyManagementAlgorithmPBES2_HS384_A192KW: nil,
+	KeyManagementAlgorithmPBES2_HS512_A256KW: nil,
 }
 
 func RegisterKeyManagementAlgorithm(alg KeyManagementAlgorithm, f func() keymanage.Algorithm) {

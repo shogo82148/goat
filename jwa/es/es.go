@@ -16,7 +16,7 @@ import (
 )
 
 var es256 = &algorithm{
-	alg:  jwa.ES256,
+	alg:  jwa.SignatureAlgorithmES256,
 	hash: crypto.SHA256,
 	crv:  elliptic.P256(),
 }
@@ -27,7 +27,7 @@ func New256() sig.Algorithm {
 }
 
 var es256k = &algorithm{
-	alg:  jwa.ES256K,
+	alg:  jwa.SignatureAlgorithmES256K,
 	hash: crypto.SHA256,
 	crv:  secp256k1.Curve(),
 }
@@ -38,7 +38,7 @@ func New256K() sig.Algorithm {
 }
 
 var es384 = &algorithm{
-	alg:  jwa.ES384,
+	alg:  jwa.SignatureAlgorithmES384,
 	hash: crypto.SHA384,
 	crv:  elliptic.P384(),
 }
@@ -49,7 +49,7 @@ func New384() sig.Algorithm {
 }
 
 var es512 = &algorithm{
-	alg:  jwa.ES512,
+	alg:  jwa.SignatureAlgorithmES512,
 	hash: crypto.SHA512,
 	crv:  elliptic.P521(),
 }
@@ -60,10 +60,10 @@ func New512() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.ES256, New256)
-	jwa.RegisterSignatureAlgorithm(jwa.ES384, New384)
-	jwa.RegisterSignatureAlgorithm(jwa.ES512, New512)
-	jwa.RegisterSignatureAlgorithm(jwa.ES256K, New256K)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmES256, New256)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmES384, New384)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmES512, New512)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmES256K, New256K)
 }
 
 var _ sig.Algorithm = (*algorithm)(nil)

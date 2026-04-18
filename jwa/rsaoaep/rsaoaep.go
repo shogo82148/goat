@@ -31,8 +31,8 @@ func New256() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.RSA_OAEP, New)
-	jwa.RegisterKeyManagementAlgorithm(jwa.RSA_OAEP_256, New256)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA_OAEP, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA_OAEP_256, New256)
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)

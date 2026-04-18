@@ -40,9 +40,9 @@ func New256() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.A128KW, New128)
-	jwa.RegisterKeyManagementAlgorithm(jwa.A192KW, New192)
-	jwa.RegisterKeyManagementAlgorithm(jwa.A256KW, New256)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA128KW, New128)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA192KW, New192)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmA256KW, New256)
 }
 
 func NewKeyWrapper(privateKey []byte) keymanage.KeyWrapper {

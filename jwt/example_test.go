@@ -27,7 +27,7 @@ func ExampleParse() {
 		"eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ." +
 		"2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw"
 	p := &jwt.Parser{
-		AlgorithmVerifier:     jwt.AllowedAlgorithms{jwa.EdDSA},
+		AlgorithmVerifier:     jwt.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
 		KeyFinder:             &jwt.JWKKeyFiner{Key: key},
 		IssuerSubjectVerifier: jwt.Issuer("https://github.com/shogo82148/goat"),
 		AudienceVerifier:      jwt.Audience("https://github.com/shogo82148"),
@@ -50,11 +50,11 @@ func ExampleSign() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	signingKey := jwa.EdDSA.New().NewSigningKey(key)
+	signingKey := jwa.SignatureAlgorithmEdDSA.New().NewSigningKey(key)
 
 	// prepare the header and the claims.
 	header := jws.NewHeader()
-	header.SetAlgorithm(jwa.EdDSA)
+	header.SetAlgorithm(jwa.SignatureAlgorithmEdDSA)
 	claims := new(jwt.Claims)
 	claims.Issuer = "https://github.com/shogo82148/goat"
 	claims.Audience = []string{"https://github.com/shogo82148"}

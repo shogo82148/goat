@@ -16,7 +16,7 @@ func New() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.EdDSA, New)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEdDSA, New)
 }
 
 type algorithm struct{}
