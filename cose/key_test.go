@@ -3,13 +3,14 @@ package cose
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/shogo82148/go-cbor"
 )
 
 func TestParseMap(t *testing.T) {
-	data, err := os.ReadFile("testdata/cose-wg-examples/KeySet.txt")
+	data, err := os.ReadFile(filepath.Join("testdata", "cose-wg-examples", "KeySet.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}

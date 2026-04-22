@@ -42,7 +42,7 @@ type testVectorOutput struct {
 }
 
 func TestRFC7520(t *testing.T) {
-	files, err := filepath.Glob("../testdata/ietf-jose-cookbook/jws/*.json")
+	files, err := filepath.Glob(filepath.Join("..", "testdata", "ietf-jose-cookbook", "jws", "*.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
