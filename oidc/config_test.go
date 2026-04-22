@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -26,7 +27,7 @@ var platforms = []string{
 
 func TestConfig(t *testing.T) {
 	for _, platform := range platforms {
-		data, err := os.ReadFile(fmt.Sprintf("testdata/%s-openid-configuration.json", platform))
+		data, err := os.ReadFile(filepath.Join("testdata", fmt.Sprintf("%s-openid-configuration.json", platform)))
 		if err != nil {
 			t.Fatal(err)
 		}

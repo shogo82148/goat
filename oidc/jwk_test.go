@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func testJWKS(t *testing.T, platform string) {
 		if got, want := r.URL.Path, "/.well-known/jwks"; got != want {
 			t.Errorf("unexpected path: want %q, got %q", want, got)
 		}
-		http.ServeFile(rw, r, "testdata/"+platform+"-jwks.json")
+		http.ServeFile(rw, r, filepath.Join("testdata", platform+"-jwks.json"))
 	}))
 	defer ts.Close()
 
