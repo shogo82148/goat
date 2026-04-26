@@ -8,6 +8,32 @@ import (
 	"testing"
 )
 
+func TestPrivateKey_Equal(t *testing.T) {
+	priv1 := GenerateKey()
+	priv2 := GenerateKey()
+
+	if !priv1.Equal(priv1) {
+		t.Error("expected keys to be equal")
+	}
+
+	if priv1.Equal(priv2) {
+		t.Error("expected keys to be different")
+	}
+}
+
+func TestPublicKey_Equal(t *testing.T) {
+	pub1 := GenerateKey().PublicKey()
+	pub2 := GenerateKey().PublicKey()
+
+	if !pub1.Equal(pub1) {
+		t.Error("expected keys to be equal")
+	}
+
+	if pub1.Equal(pub2) {
+		t.Error("expected keys to be different")
+	}
+}
+
 func decodeHex(s string) []byte {
 	data, err := hex.DecodeString(s)
 	if err != nil {

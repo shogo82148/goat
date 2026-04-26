@@ -5,12 +5,84 @@ package secp256k1
 // https://github.com/GincoInc/go-crypto/blob/f40651045f442b48b7b70e835532df09b4e2ecfa/secp256k1.go
 
 import (
+	"bytes"
+	"crypto"
 	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/subtle"
 	"math/big"
 	"sync"
 
 	"github.com/shogo82148/goat/internal/curve256k1"
 )
+
+var paramN = [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE, 0xBA, 0xAE, 0xDC, 0xE6, 0xAF, 0x48, 0xA0, 0x3B, 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41}
+
+// PrivateKey represents a secp256k1 private key.
+type PrivateKey struct {
+	d [32]byte
+}
+
+// GenerateKey generates a new private key.
+func GenerateKey() *PrivateKey {
+	for {
+		var buf [32]byte
+		rand.Read(buf[:])
+		if !isZero(&buf) && !overflow(&buf) {
+			return &PrivateKey{d: buf}
+		}
+	}
+}
+
+func isZero(buf *[32]byte) bool {
+	for _, b := range buf {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func overflow(buf *[32]byte) bool {
+	return bytes.Compare(buf[:], paramN[:]) >= 0
+}
+
+// Equal reports whether priv and x have the same value.
+func (priv *PrivateKey) Equal(x crypto.PrivateKey) bool {
+	xx, ok := x.(*PrivateKey)
+	if !ok {
+		return false
+	}
+	return subtle.ConstantTimeCompare(priv.d[:], xx.d[:]) == 1
+}
+
+// Public returns the corresponding public key.
+func (key *PrivateKey) Public() crypto.PublicKey {
+	return key.PublicKey()
+}
+
+// PublicKey returns the corresponding public key.
+func (key *PrivateKey) PublicKey() *PublicKey {
+	var ret curve256k1.Point
+	var retj curve256k1.PointJacobian
+	retj.ScalarBaseMult(key.d[:])
+	ret.FromJacobian(&retj)
+	return &PublicKey{p: ret}
+}
+
+// PublicKey represents a secp256k1 public key.
+type PublicKey struct {
+	p curve256k1.Point
+}
+
+// Equal reports whether pub and x have the same value.
+func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
+	xx, ok := x.(*PublicKey)
+	if !ok {
+		return false
+	}
+	return pub.p.Equal(&xx.p) == 1
+}
 
 var initonce sync.Once
 var curve secp256k1

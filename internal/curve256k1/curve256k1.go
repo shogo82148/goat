@@ -93,6 +93,12 @@ func (p *Point) Set(q *Point) *Point {
 	return p
 }
 
+// Equal reports whether p and q have the same value.
+// It returns 1 if they are equal, and 0 otherwise.
+func (p *Point) Equal(q *Point) int {
+	return p.x.Equal(&q.x) & p.y.Equal(&q.y)
+}
+
 type PointJacobian struct {
 	// X = x/z^2, Y = y/z^3
 	x, y, z field.Element
