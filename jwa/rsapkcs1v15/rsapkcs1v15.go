@@ -20,7 +20,7 @@ func New() keymanage.Algorithm {
 }
 
 func init() {
-	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA1_5, New)
+	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA1_5, New) //nolint:staticcheck // RSA1_5 is deprecated, but it is still supported for backward compatibility.
 }
 
 var _ keymanage.Algorithm = (*Algorithm)(nil)

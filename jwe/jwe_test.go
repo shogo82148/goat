@@ -391,11 +391,11 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alg := jwa.KeyManagementAlgorithmRSA1_5.New()
+		alg := jwa.KeyManagementAlgorithmRSA1_5.New() //nolint:staticcheck // RSA1_5 is deprecated, but we want to test the example in the RFC
 		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
-		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA1_5)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA1_5) //nolint:staticcheck // RSA1_5 is deprecated, but we want to test the example in the RFC
 		plaintext := "Live long and prosper."
 		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
