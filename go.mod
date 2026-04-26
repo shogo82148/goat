@@ -12,5 +12,4 @@ require (
 require (
 	github.com/shogo82148/floats v0.3.0 // indirect
 	github.com/shogo82148/ints v0.1.1 // indirect
-	golang.org/x/sys v0.43.0 // indirect
 )
