@@ -22,7 +22,7 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		d.SaveError(errors.New("jwk: invalid rsa parameter e"))
 		return
 	}
-	privateKey.PublicKey.E = int(e.Int64())
+	privateKey.E = int(e.Int64())
 	n := d.MustBigInt("n")
 	pub := rsa.PublicKey{
 		E: int(e.Int64()),

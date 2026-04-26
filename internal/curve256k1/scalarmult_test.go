@@ -92,8 +92,7 @@ func BenchmarkScalarMult1(b *testing.B) {
 	q.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
 	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		q.ScalarMult(&q, k)
 	}
 }
@@ -105,8 +104,7 @@ func BenchmarkScalarMultMinus1(b *testing.B) {
 	q.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
 	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		q.ScalarMult(&q, k)
 	}
 }

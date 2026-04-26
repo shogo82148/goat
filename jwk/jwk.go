@@ -7,6 +7,7 @@ import (
 	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -513,7 +514,15 @@ type ecdhPublicKey = ecdh.PublicKey
 func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PrivateKey:
-		if err := validateEcdsaPrivateKey(key); err != nil {
+		switch key.Curve {
+		case elliptic.P256():
+		case elliptic.P384():
+		case elliptic.P521():
+			// supported curves for EC keys
+		default:
+			return nil, fmt.Errorf("jwk: unknown crv: %q", key.Curve.Params().Name)
+		}
+		if _, err := key.Bytes(); err != nil {
 			return nil, err
 		}
 		return &Key{
@@ -608,7 +617,15 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PublicKey:
-		if err := validateEcdsaPublicKey(key); err != nil {
+		switch key.Curve {
+		case elliptic.P256():
+		case elliptic.P384():
+		case elliptic.P521():
+			// supported curves for EC keys
+		default:
+			return nil, fmt.Errorf("jwk: unknown crv: %q", key.Curve.Params().Name)
+		}
+		if _, err := key.Bytes(); err != nil {
 			return nil, err
 		}
 		return &Key{
@@ -674,36 +691,5 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 		}, nil
 	default:
 		return nil, fmt.Errorf("jwk: unknown public key type: %T", key)
-	}
-}
-
-func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKey) {
-	switch pub.Curve() {
-	case ecdh.P256():
-		e.Set("kty", jwa.KeyTypeEC.String())
-		e.Set("crv", jwa.EllipticCurveP256.String())
-		data := pub.Bytes()
-		e.SetBytes("x", data[1:32+1])
-		e.SetBytes("y", data[32+1:])
-	case ecdh.P384():
-		e.Set("kty", jwa.KeyTypeEC.String())
-		e.Set("crv", jwa.EllipticCurveP384.String())
-		data := pub.Bytes()
-		e.SetBytes("x", data[1:48+1])
-		e.SetBytes("y", data[48+1:])
-	case ecdh.P521():
-		e.Set("kty", jwa.KeyTypeEC.String())
-		e.Set("crv", jwa.EllipticCurveP521.String())
-		data := pub.Bytes()
-		e.SetBytes("x", data[1:66+1])
-		e.SetBytes("y", data[66+1:])
-	case ecdh.X25519():
-		e.Set("kty", jwa.KeyTypeOKP)
-		e.Set("crv", jwa.EllipticCurveX25519.String())
-		e.SetBytes("x", pub.Bytes())
-	}
-
-	if priv != nil {
-		e.SetBytes("d", priv.Bytes())
 	}
 }

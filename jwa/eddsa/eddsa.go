@@ -20,7 +20,7 @@ func New() sig.Algorithm {
 }
 
 func init() {
-	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEdDSA, New)
+	jwa.RegisterSignatureAlgorithm(jwa.SignatureAlgorithmEdDSA, New) //nolint:staticcheck // EdDSA is still supported for backward compatibility.
 }
 
 type algorithm struct{}

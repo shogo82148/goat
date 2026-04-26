@@ -374,6 +374,8 @@ const (
 
 	// KeyManagementAlgorithmRSA1_5 is RSAES-PKCS1-v1_5.
 	// import github.com/shogo82148/goat/jwa/rsapkcs1v15
+	//
+	// Deprecated: RSAES-PKCS1-v1_5 is not recommended, use [KeyManagementAlgorithmRSA_OAEP] instead.
 	KeyManagementAlgorithmRSA1_5 KeyManagementAlgorithm = "RSA1_5"
 
 	// KeyManagementAlgorithmRSA_OAEP is RSAES OAEP.

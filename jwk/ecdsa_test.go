@@ -3,6 +3,7 @@ package jwk
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/hex"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -10,6 +11,7 @@ import (
 
 func TestParseKey_ecdsa(t *testing.T) {
 	t.Run("RFC 7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256", func(t *testing.T) {
+		// parse JWK
 		rawKey := `{"kty":"EC",` +
 			`"crv":"P-256",` +
 			`"x":"f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",` +
@@ -20,32 +22,31 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// expected private key
+		data, err := hex.DecodeString("8e9b109e719098bf980487df1f5d77e9cb29606ebed2263b5f57c213df84f4b2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(elliptic.P256(), data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
 		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		x := newBigInt("57807358241436249728379122087876380298924820027722995515715270765240753673285")
-		y := newBigInt("90436541859143682268950424386863654389577770182238183823381687388274600502701")
-		want := &ecdsa.PublicKey{
-			Curve: elliptic.P256(),
-			X:     x,
-			Y:     y,
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", priv.PublicKey, key.PublicKey())
 		}
-		got := key.PublicKey()
-		if !want.Equal(got) {
-			t.Errorf("unexpected public key: want %v, got %v", want, got)
-		}
-
-		d := newBigInt("64502400493437371358766275827725703314178640739253280897215993954599262549170")
-		privateKey := &ecdsa.PrivateKey{
-			PublicKey: *want,
-			D:         d,
-		}
-		if !privateKey.Equal(key.PrivateKey()) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", priv, key.PrivateKey())
 		}
 	})
 
 	t.Run("RFC 7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
+		// parse JWK
 		rawKey := `{"kty":"EC",` +
 			`"crv":"P-521",` +
 			`"x":"AekpBQ8ST8a8VcfVOTNl353vSrDCLLJXmPk06wTjxrrjcBpXp5EOnYG_` +
@@ -59,31 +60,31 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// expected private key
+		data, err := hex.DecodeString("018e696fb034505881dd110b483eb87d32ce495fe36b3745edf2d8cae4f0f2539f4615a0e98eab52b3c0c5eac4ce075185a8e7bb47deac1d1de77bccf66135e63d82")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(elliptic.P521(), data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
 		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		x := newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132")
-		y := newBigInt("705914061082973601048865942513844186912223650952616397119610620188911564288314145208762412315826061109317770515164005156360031161563418113875601542699600118")
-		publicKey := &ecdsa.PublicKey{
-			Curve: elliptic.P521(),
-			X:     x,
-			Y:     y,
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", priv.PublicKey, key.PublicKey())
 		}
-		if !publicKey.Equal(key.PublicKey()) {
-			t.Errorf("unexpected public key: want %v, got %v", publicKey, key.PublicKey())
-		}
-
-		d := newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490")
-		privateKey := &ecdsa.PrivateKey{
-			PublicKey: *publicKey,
-			D:         d,
-		}
-		if !privateKey.Equal(key.PrivateKey()) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", priv, key.PrivateKey())
 		}
 	})
 
 	t.Run("RFC 7517 A.1. Example Public Keys (EC)", func(t *testing.T) {
+		// parse JWK
 		rawKey := `{"kty":"EC",` +
 			`"crv":"P-256",` +
 			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
@@ -94,23 +95,29 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// expected public key
+		buf, err := hex.DecodeString("0430a0424cd21c2944838a2d75c92b37e76ea20d9f00893a3b4eee8a3c0aafec3ee04b65e92456d9888b52b379bdfbd51ee869ef1f0fc65b6659695b6cce081723")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
 		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
-		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
-		want := &ecdsa.PublicKey{
-			Curve: elliptic.P256(),
-			X:     x,
-			Y:     y,
-		}
 		got := key.PublicKey()
-		if !want.Equal(got) {
-			t.Errorf("unexpected public key: want %v, got %v", want, got)
+		if !pub.Equal(got) {
+			t.Errorf("unexpected public key: want %v, got %v", pub, got)
 		}
 	})
 
 	t.Run("RFC 7517 A.2. Example Private Keys (EC)", func(t *testing.T) {
+		// parse JWK
 		rawKey := `{"kty":"EC",` +
 			`"crv":"P-256",` +
 			`"x":"MKBCTNIcKUSDii11ySs3526iDZ8AiTo7Tu6KPAqv7D4",` +
@@ -122,28 +129,26 @@ func TestParseKey_ecdsa(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// expected private key
+		data, err := hex.DecodeString("f3bd0c07a81fb932781ed52752f60cc89a6be5e51934fe01938ddb55d8f77801")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(elliptic.P256(), data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
 		if want, got := key.kty, jwa.KeyTypeEC; want != got {
 			t.Errorf("unexpected key type: want %s, got %s", want, got)
 		}
-		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
-		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
-		want := &ecdsa.PublicKey{
-			Curve: elliptic.P256(),
-			X:     x,
-			Y:     y,
+		if !priv.PublicKey.Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", priv.PublicKey, key.PublicKey())
 		}
-		got := key.PublicKey()
-		if !want.Equal(got) {
-			t.Errorf("unexpected public key: want %v, got %v", want, got)
-		}
-
-		d := newBigInt("110246039328358150430804407946042381407500908316371398015658902487828646033409")
-		privateKey := &ecdsa.PrivateKey{
-			PublicKey: *want,
-			D:         d,
-		}
-		if !privateKey.Equal(key.PrivateKey()) {
-			t.Errorf("unexpected private key: want %v, got %v", privateKey, key.PrivateKey())
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", priv, key.PrivateKey())
 		}
 	})
 }
@@ -277,22 +282,28 @@ func TestParseKey_ecdsa_invalid(t *testing.T) {
 
 func TestMarshalKey_ecdsa(t *testing.T) {
 	t.Run("RFC 7517 A.1. Example Public Keys (EC)", func(t *testing.T) {
-		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
-		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
+		buf, err := hex.DecodeString("0430a0424cd21c2944838a2d75c92b37e76ea20d9f00893a3b4eee8a3c0aafec3ee04b65e92456d9888b52b379bdfbd51ee869ef1f0fc65b6659695b6cce081723")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub, err := ecdsa.ParseUncompressedPublicKey(elliptic.P256(), buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// encode JWK
 		key := &Key{
 			kty: jwa.KeyTypeEC,
 			kid: "1",
 			use: "enc",
-			pub: &ecdsa.PublicKey{
-				Curve: elliptic.P256(),
-				X:     x,
-				Y:     y,
-			},
+			pub: pub,
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// verify
 		want := `{"crv":"P-256",` +
 			`"kid":"1",` +
 			`"kty":"EC",` +
@@ -306,30 +317,29 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 	})
 
 	t.Run("RFC 7517 A.2. Example Private Keys (EC)", func(t *testing.T) {
-		x := newBigInt("21994169848703329112137818087919262246467304847122821377551355163096090930238")
-		y := newBigInt("101451294974385619524093058399734017814808930032421185206609461750712400090915")
-		d := newBigInt("110246039328358150430804407946042381407500908316371398015658902487828646033409")
+		// expected private key
+		data, err := hex.DecodeString("f3bd0c07a81fb932781ed52752f60cc89a6be5e51934fe01938ddb55d8f77801")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(elliptic.P256(), data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// encode JWK
 		key := &Key{
-			priv: &ecdsa.PrivateKey{
-				PublicKey: ecdsa.PublicKey{
-					Curve: elliptic.P256(),
-					X:     x,
-					Y:     y,
-				},
-				D: d,
-			},
-			pub: &ecdsa.PublicKey{
-				Curve: elliptic.P256(),
-				X:     x,
-				Y:     y,
-			},
-			use: "enc",
-			kid: "1",
+			priv: priv,
+			pub:  &priv.PublicKey,
+			use:  "enc",
+			kid:  "1",
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// verify
 		want := `{"crv":"P-256",` +
 			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
 			`"kid":"1",` +
@@ -344,28 +354,26 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
-		x := newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132")
-		y := newBigInt("705914061082973601048865942513844186912223650952616397119610620188911564288314145208762412315826061109317770515164005156360031161563418113875601542699600118")
-		d := newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490")
+		data, err := hex.DecodeString("018e696fb034505881dd110b483eb87d32ce495fe36b3745edf2d8cae4f0f2539f4615a0e98eab52b3c0c5eac4ce075185a8e7bb47deac1d1de77bccf66135e63d82")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(elliptic.P521(), data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// encode JWK
 		key := &Key{
-			priv: &ecdsa.PrivateKey{
-				PublicKey: ecdsa.PublicKey{
-					Curve: elliptic.P521(),
-					X:     x,
-					Y:     y,
-				},
-				D: d,
-			},
-			pub: &ecdsa.PublicKey{
-				Curve: elliptic.P521(),
-				X:     x,
-				Y:     y,
-			},
+			priv: priv,
+			pub:  &priv.PublicKey,
 		}
 		got, err := key.MarshalJSON()
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// verify
 		want := `{"crv":"P-521",` +
 			`"d":"AY5pb7A0UFiB3RELSD64fTLOSV_jazdF7fLYyuTw8lOfRhWg6Y6rUrPA` +
 			`xerEzgdRhajnu0ferB0d53vM9mE15j2C",` +

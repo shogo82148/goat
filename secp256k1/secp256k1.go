@@ -2,7 +2,7 @@
 package secp256k1
 
 // based on https://tech.ginco.io/post/secp256k1-golang-implementation/
-// https://github.com/GincoInc/go-crypto/blob/master/secp256k1.go
+// https://github.com/GincoInc/go-crypto/blob/f40651045f442b48b7b70e835532df09b4e2ecfa/secp256k1.go
 
 import (
 	"crypto/elliptic"

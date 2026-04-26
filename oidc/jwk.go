@@ -51,7 +51,7 @@ func (c *Client) getJWKS(ctx context.Context, url string) (*jwk.Set, time.Time, 
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // ignore error because we can't do anything about it.
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, time.Time{}, fmt.Errorf("oidc: unexpected response code: %d", resp.StatusCode)

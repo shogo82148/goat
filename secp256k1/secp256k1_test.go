@@ -148,7 +148,7 @@ func TestIsOnCurve(t *testing.T) {
 		x := bigHex(p.x)
 		y := bigHex(p.y)
 		crv := Curve()
-		if !crv.IsOnCurve(x, y) {
+		if !crv.IsOnCurve(x, y) { //nolint:staticcheck // test IsOnCurve for backward compatibility.
 			t.Error("(x,y) is not on curve")
 		}
 	}
@@ -159,8 +159,8 @@ func BenchmarkIsOnCurve(b *testing.B) {
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
 	crv := Curve()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		crv.IsOnCurve(x, y)
+	for b.Loop() {
+		crv.IsOnCurve(x, y) //nolint:staticcheck // test IsOnCurve for backward compatibility.
 	}
 }
 
@@ -171,7 +171,7 @@ func TestAdd(t *testing.T) {
 	gy := bigHex("483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8")
 	crv := Curve()
 
-	xx, yy := crv.Add(x, y, gx, gy)
+	xx, yy := crv.Add(x, y, gx, gy) //nolint:staticcheck // test Add for backward compatibility.
 	if xx.String() != "103398873363144253748994332925483235365773458200442655046283530549491799842290" {
 		t.Errorf("want 103398873363144253748994332925483235365773458200442655046283530549491799842290, got %s", xx)
 	}
@@ -188,8 +188,8 @@ func BenchmarkAdd(b *testing.B) {
 	crv := Curve()
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		crv.Add(x, y, gx, gy)
+	for b.Loop() {
+		crv.Add(x, y, gx, gy) //nolint:staticcheck // test Add for backward compatibility.
 	}
 }
 
@@ -198,7 +198,7 @@ func TestDouble(t *testing.T) {
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
 	crv := Curve()
 
-	xx, yy := crv.Double(x, y)
+	xx, yy := crv.Double(x, y) //nolint:staticcheck // test Double for backward compatibility.
 	if xx.String() != "3253853896651542241016013980011516465233588677473825707395430701990395674578" {
 		t.Errorf("want 3253853896651542241016013980011516465233588677473825707395430701990395674578, got %s", xx)
 	}
@@ -212,8 +212,8 @@ func BenchmarkDouble(b *testing.B) {
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
 	crv := Curve()
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		crv.Double(x, y)
+	for b.Loop() {
+		crv.Double(x, y) //nolint:staticcheck // test Double for backward compatibility.
 	}
 }
 
@@ -223,7 +223,7 @@ func TestScalarMult1(t *testing.T) {
 	k, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
-	xx, yy := crv.ScalarMult(x, y, k)
+	xx, yy := crv.ScalarMult(x, y, k) //nolint:staticcheck // test ScalarMult for backward compatibility.
 	if xx.String() != "55042608044612121400613053601674605111304023047002903551681986042062204131860" {
 		t.Errorf("want 55042608044612121400613053601674605111304023047002903551681986042062204131860, got %s", xx)
 	}
@@ -238,7 +238,7 @@ func TestScalarMultMinus1(t *testing.T) {
 	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
-	xx, yy := crv.ScalarMult(x, y, k)
+	xx, yy := crv.ScalarMult(x, y, k) //nolint:staticcheck // test ScalarMult for backward compatibility.
 	if xx.String() != "55042608044612121400613053601674605111304023047002903551681986042062204131860" {
 		t.Errorf("want 55042608044612121400613053601674605111304023047002903551681986042062204131860, got %s", xx)
 	}
@@ -253,8 +253,8 @@ func BenchmarkMult1(b *testing.B) {
 	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
-	for i := 0; i < b.N; i++ {
-		crv.ScalarMult(x, y, k)
+	for b.Loop() {
+		crv.ScalarMult(x, y, k) //nolint:staticcheck // test ScalarMult for backward compatibility.
 	}
 }
 
@@ -264,8 +264,8 @@ func BenchmarkMultMinus1(b *testing.B) {
 	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
-	for i := 0; i < b.N; i++ {
-		crv.ScalarMult(x, y, k)
+	for b.Loop() {
+		crv.ScalarMult(x, y, k) //nolint:staticcheck // test ScalarMult for backward compatibility.
 	}
 }
 
@@ -273,7 +273,7 @@ func TestScalarBaseMult1(t *testing.T) {
 	k, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
-	xx, yy := crv.ScalarBaseMult(k)
+	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
 	if xx.String() != "55066263022277343669578718895168534326250603453777594175500187360389116729240" {
 		t.Errorf("want 55066263022277343669578718895168534326250603453777594175500187360389116729240, got %s", xx)
 	}
@@ -286,7 +286,7 @@ func TestScalarBaseMultMinus1(t *testing.T) {
 	k, _ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
-	xx, yy := crv.ScalarBaseMult(k)
+	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
 	if xx.String() != "55066263022277343669578718895168534326250603453777594175500187360389116729240" {
 		t.Errorf("want 55066263022277343669578718895168534326250603453777594175500187360389116729240, got %s", xx)
 	}
@@ -299,8 +299,8 @@ func BenchmarkScalarBaseMult1(b *testing.B) {
 	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
-	for i := 0; i < b.N; i++ {
-		crv.ScalarBaseMult(k)
+	for b.Loop() {
+		crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
 	}
 }
 
@@ -308,8 +308,8 @@ func BenchmarkScalarBaseMultMinus1(b *testing.B) {
 	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
-	for i := 0; i < b.N; i++ {
-		crv.ScalarBaseMult(k)
+	for b.Loop() {
+		crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
 	}
 }
 
@@ -359,7 +359,7 @@ func BenchmarkCombinedMult1(b *testing.B) {
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
 	crv := Curve().(*secp256k1)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		crv.CombinedMult(x, y, k, k)
 	}
 }
@@ -370,7 +370,7 @@ func BenchmarkCombinedMultMinus1(b *testing.B) {
 	y := bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb")
 	crv := Curve().(*secp256k1)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		crv.CombinedMult(x, y, k, k)
 	}
 }

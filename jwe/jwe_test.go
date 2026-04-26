@@ -13,7 +13,7 @@ import (
 	_ "github.com/shogo82148/goat/jwa/akw"
 	_ "github.com/shogo82148/goat/jwa/pbes2"
 	_ "github.com/shogo82148/goat/jwa/rsaoaep"
-	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15"
+	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15" //nolint:staticcheck // for testing RSAES-PKCS1-v1_5
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )
@@ -391,11 +391,11 @@ func TestEncrypt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		alg := jwa.KeyManagementAlgorithmRSA1_5.New()
+		alg := jwa.KeyManagementAlgorithmRSA1_5.New() //nolint:staticcheck // RSA1_5 is deprecated, but we want to test the example in the RFC
 		key := alg.NewKeyWrapper(k)
 
 		header := &Header{}
-		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA1_5)
+		header.SetAlgorithm(jwa.KeyManagementAlgorithmRSA1_5) //nolint:staticcheck // RSA1_5 is deprecated, but we want to test the example in the RFC
 		plaintext := "Live long and prosper."
 		msg1, err := NewMessageWithKW(jwa.EncryptionAlgorithmA128CBC_HS256, key, header, []byte(plaintext))
 		if err != nil {
