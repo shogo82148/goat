@@ -170,6 +170,9 @@ func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKe
 		e.Set("kty", jwa.KeyTypeOKP.String())
 		e.Set("crv", jwa.EllipticCurveX25519.String())
 		e.SetBytes("x", pub.Bytes())
+	default:
+		e.SaveError(errors.New("jwk: unknown crv"))
+		return
 	}
 
 	if priv != nil {
