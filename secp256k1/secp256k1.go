@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/subtle"
+	"errors"
 	"math/big"
 	"sync"
 
@@ -32,6 +33,19 @@ func GenerateKey() *PrivateKey {
 			return &PrivateKey{d: buf}
 		}
 	}
+}
+
+// ParseRawPrivateKey parses a private key from a fixed-length big-endian integer.
+func ParseRawPrivateKey(data []byte) (*PrivateKey, error) {
+	if len(data) != 32 {
+		return nil, errors.New("secp256k1: invalid private key length")
+	}
+	var buf [32]byte
+	copy(buf[:], data)
+	if isZero(&buf) || overflow(&buf) {
+		return nil, errors.New("secp256k1: invalid private key")
+	}
+	return &PrivateKey{d: buf}, nil
 }
 
 func isZero(buf *[32]byte) bool {
@@ -70,6 +84,11 @@ func (key *PrivateKey) PublicKey() *PublicKey {
 	return &PublicKey{p: ret}
 }
 
+// Bytes encodes the private key as a fixed-length big-endian integer.
+func (key *PrivateKey) Bytes() ([]byte, error) {
+	return bytes.Clone(key.d[:]), nil
+}
+
 // PublicKey represents a secp256k1 public key.
 type PublicKey struct {
 	p curve256k1.Point
@@ -82,6 +101,23 @@ func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
 		return false
 	}
 	return pub.p.Equal(&xx.p) == 1
+}
+
+// ParseUncompressedPublicKey parses a public key from an uncompressed point encoding.
+func ParseUncompressedPublicKey(data []byte) (*PublicKey, error) {
+	if len(data) != 65 || data[0] != 0x04 {
+		return nil, errors.New("secp256k1: invalid public key encoding")
+	}
+	var p curve256k1.Point
+	if _, err := p.SetBytes(data); err != nil {
+		return nil, err
+	}
+	return &PublicKey{p: p}, nil
+}
+
+// Bytes encodes the public key as an uncompressed point.
+func (pub *PublicKey) Bytes() ([]byte, error) {
+	return pub.p.Bytes(), nil
 }
 
 var initonce sync.Once

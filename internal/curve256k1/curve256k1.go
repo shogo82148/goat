@@ -188,6 +188,34 @@ func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {
 	return x, y
 }
 
+// Bytes returns the uncompressed encoding of p.
+func (p *Point) Bytes() []byte {
+	var buf [65]byte
+	buf[0] = 0x04 // uncompressed form
+	xBytes := p.x.Bytes()
+	yBytes := p.y.Bytes()
+	copy(buf[1+32-len(xBytes):33], xBytes)
+	copy(buf[33+32-len(yBytes):], yBytes)
+	return buf[:]
+}
+
+// SetBytes decodes p from the uncompressed encoding. It returns an error if the encoding is invalid.
+func (p *Point) SetBytes(data []byte) (*Point, error) {
+	if len(data) != 65 || data[0] != 0x04 {
+		return nil, errors.New("curve256k1: invalid point encoding")
+	}
+	if err := p.x.SetBytes(data[1:33]); err != nil {
+		return nil, err
+	}
+	if err := p.y.SetBytes(data[33:]); err != nil {
+		return nil, err
+	}
+	if !IsOnCurve(p) {
+		return nil, errors.New("curve256k1: point is not on the curve")
+	}
+	return p, nil
+}
+
 // Add set p = a + b.
 func (p *PointJacobian) Add(a, b *PointJacobian) *PointJacobian {
 	// See https://hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#addition-add-2007-bl

@@ -34,6 +34,38 @@ func TestPublicKey_Equal(t *testing.T) {
 	}
 }
 
+func TestPrivateKey_Bytes(t *testing.T) {
+	priv1 := GenerateKey()
+	b, err := priv1.Bytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv2, err := ParseRawPrivateKey(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !priv1.Equal(priv2) {
+		t.Error("expected keys to be equal")
+	}
+}
+
+func TestPublicKey_Bytes(t *testing.T) {
+	pub1 := GenerateKey().PublicKey()
+	b, err := pub1.Bytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub2, err := ParseUncompressedPublicKey(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !pub1.Equal(pub2) {
+		t.Error("expected keys to be equal")
+	}
+}
+
 func decodeHex(s string) []byte {
 	data, err := hex.DecodeString(s)
 	if err != nil {
