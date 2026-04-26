@@ -55,7 +55,7 @@ func (v *lookupTable) SelectInto(dest *Point, x int8) {
 	xabs := uint8((x + xmask) ^ xmask)
 
 	dest.Zero()
-	for i := 1; i <= 8; i++ {
+	for i := 1; i <= 8; i++ { //nolint:staticcheck // bug of staticcheck? it reports SA4008.
 		// Set dest = i*Q if |x| = i
 		cond := subtle.ConstantTimeByteEq(xabs, uint8(i))
 		dest.Select(&v.points[i-1], dest, cond)

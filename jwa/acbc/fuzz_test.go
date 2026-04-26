@@ -35,7 +35,7 @@ func FuzzDecrypt(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, cek, iv, aad, ciphertext, authTag []byte) {
 		enc := New128HS256()
-		enc.Decrypt(cek, iv, aad, ciphertext, authTag)
+		_, _ = enc.Decrypt(cek, iv, aad, ciphertext, authTag)
 	})
 }
 

@@ -1058,9 +1058,18 @@ func TestMulAdd_Check(t *testing.T) {
 	l, _ := new(big.Int).SetString("181709681073901722637330951972001133588410340171829515070372549795146003961539585716195755291692375963310293709091662304773755859649779", 10)
 	f := func(a, b, c [57]byte) bool {
 		var v, s, q, r Scalar
-		s.SetBytesWithClamping(a[:])
-		q.SetBytesWithClamping(b[:])
-		r.SetBytesWithClamping(c[:])
+		if _, err := s.SetBytesWithClamping(a[:]); err != nil {
+			t.Error(err)
+			return false
+		}
+		if _, err := q.SetBytesWithClamping(b[:]); err != nil {
+			t.Error(err)
+			return false
+		}
+		if _, err := r.SetBytesWithClamping(c[:]); err != nil {
+			t.Error(err)
+			return false
+		}
 		v.MulAdd(&s, &q, &r)
 		got := v.toBig(new(big.Int))
 

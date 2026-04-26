@@ -163,7 +163,9 @@ func sign(signature, privateKey, message []byte) {
 	mh.Write(prefix)
 	mh.Write(message)
 	messageDigest := make([]byte, 114)
-	mh.Read(messageDigest)
+	if _, err := mh.Read(messageDigest); err != nil {
+		panic(err)
+	}
 	r, err := edwards448.NewScalar().SetUniformBytes(messageDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
@@ -177,7 +179,9 @@ func sign(signature, privateKey, message []byte) {
 	kh.Write(publicKey)
 	kh.Write(message)
 	hramDigest := make([]byte, 114)
-	kh.Read(hramDigest)
+	if _, err := kh.Read(hramDigest); err != nil {
+		panic(err)
+	}
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
@@ -212,7 +216,9 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	kh.Write(publicKey)
 	kh.Write(message)
 	hramDigest := make([]byte, 114)
-	kh.Read(hramDigest)
+	if _, err := kh.Read(hramDigest); err != nil {
+		panic(err)
+	}
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")

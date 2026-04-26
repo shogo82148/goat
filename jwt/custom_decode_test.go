@@ -7,8 +7,6 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/shogo82148/pointer"
 )
 
 func TestDecodeCustom(t *testing.T) {
@@ -210,7 +208,7 @@ func TestDecodeCustom(t *testing.T) {
 			want: &struct {
 				Ptr *****string `jwt:"ptr"`
 			}{
-				Ptr: pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr(pointer.Ptr("value"))))),
+				Ptr: new(new(new(new(new("value"))))),
 			},
 		},
 

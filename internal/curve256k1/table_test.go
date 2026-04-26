@@ -98,9 +98,15 @@ func TestTable(t *testing.T) {
 	for i := range 16 {
 		var want, got PointJacobian
 		table.SelectInto(&got, uint8(i))
-		want.x.SetBytes(decodeHex(myTable[i].x))
-		want.y.SetBytes(decodeHex(myTable[i].y))
-		want.z.SetBytes(decodeHex(myTable[i].z))
+		if err := want.x.SetBytes(decodeHex(myTable[i].x)); err != nil {
+			t.Fatalf("table[%d].x: invalid hex: %v", i, err)
+		}
+		if err := want.y.SetBytes(decodeHex(myTable[i].y)); err != nil {
+			t.Fatalf("table[%d].y: invalid hex: %v", i, err)
+		}
+		if err := want.z.SetBytes(decodeHex(myTable[i].z)); err != nil {
+			t.Fatalf("table[%d].z: invalid hex: %v", i, err)
+		}
 		if want.Equal(&got) == 0 {
 			t.Errorf("table[%d].x: want %x, got %x", i, want.x.Bytes(), got.x.Bytes())
 			t.Errorf("table[%d].y: want %x, got %x", i, want.y.Bytes(), got.y.Bytes())

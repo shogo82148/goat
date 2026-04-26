@@ -16,7 +16,6 @@ jobs:
         go:
           - "stable"
           - "1.26"
-          - "1.25"
         os:
           - ubuntu-latest
         goarch:
