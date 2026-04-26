@@ -171,9 +171,6 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err != nil {
-			t.Fatal(err)
-		}
 
 		if want, got := header.Algorithm(), jwa.SignatureAlgorithmES256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
