@@ -24,7 +24,7 @@ func (v *lookupTable) SelectInto(dest *PointJacobian, x uint8) {
 		panic("curve256k1: out-of-bounds: " + strconv.Itoa(int(x)))
 	}
 	dest.Zero()
-	for i := uint8(1); i < 16; i++ {
+	for i := uint8(1); i < 16; i++ { //nolint:staticcheck // bug of staticcheck? it reports SA4008.
 		cond := subtle.ConstantTimeByteEq(x, i)
 		dest.Select(&v.points[i-1], dest, cond)
 	}
