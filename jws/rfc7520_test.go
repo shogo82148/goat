@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
+	_ "github.com/shogo82148/goat/jwa/eddsa" //nolint:staticcheck // for testing Ed25519
 	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
 	_ "github.com/shogo82148/goat/jwa/hs"    // for HMAC SHA-256
 	_ "github.com/shogo82148/goat/jwa/ps"    // for RSASSA-PKCS1-v1_5 SHA-256

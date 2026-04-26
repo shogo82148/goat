@@ -275,7 +275,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA}, //nolint:staticcheck // SignatureAlgorithmEdDSA is deprecated, but we need it for testing RFC example.
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -294,7 +294,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.SignatureAlgorithmEdDSA; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmEdDSA; want != got { //nolint:staticcheck // SignatureAlgorithmEdDSA is deprecated, but we need it for testing RFC example.
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 
