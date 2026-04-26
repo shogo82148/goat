@@ -216,7 +216,9 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	kh.Write(publicKey)
 	kh.Write(message)
 	hramDigest := make([]byte, 114)
-	kh.Read(hramDigest)
+	if _, err := kh.Read(hramDigest); err != nil {
+		panic(err)
+	}
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
