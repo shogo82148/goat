@@ -397,9 +397,6 @@ func TestMarshalKey_RSA(t *testing.T) {
 			`SD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqb` +
 			`w0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw"` +
 			`}`
-		if err != nil {
-			t.Fatal(err)
-		}
 		if string(got) != want {
 			t.Errorf("want %q, got %q", want, got)
 		}
