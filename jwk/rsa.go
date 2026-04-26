@@ -3,7 +3,6 @@ package jwk
 import (
 	"crypto/rsa"
 	"errors"
-	"fmt"
 	"math"
 	"math/big"
 
@@ -50,30 +49,11 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 		}
 
 		// precomputed values
-		crtValues := []rsa.CRTValue{}
-		if oth, ok := d.GetArray("oth"); ok {
-			crtValues = make([]rsa.CRTValue, 0, len(oth))
-			for i, v := range oth {
-				u, ok := v.(map[string]any)
-				if !ok {
-					d.SaveError(fmt.Errorf("jwk: want map[string]any for the parameter oth[%d] but got %T", i, v))
-					return
-				}
-				r := parseRSAOthParam(d, i, u, "r")
-				privateKey.Primes = append(privateKey.Primes, r)
-				crtValues = append(crtValues, rsa.CRTValue{
-					Exp:   parseRSAOthParam(d, i, u, "d"),
-					Coeff: parseRSAOthParam(d, i, u, "t"),
-					R:     r,
-				})
-			}
-		}
 		if d.Has("dp") && d.Has("dq") && d.Has("qi") {
 			privateKey.Precomputed = rsa.PrecomputedValues{
-				Dp:        d.MustBigInt("dp"),
-				Dq:        d.MustBigInt("dq"),
-				Qinv:      d.MustBigInt("qi"),
-				CRTValues: crtValues,
+				Dp:   d.MustBigInt("dp"),
+				Dq:   d.MustBigInt("dq"),
+				Qinv: d.MustBigInt("qi"),
 			}
 		}
 		if err := d.Err(); err != nil {
@@ -95,18 +75,6 @@ func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 			d.SaveError(errors.New("jwk: public keys are mismatch"))
 		}
 	}
-}
-
-func parseRSAOthParam(d *jsonutils.Decoder, i int, v map[string]any, name string) *big.Int {
-	u, ok := v[name]
-	if !ok {
-		return nil
-	}
-	w, ok := u.(string)
-	if !ok {
-		return nil
-	}
-	return new(big.Int).SetBytes(d.Decode(w, fmt.Sprintf("oth[%d].%s", i, name)))
 }
 
 func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey) {
