@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ecdh"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
@@ -16,7 +17,6 @@ import (
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/x25519"
 	"github.com/shogo82148/goat/x448"
-	"golang.org/x/crypto/ed25519"
 )
 
 func newBigInt(s string) *big.Int {
