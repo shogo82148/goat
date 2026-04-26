@@ -140,17 +140,6 @@ func encodeRSAKey(e *jsonutils.Encoder, priv *rsa.PrivateKey, pub *rsa.PublicKey
 			e.SetBigInt("dp", priv.Precomputed.Dp)
 			e.SetBigInt("dq", priv.Precomputed.Dq)
 			e.SetBigInt("qi", priv.Precomputed.Qinv)
-			oth := make([]map[string]string, 0, len(priv.Precomputed.CRTValues))
-			for _, v := range priv.Precomputed.CRTValues {
-				u := make(map[string]string)
-				u["d"] = e.Encode(v.Exp.Bytes())
-				u["t"] = e.Encode(v.Coeff.Bytes())
-				u["r"] = e.Encode(v.R.Bytes())
-				oth = append(oth, u)
-			}
-			if len(oth) > 0 {
-				e.Set("oth", oth)
-			}
 		}
 	}
 }
