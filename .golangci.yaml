@@ -1,0 +1,13 @@
+# configuration for golangci-lint.
+# see https://golangci-lint.run/docs/configuration/file/ for more details.
+
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        # https://github.com/kisielk/errcheck/pull/276
+        - (*crypto/sha3.SHA3).Write
+        - (*crypto/sha3.SHAKE).Read
+        - (*crypto/sha3.SHAKE).Write
