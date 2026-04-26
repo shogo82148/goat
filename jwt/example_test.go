@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/eddsa" // for jwa.EdDSA
+	_ "github.com/shogo82148/goat/jwa/ed25519" // for ed25519 support
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/jws"
 	"github.com/shogo82148/goat/jwt"
@@ -23,11 +23,11 @@ func ExampleParse() {
 		log.Fatal(err)
 	}
 
-	data := "eyJhbGciOiJFZERTQSJ9." +
+	data := "eyJhbGciOiJFZDI1NTE5In0." +
 		"eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ." +
-		"2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw"
+		"j8oZhXeyAJEZK9TC1a_8QZtw2aoXtG_VEA7OZceE5z7ipbkhmFt_qtIpwWFT_f2wNYfnaTAzteV5KwacbSqTCg"
 	p := &jwt.Parser{
-		AlgorithmVerifier:     jwt.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
+		AlgorithmVerifier:     jwt.AllowedAlgorithms{jwa.SignatureAlgorithmEd25519},
 		KeyFinder:             &jwt.JWKKeyFiner{Key: key},
 		IssuerSubjectVerifier: jwt.Issuer("https://github.com/shogo82148/goat"),
 		AudienceVerifier:      jwt.Audience("https://github.com/shogo82148"),
@@ -50,11 +50,11 @@ func ExampleSign() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	signingKey := jwa.SignatureAlgorithmEdDSA.New().NewSigningKey(key)
+	signingKey := jwa.SignatureAlgorithmEd25519.New().NewSigningKey(key)
 
 	// prepare the header and the claims.
 	header := jws.NewHeader()
-	header.SetAlgorithm(jwa.SignatureAlgorithmEdDSA)
+	header.SetAlgorithm(jwa.SignatureAlgorithmEd25519)
 	claims := new(jwt.Claims)
 	claims.Issuer = "https://github.com/shogo82148/goat"
 	claims.Audience = []string{"https://github.com/shogo82148"}
@@ -67,7 +67,7 @@ func ExampleSign() {
 	fmt.Println(string(token))
 
 	// Output:
-	// eyJhbGciOiJFZERTQSJ9.eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ.2p0nndDnxqsA9u1unq2bLPJiJpSj0hOfCNXe1b_Dsu7LskZPj1lFxv56rptqalzYVmR8kcrMyEIrRb94gr_KBw
+	// eyJhbGciOiJFZDI1NTE5In0.eyJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vc2hvZ284MjE0OCIsImlzcyI6Imh0dHBzOi8vZ2l0aHViLmNvbS9zaG9nbzgyMTQ4L2dvYXQifQ.j8oZhXeyAJEZK9TC1a_8QZtw2aoXtG_VEA7OZceE5z7ipbkhmFt_qtIpwWFT_f2wNYfnaTAzteV5KwacbSqTCg
 }
 
 func ExampleClaims_DecodeCustom() {
