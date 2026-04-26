@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
+	_ "github.com/shogo82148/goat/jwa/eddsa" //nolint:staticcheck // for Ed25519
 	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
 	_ "github.com/shogo82148/goat/jwa/hs"    // for HMAC SHA-256
 	_ "github.com/shogo82148/goat/jwa/none"  // for none

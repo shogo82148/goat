@@ -13,7 +13,7 @@ import (
 	_ "github.com/shogo82148/goat/jwa/akw"
 	_ "github.com/shogo82148/goat/jwa/pbes2"
 	_ "github.com/shogo82148/goat/jwa/rsaoaep"
-	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15"
+	_ "github.com/shogo82148/goat/jwa/rsapkcs1v15" //nolint:staticcheck // for testing RSAES-PKCS1-v1_5
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/keymanage"
 )

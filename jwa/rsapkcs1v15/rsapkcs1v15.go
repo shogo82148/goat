@@ -1,4 +1,6 @@
-// Package rsaoaep provides the RSAES-PKCS1-v1_5 key encryption algorithm.
+// Package rsapkcs1v15 provides the RSAES-PKCS1-v1_5 key encryption algorithm.
+//
+// Deprecated: RSAES-PKCS1-v1_5 is not recommended, use RSA-OAEP instead of RSAES-PKCS1-v1_5.
 package rsapkcs1v15
 
 import (
@@ -68,12 +70,12 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canWrap {
 		return nil, fmt.Errorf("rsapkcs1v15: key wrapping operation is not allowed")
 	}
-	return rsa.EncryptPKCS1v15(rand.Reader, w.pub, cek)
+	return rsa.EncryptPKCS1v15(rand.Reader, w.pub, cek) //nolint:staticcheck // RSAES-PKCS1-v1_5 is not recommended, but it is still supported for backward compatibility.
 }
 
 func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canUnwrap {
 		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
 	}
-	return rsa.DecryptPKCS1v15(rand.Reader, w.priv, data)
+	return rsa.DecryptPKCS1v15(rand.Reader, w.priv, data) //nolint:staticcheck // RSAES-PKCS1-v1_5 is not recommended, but it is still supported for backward compatibility.
 }
