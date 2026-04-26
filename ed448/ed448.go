@@ -11,13 +11,13 @@ import (
 	"bytes"
 	"crypto"
 	cryptorand "crypto/rand"
+	"crypto/sha3"
 	"crypto/subtle"
 	"errors"
 	"io"
 	"strconv"
 
 	"github.com/shogo82148/goat/internal/edwards448"
-	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -120,8 +120,7 @@ func newKeyFromSeed(privateKey, seed []byte) {
 		panic("x448: bad seed length: " + strconv.Itoa(l))
 	}
 
-	h := make([]byte, 114)
-	sha3.ShakeSum256(h, seed)
+	h := sha3.SumSHAKE256(seed, 114)
 
 	s, err := edwards448.NewScalar().SetBytesWithClamping(h[:57])
 	if err != nil {
@@ -150,15 +149,14 @@ var sigEd448 = []byte("SigEd448" +
 func sign(signature, privateKey, message []byte) {
 	seed, publicKey := privateKey[:SeedSize], privateKey[SeedSize:]
 
-	h := make([]byte, 114)
-	sha3.ShakeSum256(h, seed)
+	h := sha3.SumSHAKE256(seed, 114)
 	s, err := edwards448.NewScalar().SetBytesWithClamping(h[:57])
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
 	}
 	prefix := h[57:]
 
-	mh := sha3.NewShake256()
+	mh := sha3.NewSHAKE256()
 	mh.Write(sigEd448)
 	mh.Write(prefix)
 	mh.Write(message)
@@ -173,15 +171,13 @@ func sign(signature, privateKey, message []byte) {
 
 	R := new(edwards448.Point).ScalarBaseMult(r)
 
-	kh := sha3.NewShake256()
+	kh := sha3.NewSHAKE256()
 	kh.Write(sigEd448)
 	kh.Write(R.Bytes())
 	kh.Write(publicKey)
 	kh.Write(message)
 	hramDigest := make([]byte, 114)
-	if _, err := kh.Read(hramDigest); err != nil {
-		panic(err)
-	}
+	kh.Read(hramDigest)
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
@@ -210,15 +206,13 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 		return false
 	}
 
-	kh := sha3.NewShake256()
+	kh := sha3.NewSHAKE256()
 	kh.Write(sigEd448)
 	kh.Write(sig[:57])
 	kh.Write(publicKey)
 	kh.Write(message)
 	hramDigest := make([]byte, 114)
-	if _, err := kh.Read(hramDigest); err != nil {
-		panic(err)
-	}
+	kh.Read(hramDigest)
 	k, err := edwards448.NewScalar().SetUniformBytes(hramDigest)
 	if err != nil {
 		panic("ed448: internal error: setting scalar failed")
