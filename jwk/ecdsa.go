@@ -1,6 +1,7 @@
 package jwk
 
 import (
+	"crypto/ecdh"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"errors"
@@ -11,122 +12,167 @@ import (
 	"github.com/shogo82148/goat/secp256k1"
 )
 
+var errInvalidECDSAParameter = errors.New("jwk: invalid parameter of ecdsa")
+
 // RFC 7518 Section 6.2.2. Parameters for Elliptic Curve Private Keys
 func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	var curve elliptic.Curve
+	var size int
 	crv := jwa.EllipticCurve(d.MustString("crv"))
 	switch crv {
 	case jwa.EllipticCurveP256:
 		curve = elliptic.P256()
+		size = 32
 	case jwa.EllipticCurveP384:
 		curve = elliptic.P384()
+		size = 48
 	case jwa.EllipticCurveP521:
 		curve = elliptic.P521()
+		size = 66
 	case jwa.EllipticCurveSecp256k1:
 		curve = secp256k1.Curve()
+		// TODO: implement parsing of secp256k1 keys.
+		d.SaveError(errors.New("jwk: not implemented"))
+		return
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
 	}
 
+	// parameters for private key
+	var priv *ecdsa.PrivateKey
+	if dd, ok := d.GetBytes("d"); ok {
+		var err error
+		priv, err = ecdsa.ParseRawPrivateKey(curve, dd)
+		if err != nil {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		key.priv = priv
+	}
+
 	// parameters for public key
-	x := d.MustBigInt("x")
-	y := d.MustBigInt("y")
+	x := d.MustBytes("x")
+	y := d.MustBytes("y")
 	if err := d.Err(); err != nil {
 		return
 	}
-	pub := ecdsa.PublicKey{
-		Curve: curve,
-		X:     x,
-		Y:     y,
-	}
-	key.pub = &pub
-	if err := validateEcdsaPublicKey(&pub); err != nil {
-		d.SaveError(err)
+	if len(x) != size || len(y) != size {
+		d.SaveError(errInvalidECDSAParameter)
 		return
 	}
+	buf := make([]byte, 1+2*size)
+	buf[0] = 0x04 // uncompressed form
+	copy(buf[1:1+size], x)
+	copy(buf[1+size:], y)
+	pub, err := ecdsa.ParseUncompressedPublicKey(curve, buf)
+	if err != nil {
+		d.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	key.pub = pub
 
-	// parameters for private key
-	if dd, ok := d.GetBigInt("d"); ok {
-		priv := ecdsa.PrivateKey{
-			PublicKey: pub,
-			D:         dd,
-		}
-		if err := validateEcdsaPrivateKey(&priv); err != nil {
-			d.SaveError(err)
+	// sanity check of the key pair.
+	if priv != nil {
+		if !priv.PublicKey.Equal(pub) {
+			d.SaveError(errInvalidECDSAParameter)
 			return
 		}
-		key.priv = &priv
 	}
 
-	// sanity check of the certificate
+	// sanity check of the certificate.
 	if certs := key.x5c; len(certs) > 0 {
 		cert := certs[0]
 		if !pub.Equal(cert.PublicKey) {
-			d.SaveError(errors.New("jwk: public keys are mismatch"))
+			d.SaveError(errInvalidECDSAParameter)
+			return
 		}
 	}
 }
 
 // RFC 7518 Section 6.2.2. Parameters for Elliptic Curve Private Keys
 func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
-	if err := validateEcdsaPublicKey(pub); err != nil {
-		e.SaveError(err)
-		return
-	}
+	var size int
 	e.Set("kty", jwa.KeyTypeEC.String())
 	switch pub.Curve {
 	case elliptic.P256():
 		e.Set("crv", jwa.EllipticCurveP256.String())
+		size = 32
 	case elliptic.P384():
 		e.Set("crv", jwa.EllipticCurveP384.String())
+		size = 48
 	case elliptic.P521():
 		e.Set("crv", jwa.EllipticCurveP521.String())
+		size = 66
 	case secp256k1.Curve():
 		e.Set("crv", jwa.EllipticCurveSecp256k1.String())
+		// TODO: implement encoding of secp256k1 keys.
+		e.SaveError(errors.New("jwk: not implemented"))
+		return
 	default:
-		panic("not reach")
+		e.SaveError(fmt.Errorf("jwk: unknown crv: %q", pub.Curve.Params().Name))
+		return
 	}
-	size := (pub.Curve.Params().BitSize + 7) / 8
-	e.SetFixedBigInt("x", pub.X, size)
-	e.SetFixedBigInt("y", pub.Y, size)
+
+	// encode the public key.
+	data, err := pub.Bytes()
+	if err != nil {
+		e.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	if len(data) != 1+2*size || data[0] != 0x04 {
+		e.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	e.SetBytes("x", data[1:1+size])
+	e.SetBytes("y", data[1+size:])
+
+	// encode the private key.
 	if priv != nil {
 		if !priv.PublicKey.Equal(pub) {
-			e.SaveError(errors.New("jwk: invalid ecdsa key pair"))
+			e.SaveError(errInvalidECDSAParameter)
 			return
 		}
-		if err := validateEcdsaPrivateKey(priv); err != nil {
-			e.SaveError(err)
+		data, err := priv.Bytes()
+		if err != nil {
+			e.SaveError(errInvalidECDSAParameter)
 			return
 		}
-		e.SetFixedBigInt("d", priv.D, size)
+		if len(data) != size {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		e.SetBytes("d", data)
 	}
 }
 
-// sanity check of private key
-func validateEcdsaPrivateKey(key *ecdsa.PrivateKey) error {
-	if err := validateEcdsaPublicKey(&key.PublicKey); err != nil {
-		return err
+func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKey) {
+	switch pub.Curve() {
+	case ecdh.P256():
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP256.String())
+		data := pub.Bytes()
+		e.SetBytes("x", data[1:32+1])
+		e.SetBytes("y", data[32+1:])
+	case ecdh.P384():
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP384.String())
+		data := pub.Bytes()
+		e.SetBytes("x", data[1:48+1])
+		e.SetBytes("y", data[48+1:])
+	case ecdh.P521():
+		e.Set("kty", jwa.KeyTypeEC.String())
+		e.Set("crv", jwa.EllipticCurveP521.String())
+		data := pub.Bytes()
+		e.SetBytes("x", data[1:66+1])
+		e.SetBytes("y", data[66+1:])
+	case ecdh.X25519():
+		e.Set("kty", jwa.KeyTypeOKP)
+		e.Set("crv", jwa.EllipticCurveX25519.String())
+		e.SetBytes("x", pub.Bytes())
 	}
-	xx, yy := key.ScalarBaseMult(key.D.Bytes())
-	if xx.Cmp(key.X) != 0 || yy.Cmp(key.Y) != 0 {
-		return errors.New("jwk: invalid ecdsa key pair")
-	}
-	return nil
-}
 
-// sanity check of public key
-func validateEcdsaPublicKey(key *ecdsa.PublicKey) error {
-	switch key.Curve {
-	case elliptic.P256():
-	case elliptic.P384():
-	case elliptic.P521():
-	case secp256k1.Curve():
-	default:
-		return errors.New("jwk: unknown elliptic curve of ecdsa public key")
+	if priv != nil {
+		e.SetBytes("d", priv.Bytes())
 	}
-	if key.X.Sign() == 0 || key.Y.Sign() == 0 || !key.Curve.IsOnCurve(key.X, key.Y) {
-		return fmt.Errorf("jwk: invalid parameter of ecdsa public key")
-	}
-	return nil
 }
