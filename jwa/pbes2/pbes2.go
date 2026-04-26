@@ -3,6 +3,7 @@ package pbes2
 
 import (
 	"crypto"
+	"crypto/pbkdf2"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
-	"golang.org/x/crypto/pbkdf2"
 )
 
 var a128kw = &algorithm{
@@ -144,7 +144,10 @@ func (w *keyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []
 	salt = append(salt, []byte(name)...)
 	salt = append(salt, '\x00')
 	salt = append(salt, p2s...)
-	dk := pbkdf2.Key(w.key, salt, p2c, w.alg.size, w.alg.hash)
+	dk, err := pbkdf2.Key(w.alg.hash, string(w.key), salt, p2c, w.alg.size)
+	if err != nil {
+		return nil, fmt.Errorf("pbse2: failed to derive key: %w", err)
+	}
 	data, err = akw.NewKeyWrapper(dk).WrapKey(cek, opts)
 	if err != nil {
 		return nil, fmt.Errorf("pbse2: failed to wrap key: %w", err)
@@ -174,7 +177,10 @@ func (w *keyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]by
 	salt = append(salt, []byte(name)...)
 	salt = append(salt, '\x00')
 	salt = append(salt, p2s...)
-	dk := pbkdf2.Key(w.key, salt, p2c, w.alg.size, w.alg.hash)
+	dk, err := pbkdf2.Key(w.alg.hash, string(w.key), salt, p2c, w.alg.size)
+	if err != nil {
+		return nil, fmt.Errorf("pbse2: failed to derive key: %w", err)
+	}
 	cek, err := akw.NewKeyWrapper(dk).UnwrapKey(data, opts)
 	if err != nil {
 		return nil, fmt.Errorf("pbse2: failed to unwrap key: %w", err)
