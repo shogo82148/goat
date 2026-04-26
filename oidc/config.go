@@ -87,7 +87,7 @@ func (c *Client) getConfig(ctx context.Context, configURL string) (*Config, time
 	if err != nil {
 		return nil, time.Time{}, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // ignore error because we can't do anything about it.
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, time.Time{}, fmt.Errorf("oidc: unexpected response code: %d", resp.StatusCode)
