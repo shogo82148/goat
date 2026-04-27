@@ -5,7 +5,7 @@ import "testing"
 func BenchmarkAdd(b *testing.B) {
 	var x, y Element
 	y.One()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Add(&x, &y)
 	}
 }
@@ -14,8 +14,7 @@ func BenchmarkSub(b *testing.B) {
 	var x, y Element
 	y.One()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Sub(&x, &y)
 	}
 }
@@ -24,8 +23,7 @@ func BenchmarkNeg(b *testing.B) {
 	var x Element
 	x.One()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Neg(&x)
 	}
 }
@@ -36,8 +34,7 @@ func BenchmarkMul(b *testing.B) {
 	x.One()
 	x.Add(&x, &x)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Mul(&x, &y)
 	}
 }
@@ -47,8 +44,7 @@ func BenchmarkSquare(b *testing.B) {
 	x.One()
 	x.Add(&x, &x)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Square(&x)
 	}
 }
@@ -58,8 +54,7 @@ func BenchmarkInv(b *testing.B) {
 	x.One()
 	x.Add(&x, &x)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Inv(&x)
 	}
 }
