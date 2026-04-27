@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
-	_ "github.com/shogo82148/goat/jwa/eddsa" // for Ed25519
+	_ "github.com/shogo82148/goat/jwa/eddsa" //nolint:staticcheck // for Ed25519
 	_ "github.com/shogo82148/goat/jwa/es"    // for ECDSA
 	_ "github.com/shogo82148/goat/jwa/hs"    // for HMAC SHA-256
 	_ "github.com/shogo82148/goat/jwa/none"  // for none
@@ -171,9 +171,6 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err != nil {
-			t.Fatal(err)
-		}
 
 		if want, got := header.Algorithm(), jwa.SignatureAlgorithmES256; want != got {
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
@@ -278,7 +275,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 		v := &Verifier{
-			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
+			AlgorithmVerifier: AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA}, //nolint:staticcheck // SignatureAlgorithmEdDSA is deprecated, but we need it for testing RFC example.
 			KeyFinder:         &JWKKeyFinder{JWK: key},
 		}
 
@@ -297,7 +294,7 @@ func TestVerify(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if want, got := header.Algorithm(), jwa.SignatureAlgorithmEdDSA; want != got {
+		if want, got := header.Algorithm(), jwa.SignatureAlgorithmEdDSA; want != got { //nolint:staticcheck // SignatureAlgorithmEdDSA is deprecated, but we need it for testing RFC example.
 			t.Errorf("unexpected algorithm: want %s, got %s", want, got)
 		}
 

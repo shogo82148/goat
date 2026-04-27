@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/shogo82148/goat/jwa"
+	_ "github.com/shogo82148/goat/jwa/ed25519"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/jws"
 )
@@ -18,16 +19,15 @@ func ExampleParseCompact() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEd25519},
 		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
-	raw := "eyJhbGciOiJFZERTQSJ9" +
+	raw := "eyJhbGciOiJFZDI1NTE5In0" +
 		"." +
 		"RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc" +
 		"." +
-		"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
-		"9g7sVvpAr_MuM0KAg"
+		"UxhIYLHGg39NVCLpQAVD_UcfOmnGSCzLFZoXYkLiIbFccmOb_qObsgjzLKsfJw-4NlccUgvYrEHrRbNV0HcZAQ"
 
 	msg, err := jws.ParseCompact([]byte(raw))
 	if err != nil {
@@ -51,16 +51,15 @@ func ExampleVerifier_Verify() {
 		log.Fatal(err)
 	}
 	v := &jws.Verifier{
-		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEdDSA},
+		AlgorithmVerifier: jws.AllowedAlgorithms{jwa.SignatureAlgorithmEd25519},
 		KeyFinder:         &jws.JWKKeyFinder{JWK: key},
 	}
 
-	raw := "eyJhbGciOiJFZERTQSJ9" +
+	raw := "eyJhbGciOiJFZDI1NTE5In0" +
 		"." +
 		"RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc" +
 		"." +
-		"hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt" +
-		"9g7sVvpAr_MuM0KAg"
+		"UxhIYLHGg39NVCLpQAVD_UcfOmnGSCzLFZoXYkLiIbFccmOb_qObsgjzLKsfJw-4NlccUgvYrEHrRbNV0HcZAQ"
 
 	msg, err := jws.ParseCompact([]byte(raw))
 	if err != nil {
@@ -85,9 +84,9 @@ func ExampleMessage_Compact() {
 		log.Fatal(err)
 	}
 	header := jws.NewHeader()
-	header.SetAlgorithm(jwa.SignatureAlgorithmEdDSA)
+	header.SetAlgorithm(jwa.SignatureAlgorithmEd25519)
 	msg := jws.NewMessage([]byte("Example of Ed25519 signing"))
-	if err := msg.Sign(header, nil, jwa.SignatureAlgorithmEdDSA.New().NewSigningKey(key)); err != nil {
+	if err := msg.Sign(header, nil, jwa.SignatureAlgorithmEd25519.New().NewSigningKey(key)); err != nil {
 		log.Fatal(err)
 	}
 
@@ -97,5 +96,5 @@ func ExampleMessage_Compact() {
 	}
 	fmt.Println(string(data))
 	// Output:
-	// eyJhbGciOiJFZERTQSJ9.RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc.hgyY0il_MGCjP0JzlnLWG1PPOt7-09PGcvMg3AIbQR6dWbhijcNR4ki4iylGjg5BhVsPt9g7sVvpAr_MuM0KAg
+	// eyJhbGciOiJFZDI1NTE5In0.RXhhbXBsZSBvZiBFZDI1NTE5IHNpZ25pbmc.UxhIYLHGg39NVCLpQAVD_UcfOmnGSCzLFZoXYkLiIbFccmOb_qObsgjzLKsfJw-4NlccUgvYrEHrRbNV0HcZAQ
 }

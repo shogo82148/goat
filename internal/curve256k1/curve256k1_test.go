@@ -209,8 +209,7 @@ func BenchmarkAdd(b *testing.B) {
 	p2.y.Set(hex2element("f76e500a3ccd0cbd5e27bd746ceee92898d6f6fd5804c370ea2f14c0bbc47cbb"))
 	p2.z.Set(hex2element("721ce4b29855911c8fa0edeb95a00400a994a2fcf14aea11179a804deff71e2f"))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p3.Add(&p1, &p2)
 	}
 }
@@ -221,8 +220,7 @@ func BenchmarkAddDouble(b *testing.B) {
 	p1.y.Set(hex2element("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
 	p1.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p3.Add(&p1, &p1)
 	}
 }
@@ -281,8 +279,7 @@ func BenchmarkDouble(b *testing.B) {
 	p1.y.Set(hex2element("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8"))
 	p1.z.Set(hex2element("0000000000000000000000000000000000000000000000000000000000000001"))
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p3.Double(&p1)
 	}
 }

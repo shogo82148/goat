@@ -93,6 +93,12 @@ func (p *Point) Set(q *Point) *Point {
 	return p
 }
 
+// Equal reports whether p and q have the same value.
+// It returns 1 if they are equal, and 0 otherwise.
+func (p *Point) Equal(q *Point) int {
+	return p.x.Equal(&q.x) & p.y.Equal(&q.y)
+}
+
 type PointJacobian struct {
 	// X = x/z^2, Y = y/z^3
 	x, y, z field.Element
@@ -180,6 +186,34 @@ func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {
 	x.SetBytes(p.x.Bytes())
 	y.SetBytes(p.y.Bytes())
 	return x, y
+}
+
+// Bytes returns the uncompressed encoding of p.
+func (p *Point) Bytes() []byte {
+	var buf [65]byte
+	buf[0] = 0x04 // uncompressed form
+	xBytes := p.x.Bytes()
+	yBytes := p.y.Bytes()
+	copy(buf[1+32-len(xBytes):33], xBytes)
+	copy(buf[33+32-len(yBytes):], yBytes)
+	return buf[:]
+}
+
+// SetBytes decodes p from the uncompressed encoding. It returns an error if the encoding is invalid.
+func (p *Point) SetBytes(data []byte) (*Point, error) {
+	if len(data) != 65 || data[0] != 0x04 {
+		return nil, errors.New("curve256k1: invalid point encoding")
+	}
+	if err := p.x.SetBytes(data[1:33]); err != nil {
+		return nil, err
+	}
+	if err := p.y.SetBytes(data[33:]); err != nil {
+		return nil, err
+	}
+	if !IsOnCurve(p) {
+		return nil, errors.New("curve256k1: point is not on the curve")
+	}
+	return p, nil
 }
 
 // Add set p = a + b.

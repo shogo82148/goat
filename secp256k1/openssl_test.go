@@ -97,13 +97,7 @@ func testVerifyOpenSSL(t *testing.T) {
 
 	sum := sha256.Sum256(message)
 	if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
-		t.Errorf("verify failed:\n"+
-			"message: %x\n"+
-			"X: %x\n"+
-			"Y: %x\n"+
-			"D: %x\n"+
-			"R: %x\n"+
-			"S: %x", message, priv.X, priv.Y, priv.D, r, s)
+		t.Errorf("verify failed:\nmessage: %q", message)
 	}
 }
 
@@ -149,13 +143,7 @@ func testSignOpenSSL(t *testing.T) {
 
 	// verify
 	if err := verifyWithOpenSSL(pubkeyPath, signaturePath, messagePath); err != nil {
-		t.Errorf("verify failed: %v\n"+
-			"message: %x\n"+
-			"X: %x\n"+
-			"Y: %x\n"+
-			"D: %x\n"+
-			"R: %x\n"+
-			"S: %x", err, message, priv.X, priv.Y, priv.D, r, s)
+		t.Errorf("verify failed: %v\nmessage: %q\n", err, message)
 	}
 }
 
