@@ -77,10 +77,7 @@ func decodeHex(s string) []byte {
 func TestVerifyASN1(t *testing.T) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	data, err := hex.DecodeString("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := decodeHex("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
 	pub, err := ParseUncompressedPublicKey(data)
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +87,7 @@ func TestVerifyASN1(t *testing.T) {
 	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	sig, err := hex.DecodeString(
+	sig := decodeHex(
 		"3045022100ab34a027e17691ec2d7d92" +
 			"8845eb0005ae72603f7792f2018314f6" +
 			"00f5c8290c022066ff495d3625a3477a" +
@@ -105,7 +102,7 @@ func TestVerifyASN1(t *testing.T) {
 	}
 
 	// invalid signature
-	sig, err = hex.DecodeString(
+	sig = decodeHex(
 		"3045022052931d24e8a4036fcb7b645d" +
 			"81684d54201bfad5633d8c874298fe40" +
 			"0a5c0601022100c1250421ec2fe9d5c1" +
@@ -150,10 +147,7 @@ func TestSign(t *testing.T) {
 func BenchmarkVerify(b *testing.B) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	data, err := hex.DecodeString("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
-	if err != nil {
-		b.Fatal(err)
-	}
+	data := decodeHex("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
 	pub, err := ParseUncompressedPublicKey(data)
 	if err != nil {
 		b.Fatal(err)
@@ -163,16 +157,13 @@ func BenchmarkVerify(b *testing.B) {
 	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	sig, err := hex.DecodeString(
+	sig := decodeHex(
 		"3045022100ab34a027e17691ec2d7d92" +
 			"8845eb0005ae72603f7792f2018314f6" +
 			"00f5c8290c022066ff495d3625a3477a" +
 			"9919aafae2d34770159c1deb6197503f" +
 			"830cffbf944d3c",
 	)
-	if err != nil {
-		b.Fatal(err)
-	}
 
 	for b.Loop() {
 		if !VerifyASN1(pub, sum[:], sig) {
@@ -361,7 +352,7 @@ func BenchmarkMultMinus1(b *testing.B) {
 }
 
 func TestScalarBaseMult1(t *testing.T) {
-	k, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
+	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
 	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
@@ -374,7 +365,7 @@ func TestScalarBaseMult1(t *testing.T) {
 }
 
 func TestScalarBaseMultMinus1(t *testing.T) {
-	k, _ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
+	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
 	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
