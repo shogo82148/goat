@@ -96,7 +96,7 @@ func TestParseKey_Symmetric(t *testing.T) {
 func BenchmarkParseKey_Symmetric(b *testing.B) {
 	b.Run("RFC 7517 A.3. Example Symmetric Keys (A128KW)", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"oct","alg":"A128KW","k":"GawgguFyGrWKav7AX4VKUg"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -105,7 +105,7 @@ func BenchmarkParseKey_Symmetric(b *testing.B) {
 
 	b.Run("RFC 7517 A.3. Example Symmetric Keys (HMAC)", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"oct","k":"AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow","kid":"HMAC key used in JWS spec Appendix A.1 example"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}

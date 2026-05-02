@@ -222,7 +222,7 @@ func BenchmarkRSA(b *testing.B) {
 			`"e":"AQAB",` +
 			`"alg":"RS256",` +
 			`"kid":"2011-04-29"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -261,7 +261,7 @@ func BenchmarkRSA(b *testing.B) {
 			`yR8O55XLSe3SPmRfKwZI6yU24ZxvQKFYItdldUKGzO6Ia6zTKhAVRU",` +
 			`"alg":"RS256",` +
 			`"kid":"2011-04-29"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -358,7 +358,7 @@ func BenchmarkParseKey_RFC7517AppendixB(b *testing.B) {
 		`4tpzd5rFXhjRbg4zW9C+2qok+2+qDM1iJ684gPHMIY8aLWrdgQTxkumGmTq` +
 		`gawR+N5MDtdPTEQ0XfIBc2cJEUyMTY5MPvACWpkA6SdS4xSvdXK3IVfOWA=="]` +
 		`}`)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, err := ParseKey(rawKey); err != nil {
 			b.Fatal(err)
 		}

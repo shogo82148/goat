@@ -5,42 +5,27 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	"math/big"
+	"encoding/hex"
 	"testing"
 
+	"github.com/shogo82148/goat/secp256k1"
 	"github.com/shogo82148/goat/sig"
 )
 
-func newBigInt(s string) *big.Int {
-	n, ok := new(big.Int).SetString(s, 10)
-	if !ok {
-		panic("failed to parse " + s)
-	}
-	return n
-}
-
 var tests = []struct {
-	alg  func() sig.Algorithm
-	priv *ecdsa.PrivateKey
-	pub  *ecdsa.PublicKey
-	in   []byte
-	sig  []byte
+	alg   func() sig.Algorithm
+	curve elliptic.Curve
+	priv  string
+	pub   string
+	in    []byte
+	sig   []byte
 }{
+	// test vectors from RFC 7515 Appendix A.3.
 	{
 		New256,
-		&ecdsa.PrivateKey{
-			PublicKey: ecdsa.PublicKey{
-				Curve: elliptic.P256(),
-				X:     newBigInt("57807358241436249728379122087876380298924820027722995515715270765240753673285"),
-				Y:     newBigInt("90436541859143682268950424386863654389577770182238183823381687388274600502701"),
-			},
-			D: newBigInt("64502400493437371358766275827725703314178640739253280897215993954599262549170"),
-		},
-		&ecdsa.PublicKey{
-			Curve: elliptic.P256(),
-			X:     newBigInt("57807358241436249728379122087876380298924820027722995515715270765240753673285"),
-			Y:     newBigInt("90436541859143682268950424386863654389577770182238183823381687388274600502701"),
-		},
+		elliptic.P256(),
+		"8e9b109e719098bf980487df1f5d77e9cb29606ebed2263b5f57c213df84f4b2",
+		"047fcdce2770f6c45d4183cbee6fdb4b7b580733357be9ef13bacf6e3c7bd15445c7f144cd1bbd9b7e872cdfedb9eeb9f4b3695d6ea90b24ad8a4623288588e5ad",
 		[]byte{
 			101, 121, 74, 104, 98, 71, 99, 105, 79, 105, 74, 70, 85, 122, 73,
 			49, 78, 105, 74, 57, 46, 101, 121, 74, 112, 99, 51, 77, 105, 79, 105,
@@ -62,21 +47,13 @@ var tests = []struct {
 			143, 63, 127, 138, 131, 163, 84, 213,
 		},
 	},
+
+	// test vectors from RFC 7515 Appendix A.4.
 	{
 		New512,
-		&ecdsa.PrivateKey{
-			PublicKey: ecdsa.PublicKey{
-				Curve: elliptic.P521(),
-				X:     newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132"),
-				Y:     newBigInt("705914061082973601048865942513844186912223650952616397119610620188911564288314145208762412315826061109317770515164005156360031161563418113875601542699600118"),
-			},
-			D: newBigInt("5341829702302574813496892344628933729576493483297373613204193688404465422472930583369539336694834830511678939023627363969939187661870508700291259319376559490"),
-		},
-		&ecdsa.PublicKey{
-			Curve: elliptic.P521(),
-			X:     newBigInt("6558566456959953544109522959384633002634366184193672267866407124696200040032063394775499664830638630438428532794662648623689740875293641365317574204038644132"),
-			Y:     newBigInt("705914061082973601048865942513844186912223650952616397119610620188911564288314145208762412315826061109317770515164005156360031161563418113875601542699600118"),
-		},
+		elliptic.P521(),
+		"018e696fb034505881dd110b483eb87d32ce495fe36b3745edf2d8cae4f0f2539f4615a0e98eab52b3c0c5eac4ce075185a8e7bb47deac1d1de77bccf66135e63d82",
+		"0401e929050f124fc6bc55c7d5393365df9def4ab0c22cb25798f934eb04e3c6bae3701a57a7910e9d81bf363159e8ebcb155d6349f4bdb6ccf8a94c5c59c7aac101a40034a6440e376750d2371fd1bdc2c8f3b71d2f4ee5ea3432c815cca31560fe5d9387ec774b55838630e5cbbf5a8cbe0a91dd0064c6999a1f6e6e67faddede4c8c8f6",
 		[]byte{
 			101, 121, 74, 104, 98, 71, 99, 105, 79, 105, 74, 70, 85, 122, 85,
 			120, 77, 105, 74, 57, 46, 85, 71, 70, 53, 98, 71, 57, 104, 90, 65,
@@ -115,8 +92,17 @@ func (k *rawKey) PublicKey() crypto.PublicKey {
 
 func TestVerify(t *testing.T) {
 	for i, test := range tests {
+		data, err := hex.DecodeString(test.pub)
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub, err := ecdsa.ParseUncompressedPublicKey(test.curve, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		alg := test.alg()
-		key := alg.NewSigningKey(&rawKey{nil, test.pub})
+		key := alg.NewSigningKey(&rawKey{nil, pub})
 		if err := key.Verify(test.in, test.sig); err != nil {
 			t.Errorf("test %d: %v", i, err)
 		}
@@ -125,8 +111,17 @@ func TestVerify(t *testing.T) {
 
 func TestSignAndVerify(t *testing.T) {
 	for i, test := range tests {
+		data, err := hex.DecodeString(test.priv)
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := ecdsa.ParseRawPrivateKey(test.curve, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		alg := test.alg()
-		key := alg.NewSigningKey(&rawKey{test.priv, test.pub})
+		key := alg.NewSigningKey(&rawKey{priv, &priv.PublicKey})
 		sig, err := key.Sign(test.in)
 		if err != nil {
 			t.Errorf("test %d: %v", i, err)
@@ -137,17 +132,32 @@ func TestSignAndVerify(t *testing.T) {
 	}
 }
 
-func TestSign_NilPublicKey(t *testing.T) {
-	for i, test := range tests {
-		alg := test.alg()
-		key := alg.NewSigningKey(&rawKey{test.priv, nil})
-		sig, err := key.Sign(test.in)
-		if err != nil {
-			t.Errorf("test %d: %v", i, err)
-		}
-		if err := key.Verify(test.in, sig); err != nil {
-			t.Errorf("test %d: %v", i, err)
-		}
+type rawSecp256k1Key struct {
+	priv *secp256k1.PrivateKey
+	pub  *secp256k1.PublicKey
+}
+
+func (k *rawSecp256k1Key) PrivateKey() crypto.PrivateKey {
+	return k.priv
+}
+
+func (k *rawSecp256k1Key) PublicKey() crypto.PublicKey {
+	return k.pub
+}
+
+func TestSecp256k1(t *testing.T) {
+	priv := secp256k1.GenerateKey()
+	pub := priv.PublicKey()
+
+	key := New256K().NewSigningKey(&rawSecp256k1Key{priv, pub})
+
+	sig, err := key.Sign([]byte("payload"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := key.Verify([]byte("payload"), sig); err != nil {
+		t.Fatal(err)
 	}
 }
 

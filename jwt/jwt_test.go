@@ -256,8 +256,7 @@ func BenchmarkParse(b *testing.B) {
 		AudienceVerifier:      UnsecureAnyAudience,
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := p.Parse(context.Background(), raw)
 		if err != nil {
 			b.Fatal(err)

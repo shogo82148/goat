@@ -26,6 +26,7 @@ import (
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
+	"github.com/shogo82148/goat/secp256k1"
 	"github.com/shogo82148/goat/x25519"
 	"github.com/shogo82148/goat/x448"
 )
@@ -315,6 +316,12 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, fmt.Errorf("jwk: public key type is mismatch for x448: %T", key.pub)
 		}
 		encodeX448Key(e, priv, pub)
+	case *secp256k1.PrivateKey:
+		pub, ok := key.pub.(*secp256k1.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for secp256k1: %T", key.pub)
+		}
+		encodeSecp256k1Key(e, priv, pub)
 	case []byte:
 		if key.pub != nil {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
@@ -337,6 +344,8 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeEd448Key(e, nil, pub)
 		case x448.PublicKey:
 			encodeX448Key(e, nil, pub)
+		case *secp256k1.PublicKey:
+			encodeSecp256k1Key(e, nil, pub)
 		default:
 			return nil, newUnknownKeyTypeError(key)
 		}
@@ -510,7 +519,7 @@ type ecdhPublicKey = ecdh.PublicKey
 //
 // key must be one of [*crypto/ecdsa.PrivateKey], [*crypto/rsa.PrivateKey], [crypto/ed25519.PrivateKey], [*crypto/ecdh.PrivateKey],
 // [x25519.PrivateKey], [ed448.PrivateKey],
-// [x448.PrivateKey] or []byte.
+// [x448.PrivateKey], [*secp256k1.PrivateKey] or []byte.
 func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PrivateKey:
@@ -600,6 +609,12 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 			priv: key,
 			pub:  key.Public(),
 		}, nil
+	case *secp256k1.PrivateKey:
+		return &Key{
+			kty:  jwa.KeyTypeEC,
+			priv: key,
+			pub:  key.Public(),
+		}, nil
 	case []byte:
 		return &Key{
 			kty:  jwa.KeyTypeOct,
@@ -613,7 +628,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 // NewPublicKey returns a new JWK from the public key.
 //
 // key must be one of [*crypto/ecdsa.PublicKey], [*crypto/rsa.PublicKey], [crypto/ed25519.PublicKey], [*crypto/ecdh.PublicKey],
-// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey].
+// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey] or [*secp256k1.PublicKey].
 func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PublicKey:
@@ -687,6 +702,11 @@ func NewPublicKey(key crypto.PublicKey) (*Key, error) {
 		}
 		return &Key{
 			kty: jwa.KeyTypeOKP,
+			pub: key,
+		}, nil
+	case *secp256k1.PublicKey:
+		return &Key{
+			kty: jwa.KeyTypeEC,
 			pub: key,
 		}, nil
 	default:

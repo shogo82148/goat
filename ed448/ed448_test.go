@@ -328,7 +328,7 @@ func TestEqual(t *testing.T) {
 
 func BenchmarkKeyGeneration(b *testing.B) {
 	var zero zeroReader
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if _, _, err := GenerateKey(zero); err != nil {
 			b.Fatal(err)
 		}
@@ -337,7 +337,7 @@ func BenchmarkKeyGeneration(b *testing.B) {
 
 func BenchmarkNewKeyFromSeed(b *testing.B) {
 	seed := make([]byte, SeedSize)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_ = NewKeyFromSeed(seed)
 	}
 }
@@ -350,8 +350,7 @@ func BenchmarkSign(b *testing.B) {
 	message := []byte{}
 	priv := NewKeyFromSeed(seed)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Sign(priv, message)
 	}
 }
@@ -371,8 +370,7 @@ func BenchmarkVerify(b *testing.B) {
 		"b61149f05a7363268c71d95808ff2e65"+
 		"2600")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Verify(PublicKey(pub), message, signature)
 	}
 }

@@ -30,9 +30,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		curve = elliptic.P521()
 		size = 66
 	case jwa.EllipticCurveSecp256k1:
-		curve = secp256k1.Curve()
-		// TODO: implement parsing of secp256k1 keys.
-		d.SaveError(errors.New("jwk: not implemented"))
+		parseSecp256k1Key(d, key)
 		return
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
@@ -90,6 +88,57 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	}
 }
 
+func parseSecp256k1Key(d *jsonutils.Decoder, key *Key) {
+	// parameters for public key
+	x := d.MustBytes("x")
+	y := d.MustBytes("y")
+	if err := d.Err(); err != nil {
+		return
+	}
+	if len(x) != 32 || len(y) != 32 {
+		d.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	buf := make([]byte, 1+2*32)
+	buf[0] = 0x04
+	copy(buf[1:33], x)
+	copy(buf[33:], y)
+	pub, err := secp256k1.ParseUncompressedPublicKey(buf)
+	if err != nil {
+		d.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	key.pub = pub
+
+	// parameters for private key
+	var priv *secp256k1.PrivateKey
+	if dd, ok := d.GetBytes("d"); ok {
+		priv, err = secp256k1.ParseRawPrivateKey(dd)
+		if err != nil {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		key.priv = priv
+	}
+
+	// sanity check of the key pair.
+	if priv != nil {
+		if !priv.PublicKey().Equal(pub) {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+	}
+
+	// sanity check of the certificate.
+	if certs := key.x5c; len(certs) > 0 {
+		cert := certs[0]
+		if !pub.Equal(cert.PublicKey) {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+	}
+}
+
 // RFC 7518 Section 6.2.2. Parameters for Elliptic Curve Private Keys
 func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
 	var size int
@@ -104,10 +153,8 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 	case elliptic.P521():
 		e.Set("crv", jwa.EllipticCurveP521.String())
 		size = 66
-	case secp256k1.Curve():
-		e.Set("crv", jwa.EllipticCurveSecp256k1.String())
-		// TODO: implement encoding of secp256k1 keys.
-		e.SaveError(errors.New("jwk: not implemented"))
+	case secp256k1.Curve(): //nolint:staticcheck // for backward compatibility
+		encodeEcdsaKeySecp256k1(e, priv, pub)
 		return
 	default:
 		e.SaveError(fmt.Errorf("jwk: unknown crv: %q", pub.Curve.Params().Name))
@@ -139,6 +186,62 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 			return
 		}
 		if len(data) != size {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		e.SetBytes("d", data)
+	}
+}
+
+func encodeEcdsaKeySecp256k1(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
+	if pub.Curve != secp256k1.Curve() { //nolint:staticcheck // for backward compatibility
+		panic("jwk: invalid curve for secp256k1 key")
+	}
+
+	// encode the public key.
+	e.Set("crv", jwa.EllipticCurveSecp256k1.String())
+	e.SetFixedBigInt("x", pub.X, 32) //nolint:staticcheck // for backward compatibility
+	e.SetFixedBigInt("y", pub.Y, 32) //nolint:staticcheck // for backward compatibility
+
+	// encode the private key.
+	if priv != nil {
+		if !priv.PublicKey.Equal(pub) {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		e.SetFixedBigInt("d", priv.D, 32) //nolint:staticcheck // for backward compatibility
+	}
+}
+
+func encodeSecp256k1Key(e *jsonutils.Encoder, priv *secp256k1.PrivateKey, pub *secp256k1.PublicKey) {
+	e.Set("kty", jwa.KeyTypeEC.String())
+	e.Set("crv", jwa.EllipticCurveSecp256k1.String())
+
+	// encode the public key.
+	data, err := pub.Bytes()
+	if err != nil {
+		e.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	if len(data) != 1+2*32 || data[0] != 0x04 {
+		e.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	e.SetBytes("x", data[1:33])
+	e.SetBytes("y", data[33:])
+
+	// encode the private key.
+	if priv != nil {
+		if !priv.PublicKey().Equal(pub) {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		data, err := priv.Bytes()
+		if err != nil {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		if len(data) != 32 {
 			e.SaveError(errInvalidECDSAParameter)
 			return
 		}

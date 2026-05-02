@@ -10,7 +10,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/subtle"
+	"encoding/asn1"
 	"errors"
+	"io"
 	"math/big"
 	"sync"
 
@@ -22,7 +24,13 @@ var paramN = [32]byte{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF
 // PrivateKey represents a secp256k1 private key.
 type PrivateKey struct {
 	d [32]byte
+
+	// Make the type not comparable (i.e. used with == or as a map key), as
+	// equivalent points can be represented by different Go values.
+	_ incomparable
 }
+
+type incomparable [0]func()
 
 // GenerateKey generates a new private key.
 func GenerateKey() *PrivateKey {
@@ -77,11 +85,9 @@ func (key *PrivateKey) Public() crypto.PublicKey {
 
 // PublicKey returns the corresponding public key.
 func (key *PrivateKey) PublicKey() *PublicKey {
-	var ret curve256k1.Point
 	var retj curve256k1.PointJacobian
 	retj.ScalarBaseMult(key.d[:])
-	ret.FromJacobian(&retj)
-	return &PublicKey{p: ret}
+	return &PublicKey{pj: retj}
 }
 
 // Bytes encodes the private key as a fixed-length big-endian integer.
@@ -89,9 +95,20 @@ func (key *PrivateKey) Bytes() ([]byte, error) {
 	return bytes.Clone(key.d[:]), nil
 }
 
+// Sign signs a hash (which should be the result of hashing a larger message with opts.HashFunc()) using the private key.
+// If the hash is longer than the bit-length of the private key's curve order, the hash will be truncated to that length.
+// It returns the ASN.1 encoded signature, like [SignASN1].
+func (key *PrivateKey) Sign(random io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	return SignASN1(key, digest)
+}
+
 // PublicKey represents a secp256k1 public key.
 type PublicKey struct {
-	p curve256k1.Point
+	pj curve256k1.PointJacobian
+
+	// Make the type not comparable (i.e. used with == or as a map key), as
+	// equivalent points can be represented by different Go values.
+	_ incomparable
 }
 
 // Equal reports whether pub and x have the same value.
@@ -100,7 +117,7 @@ func (pub *PublicKey) Equal(x crypto.PublicKey) bool {
 	if !ok {
 		return false
 	}
-	return pub.p.Equal(&xx.p) == 1
+	return pub.pj.Equal(&xx.pj) == 1
 }
 
 // ParseUncompressedPublicKey parses a public key from an uncompressed point encoding.
@@ -109,15 +126,139 @@ func ParseUncompressedPublicKey(data []byte) (*PublicKey, error) {
 		return nil, errors.New("secp256k1: invalid public key encoding")
 	}
 	var p curve256k1.Point
+	var pj curve256k1.PointJacobian
 	if _, err := p.SetBytes(data); err != nil {
 		return nil, err
 	}
-	return &PublicKey{p: p}, nil
+	pj.FromAffine(&p)
+	return &PublicKey{pj: pj}, nil
 }
 
 // Bytes encodes the public key as an uncompressed point.
 func (pub *PublicKey) Bytes() ([]byte, error) {
-	return pub.p.Bytes(), nil
+	var p curve256k1.Point
+	p.FromJacobian(&pub.pj)
+	return p.Bytes(), nil
+}
+
+type signature struct {
+	R *big.Int
+	S *big.Int
+}
+
+// SignASN1 signs a hash (which should be the result of hashing a larger message) using the private key, priv.
+// If the hash is longer than the bit-length of the private key's curve order,
+// the hash will be truncated to that length. It returns the ASN.1 encoded signature.
+func SignASN1(priv *PrivateKey, hash []byte) ([]byte, error) {
+	initonce.Do(initCurve)
+	N := curve.params.N
+
+	if len(hash) > 32 {
+		hash = hash[:32]
+	}
+
+	var k, kInv, r, s *big.Int
+	for {
+		for {
+			k = randFieldElement()
+			kInv = new(big.Int).ModInverse(k, N)
+
+			r, _ = curve.ScalarBaseMult(k.Bytes())
+			r.Mod(r, N)
+			if r.Sign() != 0 {
+				break
+			}
+		}
+
+		e := new(big.Int).SetBytes(hash)
+		d := new(big.Int).SetBytes(priv.d[:])
+		s = new(big.Int).Mul(d, r)
+		s.Add(s, e)
+		s.Mul(s, kInv)
+		s.Mod(s, N)
+		if s.Sign() != 0 {
+			break
+		}
+	}
+
+	sig := signature{
+		R: r,
+		S: s,
+	}
+	return asn1.Marshal(sig)
+}
+
+// randFieldElement returns a random element of the order of the given
+// curve using the procedure given in FIPS 186-4, Appendix B.5.2.
+func randFieldElement() *big.Int {
+	for {
+		var buf [32]byte
+		rand.Read(buf[:])
+		if !isZero(&buf) && !overflow(&buf) {
+			return new(big.Int).SetBytes(buf[:])
+		}
+	}
+}
+
+// VerifyASN1 reports whether sig is a valid ASN.1 encoded signature of hash by pub.
+// Its return value records whether the signature is valid.
+//
+// The inputs are not considered confidential, and may leak through timing side channels,
+// or if an attacker has control of part of the inputs.
+func VerifyASN1(pub *PublicKey, hash, sig []byte) bool {
+	initonce.Do(initCurve)
+	N := curve.params.N
+
+	r, s, err := parseSignature(sig)
+	if err != nil {
+		return false
+	}
+	if r.Cmp(N) >= 0 || s.Cmp(N) >= 0 {
+		return false
+	}
+
+	if len(hash) > 32 {
+		hash = hash[:32]
+	}
+	e := new(big.Int).SetBytes(hash)
+	w := new(big.Int).ModInverse(s, N)
+
+	u1 := e.Mul(e, w)
+	u1.Mod(u1, N)
+	u2 := w.Mul(r, w)
+	u2.Mod(u2, N)
+
+	x1, y1 := curve.ScalarBaseMult(u1.Bytes())
+	var p curve256k1.Point
+	p.FromJacobian(&pub.pj)
+	x, y := p.ToBig(new(big.Int), new(big.Int))
+	x2, y2 := curve.ScalarMult(x, y, u2.Bytes())
+	x, y = curve.Add(x1, y1, x2, y2)
+
+	if x.Sign() == 0 && y.Sign() == 0 {
+		return false
+	}
+
+	x.Mod(x, N)
+	return x.Cmp(r) == 0
+}
+
+func parseSignature(b []byte) (r, s *big.Int, err error) {
+	var sig signature
+	rest, err := asn1.Unmarshal(b, &sig)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(rest) != 0 {
+		return nil, nil, errors.New("secp256k1: trailing data after ASN.1 signature")
+	}
+	if sig.R.Sign() <= 0 || sig.S.Sign() <= 0 {
+		return nil, nil, errors.New("secp256k1: invalid signature value")
+	}
+	if sig.R.BitLen() > 256 || sig.S.BitLen() > 256 {
+		return nil, nil, errors.New("secp256k1: invalid signature value")
+	}
+	return sig.R, sig.S, nil
 }
 
 var initonce sync.Once
@@ -150,6 +291,9 @@ func bigHex(s string) *big.Int {
 // Multiple invocations of this function will return the same value, so it can be used for equality checks and switch statements.
 //
 // The cryptographic operations are implemented using constant-time algorithms.
+//
+// Deprecated: using with [crypto/ecdsa] is not recommended, as the interface of [crypto/ecdsa] is not designed
+// for secp256k1 and may cause security issues. Use the functions in this package directly instead.
 func Curve() elliptic.Curve {
 	initonce.Do(initCurve)
 	return &curve

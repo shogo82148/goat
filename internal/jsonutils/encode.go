@@ -2,6 +2,7 @@ package jsonutils
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"time"
 )
@@ -53,6 +54,10 @@ func (e *Encoder) SetBigInt(name string, i *big.Int) {
 }
 
 func (e *Encoder) SetFixedBigInt(name string, i *big.Int, size int) {
+	if i.BitLen() > 8*size {
+		e.SaveError(fmt.Errorf("jsonutils: big.Int is too large to fit in %d bytes: %d bits", size, i.BitLen()))
+		return
+	}
 	e.grow(size)
 	src := i.FillBytes(e.src[:size])
 	e.raw[name] = e.Encode(src)

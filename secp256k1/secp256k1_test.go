@@ -1,8 +1,6 @@
 package secp256k1
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"testing"
@@ -74,49 +72,56 @@ func decodeHex(s string) []byte {
 	return data
 }
 
-func TestVerify(t *testing.T) {
+func TestVerifyASN1(t *testing.T) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	pub := &ecdsa.PublicKey{
-		Curve: Curve(),
-		X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-		Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
+	data := decodeHex("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
+	pub, err := ParseUncompressedPublicKey(data)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	// touch plaintext
-	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.txt
-	// openssl asn1parse -inform DER -in sig.txt
+	// touch plain.txt
+	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	r := bigHex("3D2FCB610B176153D7740A300A6DE321D997D867308F6AF594D9B56EDDDBC918")
-	s := bigHex("4EF2905C03EEDA8BC8D5C2464B62AA9C38F7BA0076FFBD25A8F29A4FF410116D")
-	if !ecdsa.Verify(pub, sum[:], r, s) {
+	sig := decodeHex(
+		"3045022100ab34a027e17691ec2d7d92" +
+			"8845eb0005ae72603f7792f2018314f6" +
+			"00f5c8290c022066ff495d3625a3477a" +
+			"9919aafae2d34770159c1deb6197503f" +
+			"830cffbf944d3c",
+	)
+	if !VerifyASN1(pub, sum[:], sig) {
 		t.Error("verify failed")
+	}
+
+	// invalid signature
+	sig = decodeHex(
+		"3045022052931d24e8a4036fcb7b645d" +
+			"81684d54201bfad5633d8c874298fe40" +
+			"0a5c0601022100c1250421ec2fe9d5c1" +
+			"afa8250a7bffeda522262b452b39b184" +
+			"785e747f21e3fa",
+	)
+	if VerifyASN1(pub, sum[:], sig) {
+		t.Error("verify should have failed")
 	}
 }
 
-func TestSign(t *testing.T) {
-	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
-	// openssl ec -text -noout -in privkey.pem
-	priv := &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: Curve(),
-			X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-			Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
-		},
-		D: bigHex("1fd03e67f8a0c70531ff1af306265831d156678f3843ece8d39e894f5c9176d7"),
-	}
-
+func TestSignASN1(t *testing.T) {
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
 	for range 1024 {
-		r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+		priv := GenerateKey()
+		sig, err := SignASN1(priv, sum[:])
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
+		pub := priv.PublicKey()
+		if !VerifyASN1(pub, sum[:], sig) {
 			t.Error("verify failed")
 		}
 	}
@@ -125,46 +130,38 @@ func TestSign(t *testing.T) {
 func BenchmarkVerify(b *testing.B) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	pub := &ecdsa.PublicKey{
-		Curve: Curve(),
-		X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-		Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
+	data := decodeHex("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
+	pub, err := ParseUncompressedPublicKey(data)
+	if err != nil {
+		b.Fatal(err)
 	}
 
-	// touch plaintext
-	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.txt
-	// openssl asn1parse -inform DER -in sig.txt
+	// touch plain.txt
+	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	r := bigHex("3D2FCB610B176153D7740A300A6DE321D997D867308F6AF594D9B56EDDDBC918")
-	s := bigHex("4EF2905C03EEDA8BC8D5C2464B62AA9C38F7BA0076FFBD25A8F29A4FF410116D")
+	sig := decodeHex(
+		"3045022100ab34a027e17691ec2d7d92" +
+			"8845eb0005ae72603f7792f2018314f6" +
+			"00f5c8290c022066ff495d3625a3477a" +
+			"9919aafae2d34770159c1deb6197503f" +
+			"830cffbf944d3c",
+	)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		if !ecdsa.Verify(pub, sum[:], r, s) {
+	for b.Loop() {
+		if !VerifyASN1(pub, sum[:], sig) {
 			b.Error("verify failed")
 		}
 	}
 }
 
 func BenchmarkSign(b *testing.B) {
-	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
-	// openssl ec -text -noout -in privkey.pem
-	priv := &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: Curve(),
-			X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-			Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
-		},
-		D: bigHex("1fd03e67f8a0c70531ff1af306265831d156678f3843ece8d39e894f5c9176d7"),
-	}
-
+	priv := GenerateKey()
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, _, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+	for b.Loop() {
+		_, err := SignASN1(priv, sum[:])
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -328,7 +325,7 @@ func BenchmarkMultMinus1(b *testing.B) {
 }
 
 func TestScalarBaseMult1(t *testing.T) {
-	k, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000001")
+	k := decodeHex("0000000000000000000000000000000000000000000000000000000000000001")
 	crv := Curve()
 
 	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.
@@ -341,7 +338,7 @@ func TestScalarBaseMult1(t *testing.T) {
 }
 
 func TestScalarBaseMultMinus1(t *testing.T) {
-	k, _ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
+	k := decodeHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364140")
 	crv := Curve()
 
 	xx, yy := crv.ScalarBaseMult(k) //nolint:staticcheck // test ScalarBaseMult for backward compatibility.

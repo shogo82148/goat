@@ -6,7 +6,9 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
-	_ "crypto/sha256" // for crypto.SHA256
+	"crypto/sha256"
+	_ "crypto/sha512" // for crypto.SHA512
+	"encoding/asn1"
 	"math/big"
 
 	"github.com/shogo82148/goat/jwa"
@@ -29,12 +31,12 @@ func New256() sig.Algorithm {
 var es256k = &algorithm{
 	alg:  jwa.SignatureAlgorithmES256K,
 	hash: crypto.SHA256,
-	crv:  secp256k1.Curve(),
+	crv:  secp256k1.Curve(), //nolint:staticcheck // for backward compatibility
 }
 
 // New256K returns ECDSA using secp256k1 and SHA-256.
 func New256K() sig.Algorithm {
-	return es256k
+	return &algorithmES256K{}
 }
 
 var es384 = &algorithm{
@@ -84,7 +86,7 @@ type signingKey struct {
 	canVerify bool
 }
 
-// NewKey implements [github.com/shogo82148/goat/sig.Algorithm].
+// NewSigningKey implements [github.com/shogo82148/goat/sig.Algorithm].
 func (alg *algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 	k := &signingKey{
 		hash:      alg.hash,
@@ -114,9 +116,6 @@ func (alg *algorithm) NewSigningKey(key sig.Key) sig.SigningKey {
 		if k.pub.Curve != alg.crv {
 			return sig.NewInvalidKey(alg.alg.String(), priv, pub)
 		}
-	}
-	if k.priv != nil && k.pub == nil {
-		k.pub = &k.priv.PublicKey
 	}
 	return k
 }
@@ -173,6 +172,98 @@ func (key *signingKey) Verify(payload, signature []byte) error {
 	r := new(big.Int).SetBytes(signature[:size])
 	s := new(big.Int).SetBytes(signature[size:])
 	if !ecdsa.Verify(key.pub, sum, r, s) {
+		return sig.ErrSignatureMismatch
+	}
+	return nil
+}
+
+var _ sig.Algorithm = (*algorithmES256K)(nil)
+
+type algorithmES256K struct{}
+
+// NewSigningKey implements [github.com/shogo82148/goat/sig.Algorithm].
+func (*algorithmES256K) NewSigningKey(sigKey sig.Key) sig.SigningKey {
+	k := &signingKeyES256K{
+		canSign:   jwktypes.CanUseFor(sigKey, jwktypes.KeyOpSign),
+		canVerify: jwktypes.CanUseFor(sigKey, jwktypes.KeyOpVerify),
+	}
+
+	priv := sigKey.PrivateKey()
+	pub := sigKey.PublicKey()
+
+	if key, ok := priv.(*secp256k1.PrivateKey); ok {
+		k.priv = key
+	} else if _, ok := priv.(*ecdsa.PrivateKey); ok {
+		return es256k.NewSigningKey(sigKey)
+	} else if priv != nil {
+		return sig.NewInvalidKey(jwa.SignatureAlgorithmES256K.String(), priv, pub)
+	}
+	if key, ok := pub.(*secp256k1.PublicKey); ok {
+		k.pub = key
+	} else if _, ok := pub.(*ecdsa.PublicKey); ok {
+		return es256k.NewSigningKey(sigKey)
+	} else if pub != nil {
+		return sig.NewInvalidKey(jwa.SignatureAlgorithmES256K.String(), priv, pub)
+	}
+	return k
+}
+
+type signingKeyES256K struct {
+	priv      *secp256k1.PrivateKey
+	pub       *secp256k1.PublicKey
+	canSign   bool
+	canVerify bool
+}
+
+// Sign implements [github.com/shogo82148/goat/sig.Key].
+func (key *signingKeyES256K) Sign(payload []byte) (signature []byte, err error) {
+	if key.priv == nil || !key.canSign {
+		return nil, sig.ErrSignUnavailable
+	}
+
+	digest := sha256.Sum256(payload)
+	sig, err := secp256k1.SignASN1(key.priv, digest[:])
+	if err != nil {
+		return nil, err
+	}
+
+	var s struct {
+		R *big.Int
+		S *big.Int
+	}
+	if _, err := asn1.Unmarshal(sig, &s); err != nil {
+		return nil, err
+	}
+	signature = make([]byte, 64)
+	s.R.FillBytes(signature[:32])
+	s.S.FillBytes(signature[32:])
+	return signature, nil
+}
+
+// Verify implements [github.com/shogo82148/goat/sig.Key].
+func (key *signingKeyES256K) Verify(payload, signature []byte) error {
+	if key.pub == nil || !key.canVerify {
+		return sig.ErrSignUnavailable
+	}
+
+	if len(signature) != 64 {
+		return sig.ErrSignatureMismatch
+	}
+
+	digest := sha256.Sum256(payload)
+	s := struct {
+		R *big.Int
+		S *big.Int
+	}{
+		R: new(big.Int).SetBytes(signature[:32]),
+		S: new(big.Int).SetBytes(signature[32:]),
+	}
+	asn1sig, err := asn1.Marshal(s)
+	if err != nil {
+		return err
+	}
+
+	if !secp256k1.VerifyASN1(key.pub, digest[:], asn1sig) {
 		return sig.ErrSignatureMismatch
 	}
 	return nil

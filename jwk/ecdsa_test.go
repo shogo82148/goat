@@ -4,9 +4,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/hex"
+	"math/big"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/secp256k1"
 )
 
 func TestParseKey_ecdsa(t *testing.T) {
@@ -151,6 +153,68 @@ func TestParseKey_ecdsa(t *testing.T) {
 			t.Errorf("unexpected private key: want %v, got %v", priv, key.PrivateKey())
 		}
 	})
+
+	t.Run("secp256k1 public key", func(t *testing.T) {
+		rawKey := `{"crv":"secp256k1",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		key, err := ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// expected public key
+		data, err := hex.DecodeString("04938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub, err := secp256k1.ParseUncompressedPublicKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
+			t.Errorf("unexpected key type: want %s, got %s", want, got)
+		}
+		got := key.PublicKey()
+		if !pub.Equal(got) {
+			t.Errorf("unexpected public key: want %v, got %v", pub, got)
+		}
+	})
+
+	t.Run("secp256k1 private key", func(t *testing.T) {
+		rawKey := `{"crv":"secp256k1",` +
+			`"d":"2C9jJaIrEHd2Jande0QEoWbe6Xc2VaTK-Za3E3uG8Uk",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		key, err := ParseKey([]byte(rawKey))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// expected private key
+		data, err := hex.DecodeString("d82f6325a22b10777625a9dd7b4404a166dee9773655a4caf996b7137b86f149")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := secp256k1.ParseRawPrivateKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if want, got := key.kty, jwa.KeyTypeEC; want != got {
+			t.Errorf("unexpected key type: want %s, got %s", want, got)
+		}
+		if !priv.PublicKey().Equal(key.PublicKey()) {
+			t.Errorf("unexpected public key: want %v, got %v", priv.PublicKey(), key.PublicKey())
+		}
+		if !priv.Equal(key.PrivateKey()) {
+			t.Errorf("unexpected private key: want %v, got %v", priv, key.PrivateKey())
+		}
+	})
 }
 
 func BenchmarkParseKey_ecdsa(b *testing.B) {
@@ -161,7 +225,7 @@ func BenchmarkParseKey_ecdsa(b *testing.B) {
 			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
 			`"use":"enc",` +
 			`"kid":"1"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -176,7 +240,7 @@ func BenchmarkParseKey_ecdsa(b *testing.B) {
 			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
 			`"use":"enc",` +
 			`"kid":"1"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -385,6 +449,147 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 			`}`
 		if want != string(got) {
 			t.Errorf("unexpected JWK: want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("secp256k1 public key using ecdsa package", func(t *testing.T) {
+		x, err := hex.DecodeString("938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		y, err := hex.DecodeString("573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub := &ecdsa.PublicKey{
+			Curve: secp256k1.Curve(), //nolint:staticcheck // for backward compatibility
+			X:     new(big.Int).SetBytes(x),
+			Y:     new(big.Int).SetBytes(y),
+		}
+
+		// encode JWK
+		key := &Key{
+			kty: jwa.KeyTypeEC,
+			pub: pub,
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
+		}
+	})
+
+	t.Run("secp256k1 private key using ecdsa package", func(t *testing.T) {
+		x, err := hex.DecodeString("938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		y, err := hex.DecodeString("573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		d, err := hex.DecodeString("d82f6325a22b10777625a9dd7b4404a166dee9773655a4caf996b7137b86f149")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv := &ecdsa.PrivateKey{
+			PublicKey: ecdsa.PublicKey{
+				Curve: secp256k1.Curve(), //nolint:staticcheck // for backward compatibility
+				X:     new(big.Int).SetBytes(x),
+				Y:     new(big.Int).SetBytes(y),
+			},
+			D: new(big.Int).SetBytes(d),
+		}
+
+		// encode JWK
+		key := &Key{
+			kty:  jwa.KeyTypeEC,
+			priv: priv,
+			pub:  &priv.PublicKey,
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"d":"2C9jJaIrEHd2Jande0QEoWbe6Xc2VaTK-Za3E3uG8Uk",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
+		}
+	})
+
+	t.Run("secp256k1 public key", func(t *testing.T) {
+		data, err := hex.DecodeString("04938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub, err := secp256k1.ParseUncompressedPublicKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// encode JWK
+		key := &Key{
+			kty: jwa.KeyTypeEC,
+			pub: pub,
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
+		}
+
+	})
+
+	t.Run("secp256k1 private key", func(t *testing.T) {
+		data, err := hex.DecodeString("d82f6325a22b10777625a9dd7b4404a166dee9773655a4caf996b7137b86f149")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv, err := secp256k1.ParseRawPrivateKey(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// encode JWK
+		key := &Key{
+			priv: priv,
+			pub:  priv.Public(),
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"d":"2C9jJaIrEHd2Jande0QEoWbe6Xc2VaTK-Za3E3uG8Uk",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
 		}
 	})
 }

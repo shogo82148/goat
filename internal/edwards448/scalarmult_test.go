@@ -37,7 +37,7 @@ func TestScalarBaseMult(t *testing.T) {
 func BenchmarkScalarBaseMult1(b *testing.B) {
 	s := new(Scalar).Set(&scOne)
 	var p Point
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.ScalarBaseMult(s)
 	}
 }
@@ -45,7 +45,7 @@ func BenchmarkScalarBaseMult1(b *testing.B) {
 func BenchmarkScalarBaseMultMinus1(b *testing.B) {
 	s := new(Scalar).Set(&scMinusOne)
 	var p Point
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.ScalarBaseMult(s)
 	}
 }
@@ -83,7 +83,7 @@ func TestScalarMult(t *testing.T) {
 func BenchmarkScalarMult1(b *testing.B) {
 	s := new(Scalar).Set(&scOne)
 	p := NewGeneratorPoint()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.ScalarMult(s, p)
 	}
 }
@@ -91,7 +91,7 @@ func BenchmarkScalarMult1(b *testing.B) {
 func BenchmarkScalarMultMinus1(b *testing.B) {
 	s := new(Scalar).Set(&scMinusOne)
 	p := NewGeneratorPoint()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.ScalarMult(s, p)
 	}
 }
@@ -137,7 +137,7 @@ func TestVarTimeDoubleScalarBaseMult(t *testing.T) {
 func BenchmarkVarTimeDoubleScalarBaseMult1(b *testing.B) {
 	s := new(Scalar).Set(&scOne)
 	p := NewGeneratorPoint()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.VarTimeDoubleScalarBaseMult(s, p, s)
 	}
 }
@@ -145,7 +145,7 @@ func BenchmarkVarTimeDoubleScalarBaseMult1(b *testing.B) {
 func BenchmarkVarTimeDoubleScalarBaseMultMinus1(b *testing.B) {
 	s := new(Scalar).Set(&scMinusOne)
 	p := NewGeneratorPoint()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		p.VarTimeDoubleScalarBaseMult(s, p, s)
 	}
 }
