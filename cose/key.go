@@ -7,11 +7,9 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/shogo82148/go-cbor"
 	"github.com/shogo82148/goat/internal/cborutils"
-	"github.com/shogo82148/goat/secp256k1"
 )
 
 // KeyType represents a COSE_Key type.
@@ -267,6 +265,7 @@ func ParseKeySet(data []byte) (*KeySet, error) {
 func parseEcdsaKey(d *cborutils.Decoder, key *Key) {
 	// curve
 	var curve elliptic.Curve
+	var size int
 	if crv, ok := d.GetInteger(-1); ok {
 		i64, err := crv.Int64()
 		if err != nil {
@@ -275,26 +274,28 @@ func parseEcdsaKey(d *cborutils.Decoder, key *Key) {
 		switch i64 {
 		case curveP256:
 			curve = elliptic.P256()
+			size = 32
 		case curveP384:
 			curve = elliptic.P384()
+			size = 48
 		case curveP521:
 			curve = elliptic.P521()
-		case curveSecp256k1:
-			curve = secp256k1.Curve()
+			size = 66
 		}
 	} else if crv, ok := d.GetString(-1); ok {
 		switch crv {
 		case curveNameP256:
 			curve = elliptic.P256()
+			size = 32
 		case curveNameP384:
 			curve = elliptic.P384()
+			size = 48
 		case curveNameP521:
 			curve = elliptic.P521()
-		case curveNameSecp256k1:
-			curve = secp256k1.Curve()
+			size = 66
 		}
 	} else {
-		d.SaveError(fmt.Errorf("missing curve"))
+		d.SaveError(errors.New("missing curve"))
 	}
 
 	// parameters for public key
@@ -303,54 +304,28 @@ func parseEcdsaKey(d *cborutils.Decoder, key *Key) {
 	if err := d.Err(); err != nil {
 		return
 	}
-	pub := ecdsa.PublicKey{
-		Curve: curve,
-		X:     new(big.Int).SetBytes(x),
-		Y:     new(big.Int).SetBytes(y),
+	if len(x) != size || len(y) != size {
+		d.SaveError(errors.New("invalid key parameter"))
+		return
 	}
-	key.pub = &pub
-	if err := validateEcdsaPublicKey(&pub); err != nil {
+	buf := make([]byte, 1+2*size)
+	buf[0] = 0x04 // uncompressed form
+	copy(buf[1:1+size], x)
+	copy(buf[1+size:], y)
+	pub, err := ecdsa.ParseUncompressedPublicKey(curve, buf)
+	if err != nil {
 		d.SaveError(err)
 		return
 	}
+	key.pub = pub
 
 	// parameters for private key
 	if dd, ok := d.GetBytes(-4); ok {
-		priv := ecdsa.PrivateKey{
-			PublicKey: pub,
-			D:         new(big.Int).SetBytes(dd),
-		}
-		if err := validateEcdsaPrivateKey(&priv); err != nil {
+		priv, err := ecdsa.ParseRawPrivateKey(curve, dd)
+		if err != nil {
 			d.SaveError(err)
 			return
 		}
-		key.priv = &priv
+		key.priv = priv
 	}
-}
-
-func validateEcdsaPrivateKey(key *ecdsa.PrivateKey) error {
-	if err := validateEcdsaPublicKey(&key.PublicKey); err != nil {
-		return err
-	}
-	xx, yy := key.ScalarBaseMult(key.D.Bytes())
-	if xx.Cmp(key.X) != 0 || yy.Cmp(key.Y) != 0 {
-		return errors.New("jwk: invalid ecdsa key pair")
-	}
-	return nil
-}
-
-// sanity check of public key
-func validateEcdsaPublicKey(key *ecdsa.PublicKey) error {
-	switch key.Curve {
-	case elliptic.P256():
-	case elliptic.P384():
-	case elliptic.P521():
-	case secp256k1.Curve():
-	default:
-		return errors.New("jwk: unknown elliptic curve of ecdsa public key")
-	}
-	if key.X.Sign() == 0 || key.Y.Sign() == 0 || !key.Curve.IsOnCurve(key.X, key.Y) {
-		return fmt.Errorf("jwk: invalid parameter of ecdsa public key")
-	}
-	return nil
 }
