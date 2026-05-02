@@ -283,6 +283,9 @@ func bigHex(s string) *big.Int {
 // Multiple invocations of this function will return the same value, so it can be used for equality checks and switch statements.
 //
 // The cryptographic operations are implemented using constant-time algorithms.
+//
+// Deprecated: using with [crypto/ecdsa] is not recommended, as the interface of [crypto/ecdsa] is not designed
+// for secp256k1 and may cause security issues. Use the functions in this package directly instead.
 func Curve() elliptic.Curve {
 	initonce.Do(initCurve)
 	return &curve
