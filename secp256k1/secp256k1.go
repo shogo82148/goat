@@ -228,12 +228,17 @@ func VerifyASN1(pub *PublicKey, hash, sig []byte) bool {
 	u2 := w.Mul(r, w)
 	u2.Mod(u2, N)
 
-	x1, y1 := curve.ScalarBaseMult(u1.Bytes())
+	var pj1 curve256k1.PointJacobian
+	pj1.ScalarBaseMult(u1.Bytes())
+
+	var pj2 curve256k1.PointJacobian
+	pj2.ScalarMult(&pub.pj, u2.Bytes())
+
 	var p curve256k1.Point
-	p.FromJacobian(&pub.pj)
+	var pj curve256k1.PointJacobian
+	pj.Add(&pj1, &pj2)
+	p.FromJacobian(&pj)
 	x, y := p.ToBig(new(big.Int), new(big.Int))
-	x2, y2 := curve.ScalarMult(x, y, u2.Bytes())
-	x, y = curve.Add(x1, y1, x2, y2)
 
 	if x.Sign() == 0 && y.Sign() == 0 {
 		return false
