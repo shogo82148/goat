@@ -74,24 +74,49 @@ func decodeHex(s string) []byte {
 	return data
 }
 
-func TestVerify(t *testing.T) {
+func TestVerifyASN1(t *testing.T) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	pub := &ecdsa.PublicKey{
-		Curve: Curve(),
-		X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-		Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
+	data, err := hex.DecodeString("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := ParseUncompressedPublicKey(data)
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	// touch plaintext
-	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.txt
-	// openssl asn1parse -inform DER -in sig.txt
+	// touch plain.txt
+	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	r := bigHex("3D2FCB610B176153D7740A300A6DE321D997D867308F6AF594D9B56EDDDBC918")
-	s := bigHex("4EF2905C03EEDA8BC8D5C2464B62AA9C38F7BA0076FFBD25A8F29A4FF410116D")
-	if !ecdsa.Verify(pub, sum[:], r, s) {
+	sig, err := hex.DecodeString(
+		"3045022100ab34a027e17691ec2d7d92" +
+			"8845eb0005ae72603f7792f2018314f6" +
+			"00f5c8290c022066ff495d3625a3477a" +
+			"9919aafae2d34770159c1deb6197503f" +
+			"830cffbf944d3c",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !VerifyASN1(pub, sum[:], sig) {
 		t.Error("verify failed")
+	}
+
+	// invalid signature
+	sig, err = hex.DecodeString(
+		"3045022052931d24e8a4036fcb7b645d" +
+			"81684d54201bfad5633d8c874298fe40" +
+			"0a5c0601022100c1250421ec2fe9d5c1" +
+			"afa8250a7bffeda522262b452b39b184" +
+			"785e747f21e3fa",
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if VerifyASN1(pub, sum[:], sig) {
+		t.Error("verify should have failed")
 	}
 }
 
@@ -125,22 +150,32 @@ func TestSign(t *testing.T) {
 func BenchmarkVerify(b *testing.B) {
 	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
 	// openssl ec -text -noout -in privkey.pem
-	pub := &ecdsa.PublicKey{
-		Curve: Curve(),
-		X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-		Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
+	data, err := hex.DecodeString("0451033e4be849b9da751ec67bb2849c0a41f17a0296bdbfd34479b00fc6c4ece76ccf6e1c55e6cdd5fcddde49403734fc420bf05e322725f2e1f6e62be6545813")
+	if err != nil {
+		b.Fatal(err)
+	}
+	pub, err := ParseUncompressedPublicKey(data)
+	if err != nil {
+		b.Fatal(err)
 	}
 
-	// touch plaintext
-	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.txt
-	// openssl asn1parse -inform DER -in sig.txt
+	// touch plain.txt
+	// openssl dgst -sha256 -sign privkey.pem plain.txt > sig.der
 	message := []byte{}
 	sum := sha256.Sum256(message)
-	r := bigHex("3D2FCB610B176153D7740A300A6DE321D997D867308F6AF594D9B56EDDDBC918")
-	s := bigHex("4EF2905C03EEDA8BC8D5C2464B62AA9C38F7BA0076FFBD25A8F29A4FF410116D")
+	sig, err := hex.DecodeString(
+		"3045022100ab34a027e17691ec2d7d92" +
+			"8845eb0005ae72603f7792f2018314f6" +
+			"00f5c8290c022066ff495d3625a3477a" +
+			"9919aafae2d34770159c1deb6197503f" +
+			"830cffbf944d3c",
+	)
+	if err != nil {
+		b.Fatal(err)
+	}
 
 	for b.Loop() {
-		if !ecdsa.Verify(pub, sum[:], r, s) {
+		if !VerifyASN1(pub, sum[:], sig) {
 			b.Error("verify failed")
 		}
 	}
