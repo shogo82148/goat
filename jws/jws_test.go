@@ -19,6 +19,8 @@ import (
 
 func TestVerify(t *testing.T) {
 	t.Run("RFC 7515 Appendix A.1 Example JWS Using HMAC SHA-256", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
 				"." +
@@ -44,7 +46,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -65,6 +67,8 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.2. Example JWS Using RSASSA-PKCS1-v1_5 SHA-256", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJhbGciOiJSUzI1NiJ9" +
 				"." +
@@ -121,7 +125,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -139,6 +143,8 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJhbGciOiJFUzI1NiJ9" +
 				"." +
@@ -167,7 +173,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -185,6 +191,8 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.4 Example JWS Using ECDSA P-521 SHA-512", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJhbGciOiJFUzUxMiJ9" +
 				"." +
@@ -216,7 +224,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -232,6 +240,8 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.5 Example Unsecured JWS", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJhbGciOiJub25lIn0" +
 				"." +
@@ -250,7 +260,7 @@ func TestVerify(t *testing.T) {
 			}),
 		}
 
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -268,6 +278,8 @@ func TestVerify(t *testing.T) {
 	})
 
 	t.Run("RFC 8037 Appendix A.4 Ed25519 Validation", func(t *testing.T) {
+		ctx := t.Context()
+
 		rawKey := `{"kty":"OKP","crv":"Ed25519",` +
 			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`
 		key, err := jwk.ParseKey([]byte(rawKey))
@@ -289,7 +301,7 @@ func TestVerify(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		header, _, payload, err := v.Verify(context.Background(), msg)
+		header, _, payload, err := v.Verify(ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -307,6 +319,8 @@ func TestVerify(t *testing.T) {
 
 func TestUnmarshalJSON(t *testing.T) {
 	t.Run("RFC 7515 Appendix A.6. Example JWS Using General JWS JSON Serialization", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := `{` +
 			`"payload":` +
 			`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
@@ -377,7 +391,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, _, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(ctx, &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -407,7 +421,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, _, payload, err = v.Verify(context.Background(), &msg)
+		_, _, payload, err = v.Verify(ctx, &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -417,6 +431,8 @@ func TestUnmarshalJSON(t *testing.T) {
 	})
 
 	t.Run("RFC 7515 Appendix A.7. Example JWS Using Flattened JWS JSON Serialization", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := `{` +
 			`"payload":` +
 			`"eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGF` +
@@ -451,7 +467,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, _, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(ctx, &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -465,6 +481,8 @@ func TestUnmarshalJSON(t *testing.T) {
 
 	// test for b64 header parameter.
 	t.Run("RFC 7797 Section 4.2. Example with Header Parameters", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := `{` +
 			`"protected":` +
 			`"eyJhbGciOiJIUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19",` +
@@ -492,7 +510,7 @@ func TestUnmarshalJSON(t *testing.T) {
 				return protected.Algorithm().New().NewSigningKey(key), nil
 			}),
 		}
-		_, _, payload, err := v.Verify(context.Background(), &msg)
+		_, _, payload, err := v.Verify(ctx, &msg)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -820,6 +838,8 @@ func TestSign(t *testing.T) {
 }
 
 func TestKeyTypeMissmatch(t *testing.T) {
+	ctx := t.Context()
+
 	// from RFC 7515 Appendix A.3 Example JWS Using ECDSA P-256 SHA-256
 	raw := []byte(
 		"eyJhbGciOiJFUzI1NiJ9" + // {"alg":"ES256"}
@@ -854,7 +874,7 @@ func TestKeyTypeMissmatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, _, err = v.Verify(context.Background(), msg)
+	_, _, _, err = v.Verify(ctx, msg)
 	if err == nil {
 		t.Error("want error, got nil")
 	}

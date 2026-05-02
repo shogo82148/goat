@@ -1,7 +1,6 @@
 package oidc
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -15,6 +14,8 @@ func TestGetJWKS(t *testing.T) {
 }
 
 func testJWKS(t *testing.T, platform string) {
+	ctx := t.Context()
+
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("unexpected http method: want %s, got %s", http.MethodGet, r.Method)
@@ -25,9 +26,6 @@ func testJWKS(t *testing.T, platform string) {
 		http.ServeFile(rw, r, filepath.Join("testdata", platform+"-jwks.json"))
 	}))
 	defer ts.Close()
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	c, err := NewClient(&ClientConfig{
 		Doer:   ts.Client(),

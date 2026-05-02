@@ -49,6 +49,8 @@ var jwtPayloads = []string{
 
 func NewFuzzJWTFunc(key *jwk.Key) func(t *testing.T, data string) {
 	return func(t *testing.T, data string) {
+		ctx := t.Context()
+
 		var sigKey sig.SigningKey
 		p := &Parser{
 			KeyFinder: FindKeyFunc(func(ctx context.Context, header *jws.Header) (sig.SigningKey, error) {
@@ -63,7 +65,7 @@ func NewFuzzJWTFunc(key *jwk.Key) func(t *testing.T, data string) {
 			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
-		token1, err := p.Parse(context.Background(), []byte(data))
+		token1, err := p.Parse(ctx, []byte(data))
 		if err != nil {
 			return
 		}
@@ -83,7 +85,7 @@ func NewFuzzJWTFunc(key *jwk.Key) func(t *testing.T, data string) {
 			IssuerSubjectVerifier: UnsecureAnyIssuerSubject,
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
-		token2, err := p.Parse(context.Background(), signed)
+		token2, err := p.Parse(ctx, signed)
 		if err != nil {
 			t.Fatal(err)
 		}
