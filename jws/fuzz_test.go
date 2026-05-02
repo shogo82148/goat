@@ -65,6 +65,8 @@ var jwsPayloads = []string{
 
 func NewFuzzJWSFunc(key *jwk.Key) func(t *testing.T, data string) {
 	return func(t *testing.T, data string) {
+		ctx := t.Context()
+
 		var sigKey sig.SigningKey
 		v1 := &Verifier{
 			AlgorithmVerifier: UnsecureAnyAlgorithm,
@@ -82,7 +84,7 @@ func NewFuzzJWSFunc(key *jwk.Key) func(t *testing.T, data string) {
 		if err != nil {
 			return
 		}
-		header1, _, payload1, err := v1.Verify(context.Background(), msg1)
+		header1, _, payload1, err := v1.Verify(ctx, msg1)
 		if err != nil {
 			return
 		}
@@ -109,7 +111,7 @@ func NewFuzzJWSFunc(key *jwk.Key) func(t *testing.T, data string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, payload3, err := v2.Verify(context.Background(), msg3)
+		_, _, payload3, err := v2.Verify(ctx, msg3)
 		if err != nil {
 			t.Error(err)
 		}
@@ -246,6 +248,8 @@ var jwsCompactPayloads = []string{
 
 func NewFuzzJWSCompactFunc(key *jwk.Key) func(t *testing.T, data string) {
 	return func(t *testing.T, data string) {
+		ctx := t.Context()
+
 		var sigKey sig.SigningKey
 		v1 := &Verifier{
 			AlgorithmVerifier: UnsecureAnyAlgorithm,
@@ -263,7 +267,7 @@ func NewFuzzJWSCompactFunc(key *jwk.Key) func(t *testing.T, data string) {
 		if err != nil {
 			return
 		}
-		header1, _, payload1, err := v1.Verify(context.Background(), msg1)
+		header1, _, payload1, err := v1.Verify(ctx, msg1)
 		if err != nil {
 			return
 		}
@@ -290,7 +294,7 @@ func NewFuzzJWSCompactFunc(key *jwk.Key) func(t *testing.T, data string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, payload3, err := v2.Verify(context.Background(), msg3)
+		_, _, payload3, err := v2.Verify(ctx, msg3)
 		if err != nil {
 			t.Error(err)
 		}

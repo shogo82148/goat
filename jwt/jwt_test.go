@@ -27,6 +27,8 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("RFC 7519 Section 3.1. Example JWT", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJ0eXAiOiJKV1QiLA0KICJhbGciOiJIUzI1NiJ9" +
 				"." +
@@ -49,7 +51,7 @@ func TestParse(t *testing.T) {
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
-		token, err := p.Parse(context.Background(), raw)
+		token, err := p.Parse(ctx, raw)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -67,6 +69,8 @@ func TestParse(t *testing.T) {
 	})
 
 	t.Run("RFC 7519 Section 6.1. Example Unsecured JWT", func(t *testing.T) {
+		ctx := t.Context()
+
 		raw := []byte(
 			"eyJhbGciOiJub25lIn0" +
 				"." +
@@ -83,7 +87,7 @@ func TestParse(t *testing.T) {
 			IssuerSubjectVerifier: Issuer("joe"),
 			AudienceVerifier:      UnsecureAnyAudience,
 		}
-		token, err := p.Parse(context.Background(), raw)
+		token, err := p.Parse(ctx, raw)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -102,6 +106,8 @@ func TestParse(t *testing.T) {
 }
 
 func TestParse_Claims(t *testing.T) {
+	ctx := t.Context()
+
 	var now time.Time
 	mockTime(t, func() time.Time {
 		return now
@@ -127,13 +133,13 @@ func TestParse_Claims(t *testing.T) {
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before expiration time
-	_, err = p.Parse(context.Background(), data)
+	_, err = p.Parse(ctx, data)
 	if err != nil {
 		t.Error(err)
 	}
 
 	now = time.Unix(1300819380, 0) // just expiration time
-	_, err = p.Parse(context.Background(), data)
+	_, err = p.Parse(ctx, data)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
@@ -145,13 +151,13 @@ func TestParse_Claims(t *testing.T) {
 			base64.RawURLEncoding.EncodeToString(token) + ".")
 
 	now = time.Unix(1300819380, -1) // 1ns before the token is valid
-	_, err = p.Parse(context.Background(), data)
+	_, err = p.Parse(ctx, data)
 	if err == nil {
 		t.Error("want some error, but not")
 	}
 
 	now = time.Unix(1300819380, 0) // just activated
-	_, err = p.Parse(context.Background(), data)
+	_, err = p.Parse(ctx, data)
 	if err != nil {
 		t.Error(err)
 	}
@@ -229,6 +235,8 @@ func TestSign(t *testing.T) {
 }
 
 func BenchmarkParse(b *testing.B) {
+	ctx := b.Context()
+
 	mockTime(b, func() time.Time {
 		return time.Unix(1300819379, 0)
 	})
@@ -257,7 +265,7 @@ func BenchmarkParse(b *testing.B) {
 	}
 
 	for b.Loop() {
-		_, err := p.Parse(context.Background(), raw)
+		_, err := p.Parse(ctx, raw)
 		if err != nil {
 			b.Fatal(err)
 		}

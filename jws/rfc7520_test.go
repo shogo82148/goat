@@ -101,6 +101,8 @@ func TestRFC7520(t *testing.T) {
 }
 
 func testRFC7520VerifySigngleSignature(t *testing.T, tv *testVector, msg *Message) {
+	ctx := t.Context()
+
 	key, err := jwk.ParseMap(tv.Input.Key.(map[string]any))
 	if err != nil {
 		t.Fatal(err)
@@ -119,9 +121,9 @@ func testRFC7520VerifySigngleSignature(t *testing.T, tv *testVector, msg *Messag
 	var protected, unprotected *Header
 	var got []byte
 	if _, ok := tv.Output.JSON["payload"]; ok {
-		protected, unprotected, got, err = v.Verify(context.Background(), msg)
+		protected, unprotected, got, err = v.Verify(ctx, msg)
 	} else {
-		protected, unprotected, got, err = v.VerifyContent(context.Background(), msg, payload)
+		protected, unprotected, got, err = v.VerifyContent(ctx, msg, payload)
 	}
 	if err != nil {
 		t.Fatal(err)
