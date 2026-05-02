@@ -133,6 +133,11 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 	return p.Bytes(), nil
 }
 
+type signature struct {
+	R *big.Int
+	S *big.Int
+}
+
 // SignASN1 signs a hash (which should be the result of hashing a larger message) using the private key, priv.
 // If the hash is longer than the bit-length of the private key's curve order,
 // the hash will be truncated to that length. It returns the ASN.1 encoded signature.
@@ -168,10 +173,7 @@ func SignASN1(priv *PrivateKey, hash []byte) ([]byte, error) {
 		}
 	}
 
-	sig := struct {
-		R *big.Int
-		S *big.Int
-	}{
+	sig := signature{
 		R: r,
 		S: s,
 	}
@@ -233,25 +235,22 @@ func VerifyASN1(pub *PublicKey, hash, sig []byte) bool {
 	return x.Cmp(r) == 0
 }
 
-func parseSignature(sig []byte) (r, s *big.Int, err error) {
-	var signature struct {
-		R *big.Int
-		S *big.Int
-	}
-	rest, err := asn1.Unmarshal(sig, &signature)
+func parseSignature(b []byte) (r, s *big.Int, err error) {
+	var sig signature
+	rest, err := asn1.Unmarshal(b, &sig)
 	if err != nil {
 		return nil, nil, err
 	}
 	if len(rest) != 0 {
 		return nil, nil, errors.New("secp256k1: trailing data after ASN.1 signature")
 	}
-	if signature.R.Sign() <= 0 || signature.S.Sign() <= 0 {
+	if sig.R.Sign() <= 0 || sig.S.Sign() <= 0 {
 		return nil, nil, errors.New("secp256k1: invalid signature value")
 	}
-	if signature.R.BitLen() > 256 || signature.S.BitLen() > 256 {
+	if sig.R.BitLen() > 256 || sig.S.BitLen() > 256 {
 		return nil, nil, errors.New("secp256k1: invalid signature value")
 	}
-	return signature.R, signature.S, nil
+	return sig.R, sig.S, nil
 }
 
 var initonce sync.Once

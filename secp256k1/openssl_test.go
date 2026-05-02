@@ -1,14 +1,15 @@
+// openssl_test.go tests the compatibility with OpenSSL.
+// These tests require OpenSSL to be installed, and will be skipped if OpenSSL doesn't support secp256k1.
+
 package secp256k1
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/asn1"
 	"encoding/pem"
 	"fmt"
-	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,11 +37,6 @@ type ecPublicKey struct {
 	PublicKey asn1.BitString
 }
 
-type signature struct {
-	R *big.Int
-	S *big.Int
-}
-
 func TestVerify_OpenSSL(t *testing.T) {
 	// integration test with OpenSSL
 	// generate signature using OpenSSL, and verify it using goat.
@@ -48,6 +44,44 @@ func TestVerify_OpenSSL(t *testing.T) {
 
 	for i := range 1024 {
 		t.Run(strconv.Itoa(i), testVerifyOpenSSL)
+	}
+}
+
+func testVerifyOpenSSL(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+
+	// generate a private key
+	priv := GenerateKey()
+	pub := priv.PublicKey()
+	privateKeyPath := filepath.Join(dir, "private-key.pem")
+	if err := writePrivateKey(privateKeyPath, priv); err != nil {
+		t.Error(err)
+		return
+	}
+
+	// generate a message
+	message := make([]byte, 1024)
+	if _, err := rand.Read(message); err != nil {
+		t.Error(err)
+		return
+	}
+	messagePath := filepath.Join(dir, "message.txt")
+	if err := os.WriteFile(messagePath, message, 0o644); err != nil {
+		t.Error(err)
+		return
+	}
+
+	// sign
+	sig, err := signWithOpenSSL(privateKeyPath, messagePath)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	sum := sha256.Sum256(message)
+	if !VerifyASN1(pub, sum[:], sig) {
+		t.Errorf("verify failed:\nmessage: %q", message)
 	}
 }
 
@@ -61,63 +95,21 @@ func TestSign_OpenSSL(t *testing.T) {
 	}
 }
 
-func testVerifyOpenSSL(t *testing.T) {
-	dir := t.TempDir()
-
-	// generate a private key
-	priv, err := ecdsa.GenerateKey(Curve(), rand.Reader)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	privkeyPath := filepath.Join(dir, "privkey.pem")
-	if err := writePrivKey(privkeyPath, priv); err != nil {
-		t.Error(err)
-		return
-	}
-
-	// generate a message
-	message := make([]byte, 32)
-	if _, err := rand.Read(message); err != nil {
-		t.Error(err)
-		return
-	}
-	messagePath := filepath.Join(dir, "message.txt")
-	if err := os.WriteFile(messagePath, message, 0o644); err != nil {
-		t.Error(err)
-		return
-	}
-
-	// sign
-	r, s, err := signWithOpenSSL(privkeyPath, messagePath)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	sum := sha256.Sum256(message)
-	if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
-		t.Errorf("verify failed:\nmessage: %q", message)
-	}
-}
-
 func testSignOpenSSL(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 
 	// generate a private key
-	priv, err := ecdsa.GenerateKey(Curve(), rand.Reader)
-	if err != nil {
-		t.Error(err)
-		return
-	}
-	pubkeyPath := filepath.Join(dir, "pubkey.pem")
-	if err := writePubKey(pubkeyPath, &priv.PublicKey); err != nil {
+	priv := GenerateKey()
+	pub := priv.PublicKey()
+	publicKeyPath := filepath.Join(dir, "public-key.pem")
+	if err := writePublicKey(publicKeyPath, pub); err != nil {
 		t.Error(err)
 		return
 	}
 
 	// generate a message
-	message := make([]byte, 32)
+	message := make([]byte, 1024)
 	if _, err := rand.Read(message); err != nil {
 		t.Error(err)
 		return
@@ -130,19 +122,19 @@ func testSignOpenSSL(t *testing.T) {
 
 	// calculate signature
 	sum := sha256.Sum256(message)
-	r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+	sig, err := SignASN1(priv, sum[:])
 	if err != nil {
 		t.Error(err)
 		return
 	}
 	signaturePath := filepath.Join(dir, "message.sig")
-	if err := writeSignature(signaturePath, r, s); err != nil {
+	if err := writeSignature(signaturePath, sig); err != nil {
 		t.Error(err)
 		return
 	}
 
 	// verify
-	if err := verifyWithOpenSSL(pubkeyPath, signaturePath, messagePath); err != nil {
+	if err := verifyWithOpenSSL(publicKeyPath, signaturePath, messagePath); err != nil {
 		t.Errorf("verify failed: %v\nmessage: %q\n", err, message)
 	}
 }
@@ -161,18 +153,12 @@ func checkSecp256k1Support(t *testing.T) bool {
 	return true
 }
 
-func signWithOpenSSL(privkeyPath, messagePath string) (r, s *big.Int, err error) {
-	out, err := exec.Command("openssl", "dgst", "-sha256", "-sign", privkeyPath, messagePath).CombinedOutput()
+func signWithOpenSSL(privateKeyPath, messagePath string) (sig []byte, err error) {
+	out, err := exec.Command("openssl", "dgst", "-sha256", "-sign", privateKeyPath, messagePath).CombinedOutput()
 	if err != nil {
-		return nil, nil, fmt.Errorf("%w: %s", err, out)
+		return nil, fmt.Errorf("%w: %s", err, out)
 	}
-
-	var sig signature
-	_, err = asn1.Unmarshal(out, &sig)
-	if err != nil {
-		return nil, nil, err
-	}
-	return sig.R, sig.S, nil
+	return out, nil
 }
 
 func verifyWithOpenSSL(pubkeyPath, signaturePath, messagePath string) error {
@@ -183,13 +169,13 @@ func verifyWithOpenSSL(pubkeyPath, signaturePath, messagePath string) error {
 	return nil
 }
 
-func writePrivKey(name string, key *ecdsa.PrivateKey) error {
-	d := key.D.Bytes()
-	size := (key.Params().BitSize + 7) / 8
-	buf := make([]byte, 1+size*2)
-	buf[0] = 0x04 // uncompressed point
-	key.X.FillBytes(buf[1 : 1+size])
-	key.Y.FillBytes(buf[1+size:])
+func writePrivateKey(name string, key *PrivateKey) error {
+	pub := key.PublicKey()
+	d := key.d[:]
+	buf, err := pub.Bytes()
+	if err != nil {
+		return err
+	}
 
 	priv := ecPrivateKey{
 		Version:       1,
@@ -207,15 +193,14 @@ func writePrivKey(name string, key *ecdsa.PrivateKey) error {
 		Type:  "EC PRIVATE KEY",
 		Bytes: data,
 	})
-	return os.WriteFile(name, pemData, 0o644)
+	return os.WriteFile(name, pemData, 0o600)
 }
 
-func writePubKey(name string, key *ecdsa.PublicKey) error {
-	size := (key.Params().BitSize + 7) / 8
-	buf := make([]byte, 1+size*2)
-	buf[0] = 0x04 // uncompressed point
-	key.X.FillBytes(buf[1 : 1+size])
-	key.Y.FillBytes(buf[1+size:])
+func writePublicKey(name string, key *PublicKey) error {
+	buf, err := key.Bytes()
+	if err != nil {
+		return err
+	}
 
 	pub := ecPublicKey{
 		KeyMeta: keyMeta{
@@ -237,14 +222,6 @@ func writePubKey(name string, key *ecdsa.PublicKey) error {
 	return os.WriteFile(name, pemData, 0o644)
 }
 
-func writeSignature(name string, r, s *big.Int) error {
-	sig := signature{
-		R: r,
-		S: s,
-	}
-	data, err := asn1.Marshal(sig)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(name, data, 0o644)
+func writeSignature(name string, sig []byte) error {
+	return os.WriteFile(name, sig, 0o644)
 }
