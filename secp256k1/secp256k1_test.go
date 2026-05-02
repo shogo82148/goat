@@ -1,8 +1,6 @@
 package secp256k1
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"testing"
@@ -94,9 +92,6 @@ func TestVerifyASN1(t *testing.T) {
 			"9919aafae2d34770159c1deb6197503f" +
 			"830cffbf944d3c",
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
 	if !VerifyASN1(pub, sum[:], sig) {
 		t.Error("verify failed")
 	}
@@ -109,36 +104,24 @@ func TestVerifyASN1(t *testing.T) {
 			"afa8250a7bffeda522262b452b39b184" +
 			"785e747f21e3fa",
 	)
-	if err != nil {
-		t.Fatal(err)
-	}
 	if VerifyASN1(pub, sum[:], sig) {
 		t.Error("verify should have failed")
 	}
 }
 
-func TestSign(t *testing.T) {
-	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
-	// openssl ec -text -noout -in privkey.pem
-	priv := &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: Curve(),
-			X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-			Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
-		},
-		D: bigHex("1fd03e67f8a0c70531ff1af306265831d156678f3843ece8d39e894f5c9176d7"),
-	}
-
+func TestSignASN1(t *testing.T) {
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
 	for range 1024 {
-		r, s, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+		priv := GenerateKey()
+		sig, err := SignASN1(priv, sum[:])
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		if !ecdsa.Verify(&priv.PublicKey, sum[:], r, s) {
+		pub := priv.PublicKey()
+		if !VerifyASN1(pub, sum[:], sig) {
 			t.Error("verify failed")
 		}
 	}
@@ -173,22 +156,12 @@ func BenchmarkVerify(b *testing.B) {
 }
 
 func BenchmarkSign(b *testing.B) {
-	// openssl ecparam -genkey -name secp256k1 -out privkey.pem
-	// openssl ec -text -noout -in privkey.pem
-	priv := &ecdsa.PrivateKey{
-		PublicKey: ecdsa.PublicKey{
-			Curve: Curve(),
-			X:     bigHex("79b1031b16eaed727f951f0fadeebc9a950092861fe266869a2e57e6eda95a14"),
-			Y:     bigHex("d39752c01275ea9b61c67990069243c158373d754a54b9acd2e8e6c5db677fbb"),
-		},
-		D: bigHex("1fd03e67f8a0c70531ff1af306265831d156678f3843ece8d39e894f5c9176d7"),
-	}
-
+	priv := GenerateKey()
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
 	for b.Loop() {
-		_, _, err := ecdsa.Sign(rand.Reader, priv, sum[:])
+		_, err := SignASN1(priv, sum[:])
 		if err != nil {
 			b.Fatal(err)
 		}

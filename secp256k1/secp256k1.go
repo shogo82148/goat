@@ -137,7 +137,57 @@ func (pub *PublicKey) Bytes() ([]byte, error) {
 // If the hash is longer than the bit-length of the private key's curve order,
 // the hash will be truncated to that length. It returns the ASN.1 encoded signature.
 func SignASN1(priv *PrivateKey, hash []byte) ([]byte, error) {
-	return []byte{}, errors.New("secp256k1: signing not implemented")
+	initonce.Do(initCurve)
+	N := curve.params.N
+
+	if len(hash) > 32 {
+		hash = hash[:32]
+	}
+
+	var k, kInv, r, s *big.Int
+	for {
+		for {
+			k = randFieldElement()
+			kInv = new(big.Int).ModInverse(k, N)
+
+			r, _ = curve.ScalarBaseMult(k.Bytes())
+			r.Mod(r, N)
+			if r.Sign() != 0 {
+				break
+			}
+		}
+
+		e := new(big.Int).SetBytes(hash)
+		d := new(big.Int).SetBytes(priv.d[:])
+		s = new(big.Int).Mul(d, r)
+		s.Add(s, e)
+		s.Mul(s, kInv)
+		s.Mod(s, N)
+		if s.Sign() != 0 {
+			break
+		}
+	}
+
+	sig := struct {
+		R *big.Int
+		S *big.Int
+	}{
+		R: r,
+		S: s,
+	}
+	return asn1.Marshal(sig)
+}
+
+// randFieldElement returns a random element of the order of the given
+// curve using the procedure given in FIPS 186-4, Appendix B.5.2.
+func randFieldElement() *big.Int {
+	for {
+		var buf [32]byte
+		rand.Read(buf[:])
+		if !isZero(&buf) && !overflow(&buf) {
+			return new(big.Int).SetBytes(buf[:])
+		}
+	}
 }
 
 // VerifyASN1 reports whether sig is a valid ASN.1 encoded signature of hash by pub.
