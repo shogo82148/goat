@@ -12,6 +12,7 @@ import (
 	"crypto/subtle"
 	"encoding/asn1"
 	"errors"
+	"io"
 	"math/big"
 	"sync"
 
@@ -92,6 +93,13 @@ func (key *PrivateKey) PublicKey() *PublicKey {
 // Bytes encodes the private key as a fixed-length big-endian integer.
 func (key *PrivateKey) Bytes() ([]byte, error) {
 	return bytes.Clone(key.d[:]), nil
+}
+
+// Sign signs a hash (which should be the result of hashing a larger message with opts.HashFunc()) using the private key.
+// If the hash is longer than the bit-length of the private key's curve order, the hash will be truncated to that length.
+// It returns the ASN.1 encoded signature, like [SignASN1].
+func (key *PrivateKey) Sign(random io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	return SignASN1(key, digest)
 }
 
 // PublicKey represents a secp256k1 public key.
