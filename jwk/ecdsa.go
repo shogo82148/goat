@@ -30,9 +30,7 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 		curve = elliptic.P521()
 		size = 66
 	case jwa.EllipticCurveSecp256k1:
-		curve = secp256k1.Curve()
-		// TODO: implement parsing of secp256k1 keys.
-		d.SaveError(errors.New("jwk: not implemented"))
+		parseSecp256k1Key(d, key)
 		return
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
@@ -75,6 +73,57 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	// sanity check of the key pair.
 	if priv != nil {
 		if !priv.PublicKey.Equal(pub) {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+	}
+
+	// sanity check of the certificate.
+	if certs := key.x5c; len(certs) > 0 {
+		cert := certs[0]
+		if !pub.Equal(cert.PublicKey) {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+	}
+}
+
+func parseSecp256k1Key(d *jsonutils.Decoder, key *Key) {
+	// parameters for public key
+	x := d.MustBytes("x")
+	y := d.MustBytes("y")
+	if err := d.Err(); err != nil {
+		return
+	}
+	if len(x) != 32 || len(y) != 32 {
+		d.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	buf := make([]byte, 1+2*32)
+	buf[0] = 0x04
+	copy(buf[1:33], x)
+	copy(buf[33:], y)
+	pub, err := secp256k1.ParseUncompressedPublicKey(buf)
+	if err != nil {
+		d.SaveError(errInvalidECDSAParameter)
+		return
+	}
+	key.pub = pub
+
+	// parameters for private key
+	var priv *secp256k1.PrivateKey
+	if dd, ok := d.GetBytes("d"); ok {
+		priv, err = secp256k1.ParseRawPrivateKey(dd)
+		if err != nil {
+			d.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		key.priv = priv
+	}
+
+	// sanity check of the key pair.
+	if priv != nil {
+		if !priv.PublicKey().Equal(pub) {
 			d.SaveError(errInvalidECDSAParameter)
 			return
 		}
