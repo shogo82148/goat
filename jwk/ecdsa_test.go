@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/hex"
+	"math/big"
 	"testing"
 
 	"github.com/shogo82148/goat/jwa"
@@ -386,6 +387,85 @@ func TestMarshalKey_ecdsa(t *testing.T) {
 			`}`
 		if want != string(got) {
 			t.Errorf("unexpected JWK: want %q, got %q", want, got)
+		}
+	})
+
+	t.Run("secp256k1 public key using ecdsa package", func(t *testing.T) {
+		x, err := hex.DecodeString("938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		y, err := hex.DecodeString("573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pub := &ecdsa.PublicKey{
+			Curve: secp256k1.Curve(), //nolint:staticcheck // for backward compatibility
+			X:     new(big.Int).SetBytes(x),
+			Y:     new(big.Int).SetBytes(y),
+		}
+
+		// encode JWK
+		key := &Key{
+			kty: jwa.KeyTypeEC,
+			pub: pub,
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
+		}
+	})
+
+	t.Run("secp256k1 private key using ecdsa package", func(t *testing.T) {
+		x, err := hex.DecodeString("938298234af08bcf0c29767a16469aecbeba145cdd2e22323ec09ed2b98aeec2")
+		if err != nil {
+			t.Fatal(err)
+		}
+		y, err := hex.DecodeString("573ad2a075663a1c024a46e8abb1001d4af1f5eba4ed9cba574681dae450c94d")
+		if err != nil {
+			t.Fatal(err)
+		}
+		d, err := hex.DecodeString("d82f6325a22b10777625a9dd7b4404a166dee9773655a4caf996b7137b86f149")
+		if err != nil {
+			t.Fatal(err)
+		}
+		priv := &ecdsa.PrivateKey{
+			PublicKey: ecdsa.PublicKey{
+				Curve: secp256k1.Curve(), //nolint:staticcheck // for backward compatibility
+				X:     new(big.Int).SetBytes(x),
+				Y:     new(big.Int).SetBytes(y),
+			},
+			D: new(big.Int).SetBytes(d),
+		}
+
+		// encode JWK
+		key := &Key{
+			kty:  jwa.KeyTypeEC,
+			priv: priv,
+			pub:  &priv.PublicKey,
+		}
+		got, err := key.MarshalJSON()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// verify
+		want := `{"crv":"secp256k1",` +
+			`"d":"2C9jJaIrEHd2Jande0QEoWbe6Xc2VaTK-Za3E3uG8Uk",` +
+			`"kty":"EC",` +
+			`"x":"k4KYI0rwi88MKXZ6Fkaa7L66FFzdLiIyPsCe0rmK7sI",` +
+			`"y":"VzrSoHVmOhwCSkboq7EAHUrx9euk7Zy6V0aB2uRQyU0"}`
+		if want != string(got) {
+			t.Errorf("unexpected JWK: want %s, got %s", want, got)
 		}
 	})
 

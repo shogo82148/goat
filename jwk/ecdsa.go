@@ -105,9 +105,7 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 		e.Set("crv", jwa.EllipticCurveP521.String())
 		size = 66
 	case secp256k1.Curve(): //nolint:staticcheck // for backward compatibility
-		e.Set("crv", jwa.EllipticCurveSecp256k1.String())
-		// TODO: implement encoding of secp256k1 keys.
-		e.SaveError(errors.New("jwk: not implemented"))
+		encodeEcdsaKeySecp256k1(e, priv, pub)
 		return
 	default:
 		e.SaveError(fmt.Errorf("jwk: unknown crv: %q", pub.Curve.Params().Name))
@@ -143,6 +141,26 @@ func encodeEcdsaKey(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.Pub
 			return
 		}
 		e.SetBytes("d", data)
+	}
+}
+
+func encodeEcdsaKeySecp256k1(e *jsonutils.Encoder, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey) {
+	if pub.Curve != secp256k1.Curve() { //nolint:staticcheck // for backward compatibility
+		panic("jwk: invalid curve for secp256k1 key")
+	}
+
+	// encode the public key.
+	e.Set("crv", jwa.EllipticCurveSecp256k1.String())
+	e.SetFixedBigInt("x", pub.X, 32) //nolint:staticcheck // for backward compatibility
+	e.SetFixedBigInt("y", pub.Y, 32) //nolint:staticcheck // for backward compatibility
+
+	// encode the private key.
+	if priv != nil {
+		if !priv.PublicKey.Equal(pub) {
+			e.SaveError(errInvalidECDSAParameter)
+			return
+		}
+		e.SetFixedBigInt("d", priv.D, 32) //nolint:staticcheck // for backward compatibility
 	}
 }
 
