@@ -161,7 +161,7 @@ func BenchmarkParseKey_ecdsa(b *testing.B) {
 			`"y":"4Etl6SRW2YiLUrN5vfvVHuhp7x8PxltmWWlbbM4IFyM",` +
 			`"use":"enc",` +
 			`"kid":"1"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -176,7 +176,7 @@ func BenchmarkParseKey_ecdsa(b *testing.B) {
 			`"d":"870MB6gfuTJ4HtUnUvYMyJpr5eUZNP4Bk43bVdj3eAE",` +
 			`"use":"enc",` +
 			`"kid":"1"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}

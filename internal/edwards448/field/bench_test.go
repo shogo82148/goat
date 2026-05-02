@@ -6,8 +6,7 @@ func BenchmarkAdd(b *testing.B) {
 	var x, y Element
 	x.One()
 	y.Add(feOne, feOne)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Add(&x, &y)
 	}
 }
@@ -16,8 +15,7 @@ func BenchmarkSub(b *testing.B) {
 	var x, y Element
 	x.One()
 	y.Add(feOne, feOne)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Sub(&x, &y)
 	}
 }
@@ -25,8 +23,7 @@ func BenchmarkSub(b *testing.B) {
 func BenchmarkNegate(b *testing.B) {
 	var x Element
 	x.One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Negate(&x)
 	}
 }
@@ -42,8 +39,7 @@ func BenchmarkSetBytes(b *testing.B) {
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.SetBytes(data)
 	}
 }
@@ -51,8 +47,7 @@ func BenchmarkSetBytes(b *testing.B) {
 func BenchmarkEqual1(b *testing.B) {
 	x := &Element{1, 1, 1, 1, 1, 1, 1, 1}
 	y := &Element{8, 7, 6, 5, 4, 3, 2, 1}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Equal(y)
 	}
 }
@@ -60,8 +55,7 @@ func BenchmarkEqual1(b *testing.B) {
 func BenchmarkEqual2(b *testing.B) {
 	x := &Element{1, 1, 1, 1, 1, 1, 1, 1}
 	y := &Element{1, 1, 1, 1, 1, 1, 1, 1}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Equal(y)
 	}
 }
@@ -69,8 +63,7 @@ func BenchmarkEqual2(b *testing.B) {
 func BenchmarkMul32(b *testing.B) {
 	var x Element
 	x.One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Mul32(&x, 2)
 	}
 }
@@ -79,8 +72,7 @@ func BenchmarkMul(b *testing.B) {
 	var x, y Element
 	x.One()
 	y.Add(feOne, feOne)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Mul(&x, &y)
 	}
 }
@@ -88,8 +80,7 @@ func BenchmarkMul(b *testing.B) {
 func BenchmarkSquare(b *testing.B) {
 	var x Element
 	x.One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Square(&x)
 	}
 }
@@ -97,8 +88,7 @@ func BenchmarkSquare(b *testing.B) {
 func BenchmarkInv(b *testing.B) {
 	var x Element
 	x.One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		x.Inv(&x)
 	}
 }
@@ -108,8 +98,7 @@ func BenchmarkSqrtRatio(b *testing.B) {
 	var v Element
 	u.One()
 	v.One()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		u.SqrtRatio(&u, &v)
 	}
 }

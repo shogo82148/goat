@@ -65,7 +65,7 @@ func BenchmarkParseKey_Ed25519(b *testing.B) {
 		rawKey := []byte(`{"kty":"OKP","crv":"Ed25519",` +
 			`"d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A",` +
 			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}
@@ -75,7 +75,7 @@ func BenchmarkParseKey_Ed25519(b *testing.B) {
 	b.Run("RFC 8037 Appendix A.2. Ed25519 Public Key", func(b *testing.B) {
 		rawKey := []byte(`{"kty":"OKP","crv":"Ed25519",` +
 			`"x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"}`)
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if _, err := ParseKey(rawKey); err != nil {
 				b.Fatal(err)
 			}

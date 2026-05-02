@@ -139,8 +139,7 @@ func BenchmarkVerify(b *testing.B) {
 	r := bigHex("3D2FCB610B176153D7740A300A6DE321D997D867308F6AF594D9B56EDDDBC918")
 	s := bigHex("4EF2905C03EEDA8BC8D5C2464B62AA9C38F7BA0076FFBD25A8F29A4FF410116D")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		if !ecdsa.Verify(pub, sum[:], r, s) {
 			b.Error("verify failed")
 		}
@@ -162,8 +161,7 @@ func BenchmarkSign(b *testing.B) {
 	message := []byte("hello secp256k1")
 	sum := sha256.Sum256(message)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, err := ecdsa.Sign(rand.Reader, priv, sum[:])
 		if err != nil {
 			b.Fatal(err)

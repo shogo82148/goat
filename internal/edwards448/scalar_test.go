@@ -946,8 +946,7 @@ func BenchmarkTestSetUniformBytes(b *testing.B) {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00,
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := s.SetUniformBytes(data)
 		if err != nil {
 			b.Fatal(err)
