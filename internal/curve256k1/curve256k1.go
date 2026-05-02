@@ -183,8 +183,12 @@ func (p *PointJacobian) Equal(v *PointJacobian) int {
 }
 
 func (p *Point) ToBig(x, y *big.Int) (xx, yy *big.Int) {
-	x.SetBytes(p.x.Bytes())
-	y.SetBytes(p.y.Bytes())
+	if x != nil {
+		x.SetBytes(p.x.Bytes())
+	}
+	if y != nil {
+		y.SetBytes(p.y.Bytes())
+	}
 	return x, y
 }
 

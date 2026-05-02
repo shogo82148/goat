@@ -163,7 +163,11 @@ func SignASN1(priv *PrivateKey, hash []byte) ([]byte, error) {
 			k = randFieldElement()
 			kInv = new(big.Int).ModInverse(k, N)
 
-			r, _ = curve.ScalarBaseMult(k.Bytes())
+			var p curve256k1.Point
+			var pj curve256k1.PointJacobian
+			pj.ScalarBaseMult(k.Bytes())
+			p.FromJacobian(&pj)
+			r, _ = p.ToBig(k, nil)
 			r.Mod(r, N)
 			if r.Sign() != 0 {
 				break
@@ -172,7 +176,7 @@ func SignASN1(priv *PrivateKey, hash []byte) ([]byte, error) {
 
 		e := new(big.Int).SetBytes(hash)
 		d := new(big.Int).SetBytes(priv.d[:])
-		s = new(big.Int).Mul(d, r)
+		s = d.Mul(d, r)
 		s.Add(s, e)
 		s.Mul(s, kInv)
 		s.Mod(s, N)
