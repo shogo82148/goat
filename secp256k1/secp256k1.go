@@ -16,7 +16,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/curve256k1"
 )
 
@@ -80,7 +79,7 @@ func (priv *PrivateKey) Equal(x crypto.PrivateKey) bool {
 }
 
 // Public returns the corresponding public key.
-func (key *PrivateKey) Public() goat.PublicKey {
+func (key *PrivateKey) Public() crypto.PublicKey {
 	return key.PublicKey()
 }
 
