@@ -3,7 +3,6 @@
 package x448
 
 import (
-	"bytes"
 	"crypto"
 	cryptorand "crypto/rand"
 	"crypto/subtle"
@@ -45,7 +44,7 @@ func (pub PublicKey) Equal(x crypto.PublicKey) bool {
 	if !ok {
 		return false
 	}
-	return bytes.Equal(pub, xx)
+	return subtle.ConstantTimeCompare(pub, xx) == 1
 }
 
 // PrivateKey is the type of X448 private keys.
