@@ -32,7 +32,7 @@ func (h *x448KeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub
 		var ok bool
 		privX, ok = priv.(x448.PrivateKey)
 		if !ok {
-			return errors.New("jwk: public key type is mismatch for x448")
+			return errors.New("jwk: private key type is mismatch for x448")
 		}
 	}
 	var pubX x448.PublicKey

@@ -33,7 +33,7 @@ func (h *rsaKeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub 
 		var ok bool
 		privRSA, ok = priv.(*rsa.PrivateKey)
 		if !ok {
-			return errors.New("jwk: public key type is mismatch for rsa")
+			return errors.New("jwk: private key type is mismatch for rsa")
 		}
 	}
 	var pubRSA *rsa.PublicKey
