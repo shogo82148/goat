@@ -1,10 +1,11 @@
 package eddsa
 
 import (
-	"crypto"
 	"crypto/ed25519"
 	"crypto/subtle"
 	"testing"
+
+	"github.com/shogo82148/goat"
 )
 
 type rawKey struct {
@@ -12,11 +13,11 @@ type rawKey struct {
 	pub  ed25519.PublicKey
 }
 
-func (k *rawKey) PrivateKey() crypto.PrivateKey {
+func (k *rawKey) PrivateKey() goat.PrivateKey {
 	return k.priv
 }
 
-func (k *rawKey) PublicKey() crypto.PublicKey {
+func (k *rawKey) PublicKey() goat.PublicKey {
 	return k.pub
 }
 

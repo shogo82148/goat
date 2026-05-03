@@ -1,12 +1,12 @@
 package ps
 
 import (
-	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
 	"testing"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -101,11 +101,11 @@ type rawKey struct {
 	pub  *rsa.PublicKey
 }
 
-func (k *rawKey) PrivateKey() crypto.PrivateKey {
+func (k *rawKey) PrivateKey() goat.PrivateKey {
 	return k.priv
 }
 
-func (k *rawKey) PublicKey() crypto.PublicKey {
+func (k *rawKey) PublicKey() goat.PublicKey {
 	return k.pub
 }
 

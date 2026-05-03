@@ -1,11 +1,11 @@
 package ed448
 
 import (
-	"crypto"
 	"crypto/subtle"
 	"fmt"
 	"testing"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/ed448"
 )
 
@@ -14,11 +14,11 @@ type rawKey struct {
 	pub  ed448.PublicKey
 }
 
-func (k *rawKey) PrivateKey() crypto.PrivateKey {
+func (k *rawKey) PrivateKey() goat.PrivateKey {
 	return k.priv
 }
 
-func (k *rawKey) PublicKey() crypto.PublicKey {
+func (k *rawKey) PublicKey() goat.PublicKey {
 	return k.pub
 }
 

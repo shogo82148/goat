@@ -1,9 +1,10 @@
 package pbes2
 
 import (
-	"crypto"
 	"crypto/subtle"
 	"testing"
+
+	"github.com/shogo82148/goat"
 )
 
 type options struct {
@@ -21,11 +22,11 @@ func (opts *options) PBES2Count() int {
 
 type rawKey []byte
 
-func (k rawKey) PrivateKey() crypto.PrivateKey {
+func (k rawKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k rawKey) PublicKey() crypto.PublicKey {
+func (k rawKey) PublicKey() goat.PublicKey {
 	return nil
 }
 

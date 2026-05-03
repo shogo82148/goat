@@ -1,9 +1,10 @@
 package agcmkw
 
 import (
-	"crypto"
 	"crypto/subtle"
 	"testing"
+
+	"github.com/shogo82148/goat"
 )
 
 type options struct {
@@ -29,11 +30,11 @@ func (opts *options) SetAuthenticationTag(tag []byte) {
 
 type bytesKey []byte
 
-func (k bytesKey) PrivateKey() crypto.PrivateKey {
+func (k bytesKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k bytesKey) PublicKey() crypto.PublicKey {
+func (k bytesKey) PublicKey() goat.PublicKey {
 	return nil
 }
 

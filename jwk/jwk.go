@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"reflect"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/ed448"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
@@ -46,8 +47,8 @@ type Key struct {
 	x5c     []*x509.Certificate
 	x5t     []byte
 	x5tS256 []byte
-	priv    crypto.PrivateKey
-	pub     crypto.PublicKey
+	priv    goat.PrivateKey
+	pub     goat.PublicKey
 }
 
 // KeyType returns RFC 7517 Section 4.1. "kty" (Key Type) Parameter.
@@ -378,13 +379,13 @@ func (key *Key) Thumbprint(h hash.Hash) ([]byte, error) {
 
 // PrivateKey returns the private key.
 // If the key doesn't contain any private key, it returns nil.
-func (key *Key) PrivateKey() crypto.PrivateKey {
+func (key *Key) PrivateKey() goat.PrivateKey {
 	return key.priv
 }
 
 // SetPrivateKey sets the private key.
 // If priv has Public() method, it sets the public key as well.
-func (key *Key) SetPrivateKey(priv crypto.PrivateKey) {
+func (key *Key) SetPrivateKey(priv goat.PrivateKey) {
 	key.priv = priv
 	if pub, ok := priv.(interface{ Public() crypto.PublicKey }); ok {
 		key.pub = pub.Public()
@@ -395,12 +396,12 @@ func (key *Key) SetPrivateKey(priv crypto.PrivateKey) {
 
 // PublicKey returns the public key.
 // If the key doesn't contain any public key, it returns nil.
-func (key *Key) PublicKey() crypto.PublicKey {
+func (key *Key) PublicKey() goat.PublicKey {
 	return key.pub
 }
 
 // SetPublicKey sets the public key, and removes the private key.
-func (key *Key) SetPublicKey(pub crypto.PublicKey) {
+func (key *Key) SetPublicKey(pub goat.PublicKey) {
 	key.priv = nil
 	key.pub = pub
 }
@@ -520,7 +521,7 @@ type ecdhPublicKey = ecdh.PublicKey
 // key must be one of [*crypto/ecdsa.PrivateKey], [*crypto/rsa.PrivateKey], [crypto/ed25519.PrivateKey], [*crypto/ecdh.PrivateKey],
 // [x25519.PrivateKey], [ed448.PrivateKey],
 // [x448.PrivateKey], [*secp256k1.PrivateKey] or []byte.
-func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
+func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PrivateKey:
 		switch key.Curve {
@@ -629,7 +630,7 @@ func NewPrivateKey(key crypto.PrivateKey) (*Key, error) {
 //
 // key must be one of [*crypto/ecdsa.PublicKey], [*crypto/rsa.PublicKey], [crypto/ed25519.PublicKey], [*crypto/ecdh.PublicKey],
 // [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey] or [*secp256k1.PublicKey].
-func NewPublicKey(key crypto.PublicKey) (*Key, error) {
+func NewPublicKey(key goat.PublicKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PublicKey:
 		switch key.Curve {
