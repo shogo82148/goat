@@ -322,13 +322,13 @@ func deriveZ(priv, pub any) ([]byte, error) {
 	case x448.PrivateKey:
 		pubkey, ok := pub.(x448.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("ecdhes: want x447.PublicKey but got %T", pub)
+			return nil, fmt.Errorf("ecdhes: want x448.PublicKey but got %T", pub)
 		}
 		return x448.X448(priv[:x448.SeedSize], pubkey)
 	case *ecdsa.PrivateKey:
 		pubkey, ok := pub.(*ecdsa.PublicKey)
 		if !ok {
-			return nil, fmt.Errorf("ecdhes: want *ecdsa.PrivateKey but got %T", pub)
+			return nil, fmt.Errorf("ecdhes: want *ecdsa.PublicKey but got %T", pub)
 		}
 		privECDH, err := priv.ECDH()
 		if err != nil {
