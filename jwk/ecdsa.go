@@ -6,11 +6,256 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+	"reflect"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
+	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/secp256k1"
 )
+
+func init() {
+	ec := &ecdsaKeyHandler{}
+	RegisterKeyType(jwa.KeyTypeEC, jwa.EllipticCurveP256, ec)
+	RegisterKeyType(jwa.KeyTypeEC, jwa.EllipticCurveP384, ec)
+	RegisterKeyType(jwa.KeyTypeEC, jwa.EllipticCurveP521, ec)
+	RegisterPrivKeyType(reflect.TypeOf((*ecdsa.PrivateKey)(nil)), ec)
+	RegisterPubKeyType(reflect.TypeOf((*ecdsa.PublicKey)(nil)), ec)
+
+	sk1 := &secp256k1KeyHandler{}
+	RegisterKeyType(jwa.KeyTypeEC, jwa.EllipticCurveSecp256k1, sk1)
+	RegisterPrivKeyType(reflect.TypeOf((*secp256k1.PrivateKey)(nil)), sk1)
+	RegisterPubKeyType(reflect.TypeOf((*secp256k1.PublicKey)(nil)), sk1)
+
+	ec2 := &ecdhKeyHandler{}
+	RegisterPrivKeyType(reflect.TypeOf((*ecdh.PrivateKey)(nil)), ec2)
+	RegisterPubKeyType(reflect.TypeOf((*ecdh.PublicKey)(nil)), ec2)
+}
+
+// ecdsaKeyHandler handles EC keys with standard P-curves (P-256, P-384, P-521).
+type ecdsaKeyHandler struct{}
+
+func (h *ecdsaKeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	d := jsonutils.NewDecoder("jwk", raw)
+	parseEcdsaKey(d, key)
+	return d.Err()
+}
+
+func (h *ecdsaKeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privECDSA *ecdsa.PrivateKey
+	if priv != nil {
+		var ok bool
+		privECDSA, ok = priv.(*ecdsa.PrivateKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for ecdsa: %T", priv)
+		}
+	}
+	var pubECDSA *ecdsa.PublicKey
+	if pub != nil {
+		var ok bool
+		pubECDSA, ok = pub.(*ecdsa.PublicKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for ecdsa: %T", pub)
+		}
+	} else if privECDSA != nil {
+		pubECDSA = &privECDSA.PublicKey
+	}
+	if pubECDSA == nil {
+		return errors.New("jwk: ECDSA key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeEcdsaKey(e, privECDSA, pubECDSA)
+	return e.Err()
+}
+
+func (h *ecdsaKeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privECDSA, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	switch privECDSA.Curve {
+	case elliptic.P256(), elliptic.P384(), elliptic.P521():
+	default:
+		return nil, fmt.Errorf("jwk: unknown crv: %q", privECDSA.Curve.Params().Name)
+	}
+	if _, err := privECDSA.Bytes(); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty:  jwa.KeyTypeEC,
+		priv: privECDSA,
+		pub:  privECDSA.Public(),
+	}, nil
+}
+
+func (h *ecdsaKeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubECDSA, ok := key.(*ecdsa.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	switch pubECDSA.Curve {
+	case elliptic.P256(), elliptic.P384(), elliptic.P521():
+	default:
+		return nil, fmt.Errorf("jwk: unknown crv: %q", pubECDSA.Curve.Params().Name)
+	}
+	if _, err := pubECDSA.Bytes(); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty: jwa.KeyTypeEC,
+		pub: pubECDSA,
+	}, nil
+}
+
+// secp256k1KeyHandler handles EC keys with the secp256k1 curve.
+type secp256k1KeyHandler struct{}
+
+func (h *secp256k1KeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	d := jsonutils.NewDecoder("jwk", raw)
+	parseSecp256k1Key(d, key)
+	return d.Err()
+}
+
+func (h *secp256k1KeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privSK1 *secp256k1.PrivateKey
+	if priv != nil {
+		var ok bool
+		privSK1, ok = priv.(*secp256k1.PrivateKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for secp256k1: %T", priv)
+		}
+	}
+	var pubSK1 *secp256k1.PublicKey
+	if pub != nil {
+		var ok bool
+		pubSK1, ok = pub.(*secp256k1.PublicKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for secp256k1: %T", pub)
+		}
+	} else if privSK1 != nil {
+		pubSK1 = privSK1.PublicKey()
+	}
+	if pubSK1 == nil {
+		return errors.New("jwk: secp256k1 key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeSecp256k1Key(e, privSK1, pubSK1)
+	return e.Err()
+}
+
+func (h *secp256k1KeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privSK1, ok := key.(*secp256k1.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	return &Key{
+		kty:  jwa.KeyTypeEC,
+		priv: privSK1,
+		pub:  privSK1.Public(),
+	}, nil
+}
+
+func (h *secp256k1KeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubSK1, ok := key.(*secp256k1.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	return &Key{
+		kty: jwa.KeyTypeEC,
+		pub: pubSK1,
+	}, nil
+}
+
+// ecdhKeyHandler handles crypto/ecdh keys on the encode/NewKey path.
+// On the decode path, EC keys are parsed as *ecdsa.PrivateKey and OKP X25519
+// keys are parsed as x25519.PrivateKey; this handler is never used for decoding.
+type ecdhKeyHandler struct{}
+
+func (h *ecdhKeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	return errors.New("jwk: ecdh decode is not supported (use EC or OKP key type)")
+}
+
+func (h *ecdhKeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privECDH *ecdh.PrivateKey
+	if priv != nil {
+		var ok bool
+		privECDH, ok = priv.(*ecdh.PrivateKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for ecdh: %T", priv)
+		}
+	}
+	var pubECDH *ecdh.PublicKey
+	if pub != nil {
+		var ok bool
+		pubECDH, ok = pub.(*ecdh.PublicKey)
+		if !ok {
+			return fmt.Errorf("jwk: public key type is mismatch for ecdh: %T", pub)
+		}
+	} else if privECDH != nil {
+		pubECDH = privECDH.PublicKey()
+	}
+	if pubECDH == nil {
+		return errors.New("jwk: ECDH key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeECDHKey(e, privECDH, pubECDH)
+	return e.Err()
+}
+
+func (h *ecdhKeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privECDH, ok := key.(*ecdh.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	switch privECDH.Curve() {
+	case ecdh.P256(), ecdh.P384(), ecdh.P521():
+		return &Key{
+			kty: jwa.KeyTypeEC,
+			keyOps: []jwktypes.KeyOp{
+				jwktypes.KeyOpDeriveKey,
+				jwktypes.KeyOpDeriveBits,
+			},
+			priv: privECDH,
+			pub:  privECDH.PublicKey(),
+		}, nil
+	case ecdh.X25519():
+		return &Key{
+			kty: jwa.KeyTypeOKP,
+			keyOps: []jwktypes.KeyOp{
+				jwktypes.KeyOpDeriveKey,
+				jwktypes.KeyOpDeriveBits,
+			},
+			priv: privECDH,
+			pub:  privECDH.PublicKey(),
+		}, nil
+	default:
+		return nil, fmt.Errorf("jwk: unknown ecdh curve: %s", privECDH.Curve())
+	}
+}
+
+func (h *ecdhKeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubECDH, ok := key.(*ecdh.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	switch pubECDH.Curve() {
+	case ecdh.P256(), ecdh.P384(), ecdh.P521():
+		return &Key{
+			kty:    jwa.KeyTypeEC,
+			keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
+			pub:    pubECDH,
+		}, nil
+	case ecdh.X25519():
+		return &Key{
+			kty:    jwa.KeyTypeOKP,
+			keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
+			pub:    pubECDH,
+		}, nil
+	default:
+		return nil, fmt.Errorf("jwk: unknown ecdh curve: %s", pubECDH.Curve())
+	}
+}
 
 var errInvalidECDSAParameter = errors.New("jwk: invalid parameter of ecdsa")
 
@@ -29,9 +274,6 @@ func parseEcdsaKey(d *jsonutils.Decoder, key *Key) {
 	case jwa.EllipticCurveP521:
 		curve = elliptic.P521()
 		size = 66
-	case jwa.EllipticCurveSecp256k1:
-		parseSecp256k1Key(d, key)
-		return
 	default:
 		d.SaveError(fmt.Errorf("jwk: unknown crv: %q", crv))
 		return
@@ -249,7 +491,7 @@ func encodeSecp256k1Key(e *jsonutils.Encoder, priv *secp256k1.PrivateKey, pub *s
 	}
 }
 
-func encodeECDHKey(e *jsonutils.Encoder, priv *ecdhPrivateKey, pub *ecdhPublicKey) {
+func encodeECDHKey(e *jsonutils.Encoder, priv *ecdh.PrivateKey, pub *ecdh.PublicKey) {
 	switch pub.Curve() {
 	case ecdh.P256():
 		e.Set("kty", jwa.KeyTypeEC.String())

@@ -4,11 +4,6 @@ package jwk
 import (
 	"bytes"
 	"crypto"
-	"crypto/ecdh"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/elliptic"
-	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -23,13 +18,9 @@ import (
 	"reflect"
 
 	"github.com/shogo82148/goat"
-	"github.com/shogo82148/goat/ed448"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwk/jwktypes"
-	"github.com/shogo82148/goat/secp256k1"
-	"github.com/shogo82148/goat/x25519"
-	"github.com/shogo82148/goat/x448"
 )
 
 // Key is a JSON Web Key.
@@ -274,90 +265,27 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	switch priv := key.priv.(type) {
-	case *ecdsa.PrivateKey:
-		pub, ok := key.pub.(*ecdsa.PublicKey)
+	if key.priv != nil {
+		t := reflect.TypeOf(key.priv)
+		handler, ok := lookupPrivKeyType(t)
 		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for ecdsa: %T", key.pub)
-		}
-		encodeEcdsaKey(e, priv, pub)
-	case *rsa.PrivateKey:
-		pub, ok := key.pub.(*rsa.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for rsa: %T", key.pub)
-		}
-		encodeRSAKey(e, priv, pub)
-	case ed25519.PrivateKey:
-		pub, ok := key.pub.(ed25519.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for ed25519: %T", key.pub)
-		}
-		encodeEd25519Key(e, priv, pub)
-	case *ecdhPrivateKey:
-		pub, ok := key.pub.(*ecdhPublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for ecdh: %T", key.pub)
-		}
-		encodeECDHKey(e, priv, pub)
-	case x25519.PrivateKey:
-		pub, ok := key.pub.(x25519.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for x25519: %T", key.pub)
-		}
-		encodeX25519Key(e, priv, pub)
-	case ed448.PrivateKey:
-		pub, ok := key.pub.(ed448.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for ed448: %T", key.pub)
-		}
-		encodeEd448Key(e, priv, pub)
-	case x448.PrivateKey:
-		pub, ok := key.pub.(x448.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for x448: %T", key.pub)
-		}
-		encodeX448Key(e, priv, pub)
-	case *secp256k1.PrivateKey:
-		pub, ok := key.pub.(*secp256k1.PublicKey)
-		if !ok {
-			return nil, fmt.Errorf("jwk: public key type is mismatch for secp256k1: %T", key.pub)
-		}
-		encodeSecp256k1Key(e, priv, pub)
-	case []byte:
-		if key.pub != nil {
-			return nil, errors.New("jwk: public key is allowed for symmetric keys")
-		}
-		encodeSymmetricKey(e, priv)
-	case nil:
-		// the key has only public key.
-		switch pub := key.pub.(type) {
-		case *ecdsa.PublicKey:
-			encodeEcdsaKey(e, nil, pub)
-		case *rsa.PublicKey:
-			encodeRSAKey(e, nil, pub)
-		case ed25519.PublicKey:
-			encodeEd25519Key(e, nil, pub)
-		case *ecdhPublicKey:
-			encodeECDHKey(e, nil, pub)
-		case x25519.PublicKey:
-			encodeX25519Key(e, nil, pub)
-		case ed448.PublicKey:
-			encodeEd448Key(e, nil, pub)
-		case x448.PublicKey:
-			encodeX448Key(e, nil, pub)
-		case *secp256k1.PublicKey:
-			encodeSecp256k1Key(e, nil, pub)
-		default:
 			return nil, newUnknownKeyTypeError(key)
 		}
-	default:
-		return nil, newUnknownKeyTypeError(key)
+		if err := handler.EncodeKey(raw, key.priv, key.pub); err != nil {
+			return nil, err
+		}
+	} else if key.pub != nil {
+		t := reflect.TypeOf(key.pub)
+		handler, ok := lookupPubKeyType(t)
+		if !ok {
+			return nil, newUnknownKeyTypeError(key)
+		}
+		if err := handler.EncodeKey(raw, nil, key.pub); err != nil {
+			return nil, err
+		}
 	}
 
-	if err := e.Err(); err != nil {
-		return nil, err
-	}
-	return json.Marshal(e.Data())
+	return json.Marshal(raw)
 }
 
 // Thumbprint computes the thumbprint of the key defined in RFC 7638.
@@ -417,19 +345,12 @@ func ParseMap(raw map[string]any) (*Key, error) {
 		return nil, err
 	}
 
-	switch key.kty {
-	case jwa.KeyTypeEC:
-		parseEcdsaKey(d, key)
-	case jwa.KeyTypeRSA:
-		parseRSAKey(d, key)
-	case jwa.KeyTypeOKP:
-		parseOKPKey(d, key)
-	case jwa.KeyTypeOct:
-		parseSymmetricKey(d, key)
-	default:
+	crv, _ := d.GetString("crv")
+	handler, ok := lookupKeyType(key.kty, jwa.EllipticCurve(crv))
+	if !ok {
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.kty)
 	}
-	if err := d.Err(); err != nil {
+	if err := handler.DecodeKey(raw, key); err != nil {
 		return nil, err
 	}
 	return key, nil
@@ -513,204 +434,37 @@ func (err *unknownKeyTypeError) Error() string {
 	return "jwk: unknown private and public key type: " + err.priv.String() + ", " + err.pub.String()
 }
 
-type ecdhPrivateKey = ecdh.PrivateKey
-type ecdhPublicKey = ecdh.PublicKey
-
 // NewPrivateKey returns a new JWK from the private key.
-//
-// key must be one of [*crypto/ecdsa.PrivateKey], [*crypto/rsa.PrivateKey], [crypto/ed25519.PrivateKey], [*crypto/ecdh.PrivateKey],
-// [x25519.PrivateKey], [ed448.PrivateKey],
-// [x448.PrivateKey], [*secp256k1.PrivateKey] or []byte.
+// The key type must be registered via [RegisterPrivKeyType].
+// Built-in supported types are: [*crypto/ecdsa.PrivateKey], [*crypto/rsa.PrivateKey],
+// [crypto/ed25519.PrivateKey], [*crypto/ecdh.PrivateKey],
+// [x25519.PrivateKey], [ed448.PrivateKey], [x448.PrivateKey],
+// [*secp256k1.PrivateKey], and []byte.
 func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
-	switch key := key.(type) {
-	case *ecdsa.PrivateKey:
-		switch key.Curve {
-		case elliptic.P256():
-		case elliptic.P384():
-		case elliptic.P521():
-			// supported curves for EC keys
-		default:
-			return nil, fmt.Errorf("jwk: unknown crv: %q", key.Curve.Params().Name)
-		}
-		if _, err := key.Bytes(); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeEC,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case *rsa.PrivateKey:
-		if err := validateRSAPrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeRSA,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case ed25519.PrivateKey:
-		if err := validateEd25519PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeOKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case *ecdh.PrivateKey:
-		switch key.Curve() {
-		case ecdh.P256(), ecdh.P384(), ecdh.P521():
-			return &Key{
-				kty: jwa.KeyTypeEC,
-				keyOps: []jwktypes.KeyOp{
-					jwktypes.KeyOpDeriveKey,
-					jwktypes.KeyOpDeriveBits,
-				},
-				priv: key,
-				pub:  key.PublicKey(),
-			}, nil
-		case ecdh.X25519():
-			return &Key{
-				kty: jwa.KeyTypeOKP,
-				keyOps: []jwktypes.KeyOp{
-					jwktypes.KeyOpDeriveKey,
-					jwktypes.KeyOpDeriveBits,
-				},
-				priv: key,
-				pub:  key.PublicKey(),
-			}, nil
-		default:
-			return nil, fmt.Errorf("jwk: unknown ecdh curve: %s", key.Curve())
-		}
-	case x25519.PrivateKey:
-		if err := validateX25519PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeOKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case ed448.PrivateKey:
-		if err := validateEd448PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeOKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case x448.PrivateKey:
-		if err := validateX448PrivateKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty:  jwa.KeyTypeOKP,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case *secp256k1.PrivateKey:
-		return &Key{
-			kty:  jwa.KeyTypeEC,
-			priv: key,
-			pub:  key.Public(),
-		}, nil
-	case []byte:
-		return &Key{
-			kty:  jwa.KeyTypeOct,
-			priv: append([]byte(nil), key...),
-		}, nil
-	default:
+	t := reflect.TypeOf(key)
+	if t == nil {
 		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
 	}
+	handler, ok := lookupPrivKeyType(t)
+	if !ok {
+		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
+	}
+	return handler.NewPrivateKey(key)
 }
 
 // NewPublicKey returns a new JWK from the public key.
-//
-// key must be one of [*crypto/ecdsa.PublicKey], [*crypto/rsa.PublicKey], [crypto/ed25519.PublicKey], [*crypto/ecdh.PublicKey],
-// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey] or [*secp256k1.PublicKey].
+// The key type must be registered via [RegisterPubKeyType].
+// Built-in supported types are: [*crypto/ecdsa.PublicKey], [*crypto/rsa.PublicKey],
+// [crypto/ed25519.PublicKey], [*crypto/ecdh.PublicKey],
+// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey], and [*secp256k1.PublicKey].
 func NewPublicKey(key goat.PublicKey) (*Key, error) {
-	switch key := key.(type) {
-	case *ecdsa.PublicKey:
-		switch key.Curve {
-		case elliptic.P256():
-		case elliptic.P384():
-		case elliptic.P521():
-			// supported curves for EC keys
-		default:
-			return nil, fmt.Errorf("jwk: unknown crv: %q", key.Curve.Params().Name)
-		}
-		if _, err := key.Bytes(); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeEC,
-			pub: key,
-		}, nil
-	case *rsa.PublicKey:
-		if err := validateRSAPublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeRSA,
-			pub: key,
-		}, nil
-	case ed25519.PublicKey:
-		if err := validateEd25519PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeOKP,
-			pub: key,
-		}, nil
-	case *ecdh.PublicKey:
-		switch key.Curve() {
-		case ecdh.P256(), ecdh.P384(), ecdh.P521():
-			return &Key{
-				kty:    jwa.KeyTypeEC,
-				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
-				pub:    key,
-			}, nil
-		case ecdh.X25519():
-			return &Key{
-				kty:    jwa.KeyTypeOKP,
-				keyOps: []jwktypes.KeyOp{jwktypes.KeyOpDeriveBits},
-				pub:    key,
-			}, nil
-		default:
-			return nil, fmt.Errorf("jwk: unknown ecdh curve: %s", key.Curve())
-		}
-	case x25519.PublicKey:
-		if err := validateX25519PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeOKP,
-			pub: key,
-		}, nil
-	case ed448.PublicKey:
-		if err := validateEd448PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeOKP,
-			pub: key,
-		}, nil
-	case x448.PublicKey:
-		if err := validateX448PublicKey(key); err != nil {
-			return nil, err
-		}
-		return &Key{
-			kty: jwa.KeyTypeOKP,
-			pub: key,
-		}, nil
-	case *secp256k1.PublicKey:
-		return &Key{
-			kty: jwa.KeyTypeEC,
-			pub: key,
-		}, nil
-	default:
+	t := reflect.TypeOf(key)
+	if t == nil {
 		return nil, fmt.Errorf("jwk: unknown public key type: %T", key)
 	}
+	handler, ok := lookupPubKeyType(t)
+	if !ok {
+		return nil, fmt.Errorf("jwk: unknown public key type: %T", key)
+	}
+	return handler.NewPublicKey(key)
 }

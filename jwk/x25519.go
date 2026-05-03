@@ -3,11 +3,84 @@ package jwk
 import (
 	"bytes"
 	"errors"
+	"reflect"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/x25519"
 )
+
+func init() {
+	h := &x25519KeyHandler{}
+	RegisterKeyType(jwa.KeyTypeOKP, jwa.EllipticCurveX25519, h)
+	RegisterPrivKeyType(reflect.TypeOf(x25519.PrivateKey(nil)), h)
+	RegisterPubKeyType(reflect.TypeOf(x25519.PublicKey(nil)), h)
+}
+
+type x25519KeyHandler struct{}
+
+func (h *x25519KeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	d := jsonutils.NewDecoder("jwk", raw)
+	parseX25519Key(d, key)
+	return d.Err()
+}
+
+func (h *x25519KeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privX x25519.PrivateKey
+	if priv != nil {
+		var ok bool
+		privX, ok = priv.(x25519.PrivateKey)
+		if !ok {
+			return errors.New("jwk: public key type is mismatch for x25519")
+		}
+	}
+	var pubX x25519.PublicKey
+	if pub != nil {
+		var ok bool
+		pubX, ok = pub.(x25519.PublicKey)
+		if !ok {
+			return errors.New("jwk: public key type is mismatch for x25519")
+		}
+	} else if privX != nil {
+		pubX = privX.Public().(x25519.PublicKey)
+	}
+	if pubX == nil {
+		return errors.New("jwk: x25519 key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeX25519Key(e, privX, pubX)
+	return e.Err()
+}
+
+func (h *x25519KeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privX, ok := key.(x25519.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateX25519PrivateKey(privX); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty:  jwa.KeyTypeOKP,
+		priv: privX,
+		pub:  privX.Public(),
+	}, nil
+}
+
+func (h *x25519KeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubX, ok := key.(x25519.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateX25519PublicKey(pubX); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty: jwa.KeyTypeOKP,
+		pub: pubX,
+	}, nil
+}
 
 func parseX25519Key(d *jsonutils.Decoder, key *Key) {
 	x := d.MustBytes("x")
