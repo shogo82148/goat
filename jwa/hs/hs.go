@@ -38,7 +38,7 @@ func New384() sig.Algorithm {
 }
 
 var hs512 = &algorithm{
-	alg:  jwa.SignatureAlgorithmHS256,
+	alg:  jwa.SignatureAlgorithmHS512,
 	hash: crypto.SHA512,
 }
 
@@ -77,7 +77,7 @@ func New384Weak() sig.Algorithm {
 }
 
 var hs512w = &algorithm{
-	alg:  jwa.SignatureAlgorithmHS256,
+	alg:  jwa.SignatureAlgorithmHS512,
 	hash: crypto.SHA512,
 	weak: true,
 }
