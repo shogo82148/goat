@@ -8,7 +8,7 @@ import (
 	"github.com/shogo82148/goat/keymanage"
 )
 
-var alg = &Algorithm{}
+var alg = &algorithm{}
 
 func New() keymanage.Algorithm {
 	return alg
@@ -18,12 +18,12 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmDirect, New)
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct{}
+type algorithm struct{}
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	cek, ok := privateKey.([]byte)
 	if !ok {
