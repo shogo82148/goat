@@ -3,7 +3,6 @@
 package x25519
 
 import (
-	"bytes"
 	"crypto"
 	"crypto/ecdh"
 	cryptorand "crypto/rand"
@@ -34,7 +33,7 @@ func (pub PublicKey) Equal(x crypto.PublicKey) bool {
 	if !ok {
 		return false
 	}
-	return bytes.Equal(pub, xx)
+	return subtle.ConstantTimeCompare(pub, xx) == 1
 }
 
 // PrivateKey is the type of X25519 private keys.
