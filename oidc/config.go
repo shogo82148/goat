@@ -94,7 +94,7 @@ func (c *Client) getConfig(ctx context.Context, configURL string) (*Config, time
 	}
 
 	// parse the response body
-	buf, err := io.ReadAll(resp.Body)
+	buf, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // limit to 1MB
 	if err != nil {
 		return nil, time.Time{}, err
 	}
