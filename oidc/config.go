@@ -94,7 +94,7 @@ func (c *Client) getConfig(ctx context.Context, configURL string) (*Config, time
 	}
 
 	// parse the response body
-	buf, err := io.ReadAll(resp.Body)
+	buf, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // limit to 1MB
 	if err != nil {
 		return nil, time.Time{}, err
 	}
@@ -102,5 +102,11 @@ func (c *Client) getConfig(ctx context.Context, configURL string) (*Config, time
 	if err := json.Unmarshal(buf, &config); err != nil {
 		return nil, time.Time{}, err
 	}
+
+	// validate
+	if config.Issuer != c.issuer {
+		return nil, time.Time{}, fmt.Errorf("oidc: issuer mismatch: expected %q, got %q", c.issuer, config.Issuer)
+	}
+
 	return &config, expiresAt, nil
 }
