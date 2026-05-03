@@ -2,14 +2,15 @@ package none
 
 import (
 	"bytes"
-	"crypto"
 	"testing"
+
+	"github.com/shogo82148/goat"
 )
 
 type dummyKey struct{}
 
-func (k *dummyKey) PrivateKey() crypto.PrivateKey { return nil }
-func (k *dummyKey) PublicKey() crypto.PublicKey   { return nil }
+func (k *dummyKey) PrivateKey() goat.PrivateKey { return nil }
+func (k *dummyKey) PublicKey() goat.PublicKey   { return nil }
 
 func TestSign(t *testing.T) {
 	alg := New()

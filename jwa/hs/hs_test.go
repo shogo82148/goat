@@ -1,7 +1,6 @@
 package hs
 
 import (
-	"crypto"
 	"crypto/hmac"
 	"crypto/rand"
 	_ "crypto/sha256"
@@ -10,6 +9,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/sig"
 )
 
@@ -323,11 +323,11 @@ var tests = []struct {
 
 type rawKey []byte
 
-func (k rawKey) PrivateKey() crypto.PrivateKey {
+func (k rawKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k rawKey) PublicKey() crypto.PublicKey {
+func (k rawKey) PublicKey() goat.PublicKey {
 	return nil
 }
 

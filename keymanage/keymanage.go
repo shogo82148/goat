@@ -1,12 +1,14 @@
 // Package keymanage defines the interface of Key Management Algorithms.
 package keymanage
 
-import "crypto"
+import (
+	"github.com/shogo82148/goat"
+)
 
 // Key is a key for wrapping or unwrapping Content Encryption Key (CEK).
 type Key interface {
-	PrivateKey() crypto.PrivateKey
-	PublicKey() crypto.PublicKey
+	PrivateKey() goat.PrivateKey
+	PublicKey() goat.PublicKey
 }
 
 // Algorithm is an algorithm for wrapping or unwrapping Content Encryption Key (CEK).

@@ -12,6 +12,7 @@ import (
 	"hash"
 	"io"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwa/dir"
@@ -103,11 +104,11 @@ func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 
 type bytesKey []byte
 
-func (k bytesKey) PrivateKey() crypto.PrivateKey {
+func (k bytesKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k bytesKey) PublicKey() crypto.PublicKey {
+func (k bytesKey) PublicKey() goat.PublicKey {
 	return nil
 }
 
