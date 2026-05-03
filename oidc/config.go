@@ -102,5 +102,11 @@ func (c *Client) getConfig(ctx context.Context, configURL string) (*Config, time
 	if err := json.Unmarshal(buf, &config); err != nil {
 		return nil, time.Time{}, err
 	}
+
+	// validate
+	if config.Issuer != c.issuer {
+		return nil, time.Time{}, fmt.Errorf("oidc: issuer mismatch: expected %q, got %q", c.issuer, config.Issuer)
+	}
+
 	return &config, expiresAt, nil
 }
