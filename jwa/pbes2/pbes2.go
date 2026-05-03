@@ -137,13 +137,14 @@ func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 		p2c = 10000
 		setter.SetPBES2Count(p2c)
 	}
-	if p2c > maxPBES2Count {
-		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
-	}
 	return w.wrapKey(p2s, p2c, cek, opts)
 }
 
 func (w *keyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []byte, err error) {
+	if p2c > maxPBES2Count {
+		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
+	}
+
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
@@ -177,6 +178,10 @@ func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 }
 
 func (w *keyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]byte, error) {
+	if p2c > maxPBES2Count {
+		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
+	}
+
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
