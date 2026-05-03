@@ -2,13 +2,13 @@ package cose
 
 import (
 	"bytes"
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"errors"
 	"fmt"
 
 	"github.com/shogo82148/go-cbor"
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/cborutils"
 )
 
@@ -126,8 +126,8 @@ type Key struct {
 	kty KeyType
 	kid []byte
 
-	priv crypto.PrivateKey
-	pub  crypto.PublicKey
+	priv goat.PrivateKey
+	pub  goat.PublicKey
 }
 
 // KeyType returns the key type of the key.
@@ -141,12 +141,12 @@ func (key *Key) KeyID() []byte {
 }
 
 // PrivateKey returns the private key of the key.
-func (key *Key) PrivateKey() crypto.PrivateKey {
+func (key *Key) PrivateKey() goat.PrivateKey {
 	return key.priv
 }
 
 // PublicKey returns the public key of the key.
-func (key *Key) PublicKey() crypto.PublicKey {
+func (key *Key) PublicKey() goat.PublicKey {
 	return key.pub
 }
 

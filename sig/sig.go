@@ -2,14 +2,15 @@
 package sig
 
 import (
-	"crypto"
 	"errors"
 	"reflect"
+
+	"github.com/shogo82148/goat"
 )
 
 type Key interface {
-	PrivateKey() crypto.PrivateKey
-	PublicKey() crypto.PublicKey
+	PrivateKey() goat.PrivateKey
+	PublicKey() goat.PublicKey
 }
 
 // Algorithm is an algorithm for signing.

@@ -1,13 +1,13 @@
 package es
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
 	"testing"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/secp256k1"
 	"github.com/shogo82148/goat/sig"
 )
@@ -82,11 +82,11 @@ type rawKey struct {
 	pub  *ecdsa.PublicKey
 }
 
-func (k *rawKey) PrivateKey() crypto.PrivateKey {
+func (k *rawKey) PrivateKey() goat.PrivateKey {
 	return k.priv
 }
 
-func (k *rawKey) PublicKey() crypto.PublicKey {
+func (k *rawKey) PublicKey() goat.PublicKey {
 	return k.pub
 }
 
@@ -137,11 +137,11 @@ type rawSecp256k1Key struct {
 	pub  *secp256k1.PublicKey
 }
 
-func (k *rawSecp256k1Key) PrivateKey() crypto.PrivateKey {
+func (k *rawSecp256k1Key) PrivateKey() goat.PrivateKey {
 	return k.priv
 }
 
-func (k *rawSecp256k1Key) PublicKey() crypto.PublicKey {
+func (k *rawSecp256k1Key) PublicKey() goat.PublicKey {
 	return k.pub
 }
 

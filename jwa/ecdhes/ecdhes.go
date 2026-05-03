@@ -4,21 +4,26 @@ package ecdhes
 
 import (
 	"crypto"
+	"crypto/ecdh"
+	"crypto/ecdsa"
 	"crypto/rand"
 	_ "crypto/sha256" // for crypto.SHA256
 	"fmt"
 	"hash"
 	"io"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/jwa"
 	"github.com/shogo82148/goat/jwa/akw"
 	"github.com/shogo82148/goat/jwa/dir"
 	"github.com/shogo82148/goat/jwk"
 	"github.com/shogo82148/goat/jwk/jwktypes"
 	"github.com/shogo82148/goat/keymanage"
+	"github.com/shogo82148/goat/x25519"
+	"github.com/shogo82148/goat/x448"
 )
 
-var alg = &Algorithm{
+var alg = &algorithm{
 	alg: dir.New(),
 }
 
@@ -28,7 +33,7 @@ func New() keymanage.Algorithm {
 	return alg
 }
 
-var a128kw = &Algorithm{
+var a128kw = &algorithm{
 	size: 16,
 	alg:  akw.New128(),
 }
@@ -38,7 +43,7 @@ func NewA128KW() keymanage.Algorithm {
 	return a128kw
 }
 
-var a192kw = &Algorithm{
+var a192kw = &algorithm{
 	size: 24,
 	alg:  akw.New192(),
 }
@@ -48,7 +53,7 @@ func NewA192KW() keymanage.Algorithm {
 	return a192kw
 }
 
-var a256kw = &Algorithm{
+var a256kw = &algorithm{
 	size: 32,
 	alg:  akw.New256(),
 }
@@ -65,9 +70,9 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmECDH_ES_A256KW, NewA256KW)
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	size int
 	alg  keymanage.Algorithm
 }
@@ -89,8 +94,8 @@ type agreementPartyVInfoGetter interface {
 }
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
-	return &KeyWrapper{
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+	return &keyWrapper{
 		priv:      key.PrivateKey(),
 		alg:       alg,
 		canDerive: jwktypes.CanUseFor(key, jwktypes.KeyOpDeriveKey),
@@ -99,27 +104,27 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 
 type bytesKey []byte
 
-func (k bytesKey) PrivateKey() crypto.PrivateKey {
+func (k bytesKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k bytesKey) PublicKey() crypto.PublicKey {
+func (k bytesKey) PublicKey() goat.PublicKey {
 	return nil
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 
-type KeyWrapper struct {
+type keyWrapper struct {
 	priv      any
-	alg       *Algorithm
+	alg       *algorithm
 	canDerive bool
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
 		return nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
 	}
@@ -147,7 +152,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return w.alg.alg.NewKeyWrapper(bytesKey(key)).UnwrapKey(data, opts)
 }
 
-func (w *KeyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
+func (w *keyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
 	if !w.canDerive {
 		return nil, nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
 	}
@@ -297,4 +302,51 @@ func (r *kdf) putUint32(v uint32) {
 	buf[2] = byte(v >> 8)
 	buf[3] = byte(v)
 	r.hash.Write(buf)
+}
+
+func deriveZ(priv, pub any) ([]byte, error) {
+	switch priv := priv.(type) {
+	case x25519.PrivateKey:
+		pubkey, ok := pub.(x25519.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want x25519.PublicKey but got %T", pub)
+		}
+		privECDH, err := priv.ECDH()
+		if err != nil {
+			return nil, err
+		}
+		pubECDH, err := pubkey.ECDH()
+		if err != nil {
+			return nil, err
+		}
+		return privECDH.ECDH(pubECDH)
+	case x448.PrivateKey:
+		pubkey, ok := pub.(x448.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want x448.PublicKey but got %T", pub)
+		}
+		return x448.X448(priv[:x448.SeedSize], pubkey)
+	case *ecdsa.PrivateKey:
+		pubkey, ok := pub.(*ecdsa.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want *ecdsa.PublicKey but got %T", pub)
+		}
+		privECDH, err := priv.ECDH()
+		if err != nil {
+			return nil, err
+		}
+		pubECDH, err := pubkey.ECDH()
+		if err != nil {
+			return nil, err
+		}
+		return privECDH.ECDH(pubECDH)
+	case *ecdh.PrivateKey:
+		pubkey, ok := pub.(*ecdh.PublicKey)
+		if !ok {
+			return nil, fmt.Errorf("ecdhes: want *ecdh.PublicKey but got %T", pub)
+		}
+		return priv.ECDH(pubkey)
+	default:
+		return nil, fmt.Errorf("ecdhes: unknown private key type: %T", priv)
+	}
 }

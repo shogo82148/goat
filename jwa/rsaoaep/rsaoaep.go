@@ -12,7 +12,7 @@ import (
 	"github.com/shogo82148/goat/keymanage"
 )
 
-var alg = &Algorithm{
+var alg = &algorithm{
 	hash: crypto.SHA1,
 }
 
@@ -21,7 +21,7 @@ func New() keymanage.Algorithm {
 	return alg
 }
 
-var alg256 = &Algorithm{
+var alg256 = &algorithm{
 	hash: crypto.SHA256,
 }
 
@@ -35,13 +35,13 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA_OAEP_256, New256)
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct {
+type algorithm struct {
 	hash crypto.Hash
 }
 
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	priv, ok := privateKey.(*rsa.PrivateKey)
 	if !ok && privateKey != nil {
@@ -54,7 +54,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	}
 
 	if priv != nil {
-		return &KeyWrapper{
+		return &keyWrapper{
 			alg:       alg,
 			priv:      priv,
 			pub:       &priv.PublicKey,
@@ -63,7 +63,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 		}
 	}
 
-	return &KeyWrapper{
+	return &keyWrapper{
 		alg:       alg,
 		pub:       pub,
 		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
@@ -71,18 +71,18 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	}
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 var label = []byte{}
 
-type KeyWrapper struct {
-	alg       *Algorithm
+type keyWrapper struct {
+	alg       *algorithm
 	priv      *rsa.PrivateKey
 	pub       *rsa.PublicKey
 	canWrap   bool
 	canUnwrap bool
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canWrap {
 		return nil, fmt.Errorf("rsaoaep: key wrapping operation is not allowed")
 	}
@@ -90,7 +90,7 @@ func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return rsa.EncryptOAEP(hash, rand.Reader, w.pub, cek, label)
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canUnwrap {
 		return nil, fmt.Errorf("rsaoaep: key unwrapping operation is not allowed")
 	}

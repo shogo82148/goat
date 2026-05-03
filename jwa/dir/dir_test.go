@@ -1,17 +1,18 @@
 package dir
 
 import (
-	"crypto"
 	"testing"
+
+	"github.com/shogo82148/goat"
 )
 
 type rawKey []byte
 
-func (k rawKey) PrivateKey() crypto.PrivateKey {
+func (k rawKey) PrivateKey() goat.PrivateKey {
 	return []byte(k)
 }
 
-func (k rawKey) PublicKey() crypto.PublicKey {
+func (k rawKey) PublicKey() goat.PublicKey {
 	return nil
 }
 
