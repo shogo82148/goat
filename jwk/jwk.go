@@ -643,7 +643,7 @@ func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
 		}, nil
 	case *mlkem.DecapsulationKey768:
 		return &Key{
-			alg:  jwa.KeyManagementAlgorithmMLKEM1024.KeyAlgorithm(),
+			alg:  jwa.KeyManagementAlgorithmMLKEM768.KeyAlgorithm(),
 			kty:  jwa.KeyTypeAKP,
 			priv: key,
 			pub:  key.EncapsulationKey(),
@@ -747,7 +747,7 @@ func NewPublicKey(key goat.PublicKey) (*Key, error) {
 		}, nil
 	case *mlkem.EncapsulationKey768:
 		return &Key{
-			alg: jwa.KeyManagementAlgorithmMLKEM1024.KeyAlgorithm(),
+			alg: jwa.KeyManagementAlgorithmMLKEM768.KeyAlgorithm(),
 			kty: jwa.KeyTypeAKP,
 			pub: key,
 		}, nil
