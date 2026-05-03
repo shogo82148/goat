@@ -13,7 +13,7 @@ import (
 	"github.com/shogo82148/goat/keymanage"
 )
 
-var alg = &Algorithm{}
+var alg = &algorithm{}
 
 func New() keymanage.Algorithm {
 	return alg
@@ -23,12 +23,12 @@ func init() {
 	jwa.RegisterKeyManagementAlgorithm(jwa.KeyManagementAlgorithmRSA1_5, New) //nolint:staticcheck // RSA1_5 is deprecated, but it is still supported for backward compatibility.
 }
 
-var _ keymanage.Algorithm = (*Algorithm)(nil)
+var _ keymanage.Algorithm = (*algorithm)(nil)
 
-type Algorithm struct{}
+type algorithm struct{}
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
-func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
+func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	privateKey := key.PrivateKey()
 	priv, ok := privateKey.(*rsa.PrivateKey)
 	if !ok && privateKey != nil {
@@ -42,7 +42,7 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 	}
 
 	if priv != nil {
-		return &KeyWrapper{
+		return &keyWrapper{
 			priv:      priv,
 			pub:       &priv.PublicKey,
 			canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
@@ -50,30 +50,30 @@ func (alg *Algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
 		}
 	}
 
-	return &KeyWrapper{
+	return &keyWrapper{
 		pub:       pub,
 		canWrap:   jwktypes.CanUseFor(key, jwktypes.KeyOpWrapKey),
 		canUnwrap: false,
 	}
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 
-type KeyWrapper struct {
+type keyWrapper struct {
 	priv      *rsa.PrivateKey
 	pub       *rsa.PublicKey
 	canWrap   bool
 	canUnwrap bool
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canWrap {
 		return nil, fmt.Errorf("rsapkcs1v15: key wrapping operation is not allowed")
 	}
 	return rsa.EncryptPKCS1v15(rand.Reader, w.pub, cek) //nolint:staticcheck // RSAES-PKCS1-v1_5 is not recommended, but it is still supported for backward compatibility.
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canUnwrap {
 		return nil, fmt.Errorf("rsapkcs1v15: key unwrapping operation is not allowed")
 	}
