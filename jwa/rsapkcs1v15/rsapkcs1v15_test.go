@@ -43,7 +43,7 @@ func TestUnwrap(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	alg := &Algorithm{}
+	alg := &algorithm{}
 	wrapper := alg.NewKeyWrapper(key)
 	encryptedKey := []byte{
 		80, 104, 72, 58, 11, 130, 236, 139, 132, 189, 255, 205, 61, 86, 151,
