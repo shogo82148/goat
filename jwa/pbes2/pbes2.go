@@ -99,9 +99,11 @@ type pbes2CountGetter interface {
 	PBES2Count() int
 }
 
-type PBES2CountSetter interface {
+type pbes2CountSetter interface {
 	SetPBES2Count(p2c int)
 }
+
+const maxPBES2Count = 1_000_000
 
 func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
@@ -128,12 +130,15 @@ func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 		p2c = getter.PBES2Count()
 	}
 	if p2c == 0 {
-		setter, ok := opts.(PBES2CountSetter)
+		setter, ok := opts.(pbes2CountSetter)
 		if !ok {
 			return nil, errors.New("pbse2: neither PBES2Count nor SetPBES2Count found")
 		}
 		p2c = 10000
 		setter.SetPBES2Count(p2c)
+	}
+	if p2c > maxPBES2Count {
+		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
 	}
 	return w.wrapKey(p2s, p2c, cek, opts)
 }
