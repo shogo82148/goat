@@ -99,9 +99,11 @@ type pbes2CountGetter interface {
 	PBES2Count() int
 }
 
-type PBES2CountSetter interface {
+type pbes2CountSetter interface {
 	SetPBES2Count(p2c int)
 }
+
+const maxPBES2Count = 1_000_000
 
 func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
@@ -128,7 +130,7 @@ func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 		p2c = getter.PBES2Count()
 	}
 	if p2c == 0 {
-		setter, ok := opts.(PBES2CountSetter)
+		setter, ok := opts.(pbes2CountSetter)
 		if !ok {
 			return nil, errors.New("pbse2: neither PBES2Count nor SetPBES2Count found")
 		}
@@ -139,6 +141,10 @@ func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 }
 
 func (w *keyWrapper) wrapKey(p2s []byte, p2c int, cek []byte, opts any) (data []byte, err error) {
+	if p2c > maxPBES2Count {
+		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
+	}
+
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
@@ -172,6 +178,10 @@ func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 }
 
 func (w *keyWrapper) unwrapKey(p2s []byte, p2c int, data []byte, opts any) ([]byte, error) {
+	if p2c > maxPBES2Count {
+		return nil, fmt.Errorf("pbse2: PBES2Count is too large: %d", p2c)
+	}
+
 	name := w.alg.name
 	salt := make([]byte, 0, len(name)+len(p2s)+1)
 	salt = append(salt, []byte(name)...)
