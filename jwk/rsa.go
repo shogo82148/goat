@@ -5,10 +5,83 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"reflect"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 )
+
+func init() {
+	h := &rsaKeyHandler{}
+	RegisterKeyType(jwa.KeyTypeRSA, "", h)
+	RegisterPrivKeyType(reflect.TypeOf((*rsa.PrivateKey)(nil)), h)
+	RegisterPubKeyType(reflect.TypeOf((*rsa.PublicKey)(nil)), h)
+}
+
+type rsaKeyHandler struct{}
+
+func (h *rsaKeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	d := jsonutils.NewDecoder("jwk", raw)
+	parseRSAKey(d, key)
+	return d.Err()
+}
+
+func (h *rsaKeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privRSA *rsa.PrivateKey
+	if priv != nil {
+		var ok bool
+		privRSA, ok = priv.(*rsa.PrivateKey)
+		if !ok {
+			return errors.New("jwk: private key type is mismatch for rsa")
+		}
+	}
+	var pubRSA *rsa.PublicKey
+	if pub != nil {
+		var ok bool
+		pubRSA, ok = pub.(*rsa.PublicKey)
+		if !ok {
+			return errors.New("jwk: public key type is mismatch for rsa")
+		}
+	} else if privRSA != nil {
+		pubRSA = &privRSA.PublicKey
+	}
+	if pubRSA == nil {
+		return errors.New("jwk: RSA key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeRSAKey(e, privRSA, pubRSA)
+	return e.Err()
+}
+
+func (h *rsaKeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privRSA, ok := key.(*rsa.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateRSAPrivateKey(privRSA); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty:  jwa.KeyTypeRSA,
+		priv: privRSA,
+		pub:  privRSA.Public(),
+	}, nil
+}
+
+func (h *rsaKeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubRSA, ok := key.(*rsa.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateRSAPublicKey(pubRSA); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty: jwa.KeyTypeRSA,
+		pub: pubRSA,
+	}, nil
+}
 
 func parseRSAKey(d *jsonutils.Decoder, key *Key) {
 	var privateKey rsa.PrivateKey

@@ -4,10 +4,83 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"errors"
+	"reflect"
 
+	"github.com/shogo82148/goat"
 	"github.com/shogo82148/goat/internal/jsonutils"
 	"github.com/shogo82148/goat/jwa"
 )
+
+func init() {
+	h := &ed25519KeyHandler{}
+	RegisterKeyType(jwa.KeyTypeOKP, jwa.EllipticCurveEd25519, h)
+	RegisterPrivKeyType(reflect.TypeOf(ed25519.PrivateKey(nil)), h)
+	RegisterPubKeyType(reflect.TypeOf(ed25519.PublicKey(nil)), h)
+}
+
+type ed25519KeyHandler struct{}
+
+func (h *ed25519KeyHandler) DecodeKey(raw map[string]any, key *Key) error {
+	d := jsonutils.NewDecoder("jwk", raw)
+	parseEd25519Key(d, key)
+	return d.Err()
+}
+
+func (h *ed25519KeyHandler) EncodeKey(raw map[string]any, priv goat.PrivateKey, pub goat.PublicKey) error {
+	var privED ed25519.PrivateKey
+	if priv != nil {
+		var ok bool
+		privED, ok = priv.(ed25519.PrivateKey)
+		if !ok {
+			return errors.New("jwk: private key type is mismatch for ed25519")
+		}
+	}
+	var pubED ed25519.PublicKey
+	if pub != nil {
+		var ok bool
+		pubED, ok = pub.(ed25519.PublicKey)
+		if !ok {
+			return errors.New("jwk: public key type is mismatch for ed25519")
+		}
+	} else if privED != nil {
+		pubED = privED.Public().(ed25519.PublicKey)
+	}
+	if pubED == nil {
+		return errors.New("jwk: ed25519 key has no public key")
+	}
+	e := jsonutils.NewEncoder(raw)
+	encodeEd25519Key(e, privED, pubED)
+	return e.Err()
+}
+
+func (h *ed25519KeyHandler) NewPrivateKey(key goat.PrivateKey) (*Key, error) {
+	privED, ok := key.(ed25519.PrivateKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateEd25519PrivateKey(privED); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty:  jwa.KeyTypeOKP,
+		priv: privED,
+		pub:  privED.Public(),
+	}, nil
+}
+
+func (h *ed25519KeyHandler) NewPublicKey(key goat.PublicKey) (*Key, error) {
+	pubED, ok := key.(ed25519.PublicKey)
+	if !ok {
+		return nil, nil
+	}
+	if err := validateEd25519PublicKey(pubED); err != nil {
+		return nil, err
+	}
+	return &Key{
+		kty: jwa.KeyTypeOKP,
+		pub: pubED,
+	}, nil
+}
 
 func parseEd25519Key(d *jsonutils.Decoder, key *Key) {
 	x := d.MustBytes("x")
