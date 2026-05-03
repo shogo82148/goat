@@ -94,7 +94,7 @@ type agreementPartyVInfoGetter interface {
 
 // NewKeyWrapper implements [github.com/shogo82148/goat/keymanage.Algorithm].
 func (alg *algorithm) NewKeyWrapper(key keymanage.Key) keymanage.KeyWrapper {
-	return &KeyWrapper{
+	return &keyWrapper{
 		priv:      key.PrivateKey(),
 		alg:       alg,
 		canDerive: jwktypes.CanUseFor(key, jwktypes.KeyOpDeriveKey),
@@ -111,19 +111,19 @@ func (k bytesKey) PublicKey() crypto.PublicKey {
 	return nil
 }
 
-var _ keymanage.KeyWrapper = (*KeyWrapper)(nil)
+var _ keymanage.KeyWrapper = (*keyWrapper)(nil)
 
-type KeyWrapper struct {
+type keyWrapper struct {
 	priv      any
 	alg       *algorithm
 	canDerive bool
 }
 
-func (w *KeyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) WrapKey(cek []byte, opts any) ([]byte, error) {
 	return []byte{}, nil
 }
 
-func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
+func (w *keyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	if !w.canDerive {
 		return nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
 	}
@@ -151,7 +151,7 @@ func (w *KeyWrapper) UnwrapKey(data []byte, opts any) ([]byte, error) {
 	return w.alg.alg.NewKeyWrapper(bytesKey(key)).UnwrapKey(data, opts)
 }
 
-func (w *KeyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
+func (w *keyWrapper) DeriveKey(opts any) (cek, encryptedCEK []byte, err error) {
 	if !w.canDerive {
 		return nil, nil, fmt.Errorf("ecdhes: key derive operation is not allowed")
 	}
