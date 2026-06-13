@@ -441,6 +441,22 @@ const (
 	// KeyManagementAlgorithmPBES2_HS512_A256KW is PBES2 with HMAC SHA-512 and "A256KW" wrapping.
 	// import github.com/shogo82148/goat/jwa/pbes2
 	KeyManagementAlgorithmPBES2_HS512_A256KW KeyManagementAlgorithm = "PBES2-HS512+A256KW"
+
+	// KeyManagementAlgorithmMLKEM768 is ML-KEM-768.
+	// import github.com/shogo82148/goat/jwa/mlkem
+	KeyManagementAlgorithmMLKEM768 KeyManagementAlgorithm = "ML-KEM-768"
+
+	// KeyManagementAlgorithmMLKEM1024 is ML-KEM-1024.
+	// import github.com/shogo82148/goat/jwa/mlkem
+	KeyManagementAlgorithmMLKEM1024 KeyManagementAlgorithm = "ML-KEM-1024"
+
+	// KeyManagementAlgorithmMLKEM768_AES192KW is ML-KEM-768 + AES192KW.
+	// import github.com/shogo82148/goat/jwa/mlkem
+	KeyManagementAlgorithmMLKEM768_AES192KW KeyManagementAlgorithm = "ML-KEM-768+AES192KW"
+
+	// KeyManagementAlgorithmMLKEM1024_AES256KW is ML-KEM-1024 + AES256KW.
+	// import github.com/shogo82148/goat/jwa/mlkem
+	KeyManagementAlgorithmMLKEM1024_AES256KW KeyManagementAlgorithm = "ML-KEM-1024+AES256KW"
 )
 
 var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algorithm{
@@ -461,6 +477,10 @@ var keyManagementAlgorithms = map[KeyManagementAlgorithm]func() keymanage.Algori
 	KeyManagementAlgorithmPBES2_HS256_A128KW: nil,
 	KeyManagementAlgorithmPBES2_HS384_A192KW: nil,
 	KeyManagementAlgorithmPBES2_HS512_A256KW: nil,
+	KeyManagementAlgorithmMLKEM768:           nil,
+	KeyManagementAlgorithmMLKEM1024:          nil,
+	KeyManagementAlgorithmMLKEM768_AES192KW:  nil,
+	KeyManagementAlgorithmMLKEM1024_AES256KW: nil,
 }
 
 func RegisterKeyManagementAlgorithm(alg KeyManagementAlgorithm, f func() keymanage.Algorithm) {
@@ -695,6 +715,11 @@ const (
 
 	// KeyTypeOct is Octet sequence (used to represent symmetric keys).
 	KeyTypeOct KeyType = "oct"
+
+	// KeyTypeAKP is Algorithm Key Pair defined in [I-D.ietf-cose-dilithium].
+	//
+	// [I-D.ietf-cose-dilithium]: https://datatracker.ietf.org/doc/draft-ietf-cose-dilithium/11/
+	KeyTypeAKP KeyType = "AKP"
 )
 
 func (kyt KeyType) String() string {
