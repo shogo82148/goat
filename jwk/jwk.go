@@ -8,6 +8,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mlkem"
 	"crypto/rsa"
 	"crypto/sha1"
 	"crypto/sha256"
@@ -328,6 +329,18 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			return nil, errors.New("jwk: public key is allowed for symmetric keys")
 		}
 		encodeSymmetricKey(e, priv)
+	case *mlkem.DecapsulationKey768:
+		pub, ok := key.pub.(*mlkem.EncapsulationKey768)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for mlkem768: %T", key.pub)
+		}
+		encodeMLKEM768Key(e, priv, pub)
+	case *mlkem.DecapsulationKey1024:
+		pub, ok := key.pub.(*mlkem.EncapsulationKey1024)
+		if !ok {
+			return nil, fmt.Errorf("jwk: public key type is mismatch for mlkem1024: %T", key.pub)
+		}
+		encodeMLKEM1024Key(e, priv, pub)
 	case nil:
 		// the key has only public key.
 		switch pub := key.pub.(type) {
@@ -347,6 +360,10 @@ func (key *Key) MarshalJSON() ([]byte, error) {
 			encodeX448Key(e, nil, pub)
 		case *secp256k1.PublicKey:
 			encodeSecp256k1Key(e, nil, pub)
+		case *mlkem.EncapsulationKey768:
+			encodeMLKEM768Key(e, nil, pub)
+		case *mlkem.EncapsulationKey1024:
+			encodeMLKEM1024Key(e, nil, pub)
 		default:
 			return nil, newUnknownKeyTypeError(key)
 		}
@@ -426,6 +443,8 @@ func ParseMap(raw map[string]any) (*Key, error) {
 		parseOKPKey(d, key)
 	case jwa.KeyTypeOct:
 		parseSymmetricKey(d, key)
+	case jwa.KeyTypeAKP:
+		parseAKPKey(d, key)
 	default:
 		return nil, fmt.Errorf("jwk: unknown key type: %q", key.kty)
 	}
@@ -518,9 +537,10 @@ type ecdhPublicKey = ecdh.PublicKey
 
 // NewPrivateKey returns a new JWK from the private key.
 //
-// key must be one of [*crypto/ecdsa.PrivateKey], [*crypto/rsa.PrivateKey], [crypto/ed25519.PrivateKey], [*crypto/ecdh.PrivateKey],
+// key must be one of [*ecdsa.PrivateKey], [*rsa.PrivateKey], [ed25519.PrivateKey], [*ecdh.PrivateKey],
 // [x25519.PrivateKey], [ed448.PrivateKey],
-// [x448.PrivateKey], [*secp256k1.PrivateKey] or []byte.
+// [x448.PrivateKey], [*secp256k1.PrivateKey], []byte,
+// [*mlkem.DecapsulationKey768] or [*mlkem.DecapsulationKey1024].
 func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PrivateKey:
@@ -621,6 +641,20 @@ func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
 			kty:  jwa.KeyTypeOct,
 			priv: append([]byte(nil), key...),
 		}, nil
+	case *mlkem.DecapsulationKey768:
+		return &Key{
+			alg:  jwa.KeyManagementAlgorithmMLKEM768.KeyAlgorithm(),
+			kty:  jwa.KeyTypeAKP,
+			priv: key,
+			pub:  key.EncapsulationKey(),
+		}, nil
+	case *mlkem.DecapsulationKey1024:
+		return &Key{
+			alg:  jwa.KeyManagementAlgorithmMLKEM1024.KeyAlgorithm(),
+			kty:  jwa.KeyTypeAKP,
+			priv: key,
+			pub:  key.EncapsulationKey(),
+		}, nil
 	default:
 		return nil, fmt.Errorf("jwk: unknown private key type: %T", key)
 	}
@@ -628,8 +662,9 @@ func NewPrivateKey(key goat.PrivateKey) (*Key, error) {
 
 // NewPublicKey returns a new JWK from the public key.
 //
-// key must be one of [*crypto/ecdsa.PublicKey], [*crypto/rsa.PublicKey], [crypto/ed25519.PublicKey], [*crypto/ecdh.PublicKey],
-// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey] or [*secp256k1.PublicKey].
+// key must be one of [*ecdsa.PublicKey], [*rsa.PublicKey], [ed25519.PublicKey], [*ecdh.PublicKey],
+// [x25519.PublicKey], [ed448.PublicKey], [x448.PublicKey], [*secp256k1.PublicKey],
+// [*mlkem.EncapsulationKey768] or [*mlkem.EncapsulationKey1024].
 func NewPublicKey(key goat.PublicKey) (*Key, error) {
 	switch key := key.(type) {
 	case *ecdsa.PublicKey:
@@ -708,6 +743,18 @@ func NewPublicKey(key goat.PublicKey) (*Key, error) {
 	case *secp256k1.PublicKey:
 		return &Key{
 			kty: jwa.KeyTypeEC,
+			pub: key,
+		}, nil
+	case *mlkem.EncapsulationKey768:
+		return &Key{
+			alg: jwa.KeyManagementAlgorithmMLKEM768.KeyAlgorithm(),
+			kty: jwa.KeyTypeAKP,
+			pub: key,
+		}, nil
+	case *mlkem.EncapsulationKey1024:
+		return &Key{
+			alg: jwa.KeyManagementAlgorithmMLKEM1024.KeyAlgorithm(),
+			kty: jwa.KeyTypeAKP,
 			pub: key,
 		}, nil
 	default:
