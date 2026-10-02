@@ -15,6 +15,7 @@ jobs:
       matrix:
         go:
           - "stable"
+          - "1.27"
           - "1.26"
         os:
           - ubuntu-latest
